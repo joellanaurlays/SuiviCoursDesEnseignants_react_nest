@@ -11,6 +11,7 @@ import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import { UsersService } from './users.service.js';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 interface AuthenticatedRequest extends Request {
   user: { id: number };
@@ -18,6 +19,8 @@ interface AuthenticatedRequest extends Request {
 
 const MANAGE_USERS_ROLES = ['CHEF_SCOLARITE', 'ADMINISTRATEUR'];
 
+@ApiTags('Users')
+@ApiBearerAuth('access-token')
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
