@@ -1,8 +1,11 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 
+const MANAGE_USERS_ROLES = ['CHEF_SCOLARITE', 'ADMINISTRATEUR']
+
 function DashboardPlaceholder() {
   const { user, logout } = useAuth()
+  const canManageUsers = MANAGE_USERS_ROLES.includes(user.role)
 
   return (
     <div className="min-h-screen bg-bg px-6 py-8">
@@ -14,6 +17,14 @@ function DashboardPlaceholder() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {canManageUsers && (
+            <Link
+              to="/users"
+              className="text-sm font-medium text-primary border border-primary rounded-lg px-3 py-1.5 hover:bg-blue-50"
+            >
+              Gestion des utilisateurs
+            </Link>
+          )}
           <Link
             to="/profile"
             className="text-sm font-medium text-primary border border-primary rounded-lg px-3 py-1.5 hover:bg-blue-50"
