@@ -1,11 +1,24 @@
+import { Navigate, Route, Routes } from 'react-router-dom'
+import ProtectedRoute from './components/ProtectedRoute.jsx'
+import DashboardPlaceholder from './pages/DashboardPlaceholder.jsx'
+import LoginPage from './pages/LoginPage.jsx'
 import './styles/index.css'
 
 function App() {
   return (
-    <div style={{ textAlign: 'center', marginTop: '4rem' }}>
-      <h1>EMIT — Suivi des enseignements</h1>
-      <p>Frontend configuré (React + Tailwind CSS).</p>
-    </div>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <DashboardPlaceholder />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    </Routes>
   )
 }
 
