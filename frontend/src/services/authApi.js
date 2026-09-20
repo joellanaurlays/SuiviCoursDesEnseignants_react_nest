@@ -1,29 +1,17 @@
-const API_URL = import.meta.env.VITE_API_URL
+import { apiFetch } from './apiClient.js'
 
-export async function loginRequest(email, password) {
-  const response = await fetch(`${API_URL}/auth/login`, {
+export function loginRequest(email, password) {
+  return apiFetch('/auth/login', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
+    body: { email, password },
+    auth: false,
   })
-
-  const data = await response.json()
-
-  if (!response.ok) {
-    throw new Error(data.message || 'Erreur de connexion.')
-  }
-
-  return data
 }
 
-export async function fetchProfile(token) {
-  const response = await fetch(`${API_URL}/auth/profile`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
+export function fetchProfile() {
+  return apiFetch('/auth/profile')
+}
 
-  if (!response.ok) {
-    throw new Error('Session invalide.')
-  }
-
-  return response.json()
+export function logoutRequest() {
+  return apiFetch('/auth/logout', { method: 'POST' })
 }

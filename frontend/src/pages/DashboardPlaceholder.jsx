@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 
 function DashboardPlaceholder() {
@@ -12,13 +13,21 @@ function DashboardPlaceholder() {
             {user.firstName} {user.lastName} — {user.role}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={logout}
-          className="text-sm font-medium text-error border border-error rounded-lg px-3 py-1.5 hover:bg-red-50"
-        >
-          Déconnexion
-        </button>
+        <div className="flex items-center gap-3">
+          <Link
+            to="/profile"
+            className="text-sm font-medium text-primary border border-primary rounded-lg px-3 py-1.5 hover:bg-blue-50"
+          >
+            Mon profil
+          </Link>
+          <button
+            type="button"
+            onClick={logout}
+            className="text-sm font-medium text-error border border-error rounded-lg px-3 py-1.5 hover:bg-red-50"
+          >
+            Déconnexion
+          </button>
+        </div>
       </header>
 
       <div className="bg-white border border-slate-200 rounded-xl p-6 text-slate-500">

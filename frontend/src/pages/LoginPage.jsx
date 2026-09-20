@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 
 function LoginPage() {
-  const { login, user } = useAuth()
+  const { login, user, sessionExpired, clearSessionExpiredFlag } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -15,6 +15,11 @@ function LoginPage() {
       navigate('/dashboard', { replace: true })
     }
   }, [user, navigate])
+
+  useEffect(() => {
+    return () => clearSessionExpiredFlag()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function handleSubmit(event) {
     event.preventDefault()
@@ -36,6 +41,12 @@ function LoginPage() {
       <div className="w-full max-w-sm bg-white shadow-md rounded-xl p-8 border border-slate-200">
         <h1 className="text-2xl font-bold text-text mb-1">EMIT</h1>
         <p className="text-sm text-slate-500 mb-6">Suivi et pilotage des enseignants</p>
+
+        {sessionExpired && (
+          <p className="text-sm text-warning bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
+            Votre session a expiré, veuillez vous reconnecter.
+          </p>
+        )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
