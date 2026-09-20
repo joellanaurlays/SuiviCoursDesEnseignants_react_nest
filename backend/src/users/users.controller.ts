@@ -3,7 +3,9 @@ import {
   ParseIntPipe, Patch, Post, Query, Req, UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
+import { Roles } from '../auth/decorators/roles.decorator.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
+import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
@@ -14,17 +16,21 @@ interface AuthenticatedRequest extends Request {
   user: { id: number };
 }
 
+const MANAGE_USERS_ROLES = ['CHEF_SCOLARITE', 'ADMINISTRATEUR'];
+
 @Controller('users')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
+  @Roles(...MANAGE_USERS_ROLES)
   create(@Body() dto: CreateUserDto) {
     return this.usersService.create(dto);
   }
 
   @Get()
+  @Roles(...MANAGE_USERS_ROLES)
   findAll(
     @Query('search') search?: string,
     @Query('role') role?: string,
@@ -32,13 +38,7 @@ export class UsersController {
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page?: number,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit?: number,
   ) {
-    return this.usersService.findAll({
-      search,
-      role,
-      isActive,
-      page: page!,
-      limit: limit!,
-    });
+    return this.usersService.findAll({ search, role, isActive, page: page!, limit: limit! });
   }
 
   @Get('me')
@@ -57,15 +57,14 @@ export class UsersController {
   }
 
   @Get(':id')
+  @Roles(...MANAGE_USERS_ROLES)
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.findOne(id);
   }
 
   @Patch(':id')
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateUserDto,
-  ) {
+  @Roles(...MANAGE_USERS_ROLES)
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateUserDto) {
     return this.usersService.update(id, dto);
   }
 }
