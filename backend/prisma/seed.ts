@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
+import * as bcrypt from 'bcrypt';
 import { PrismaClient, RoleName } from '../src/generated/prisma/client.js';
 
 const adapter = new PrismaPg({
@@ -23,6 +24,25 @@ async function main() {
       create: role,
     });
   }
+
+  // Utilisateur de test uniquement — la création réelle d'utilisateurs sera gérée en T02
+  const adminRole = await prisma.role.findUniqueOrThrow({
+    where: { name: 'ADMINISTRATEUR' },
+  });
+
+  const hashedPassword = await bcrypt.hash('Admin123!', 10);
+
+  await prisma.user.upsert({
+    where: { email: 'admin@emit.mg' },
+    update: {},
+    create: {
+      email: 'admin@emit.mg',
+      password: hashedPassword,
+      firstName: 'Admin',
+      lastName: 'EMIT',
+      roleId: adminRole.id,
+    },
+  });
 }
 
 main()
