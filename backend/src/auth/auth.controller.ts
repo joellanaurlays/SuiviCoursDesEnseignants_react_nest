@@ -19,4 +19,14 @@ export class AuthController {
   getProfile(@Req() req: Request) {
     return (req as unknown as { user: unknown }).user;
   }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  logout() {
+    // JWT stateless : aucune session serveur à invalider.
+    // Cet endpoint existe pour la cohérence de l'API et un futur
+    // système de blacklist/audit si le projet en a besoin plus tard.
+    return { message: 'Déconnexion effectuée.' };
+  }
 }
