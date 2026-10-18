@@ -1,0 +1,116 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Cycle {
+  LICENCE
+  MASTER
+}
+
+enum EtatEnseignement {
+  NON_COMMENCE
+  EN_COURS
+  TERMINE
+}
+
+enum StatutSeance {
+  PLANIFIEE
+  REALISEE
+  ANNULEE
+}
+
+model Enseignement {
+  id                   String            @id @default(uuid())
+  matiereId            String
+  enseignantId         String
+  mentionId            String
+  cycle                Cycle
+  niveauId             String
+  parcours             String
+  semestreId           String
+  anneeUniversitaireId String
+  volumePrevu          Int
+  // Colonnes agrégées maintenues par SuiviRecalculService (cache dénormalisé).
+  // Toutes les réponses API recalculent depuis les séances (source de vérité).
+  heuresRealisees      Float             @default(0)
+  progression          Float             @default(0)
+  etat                 EtatEnseignement  @default(NON_COMMENCE)
+  // Clôture anticipée : l'enseignant termine lui-même son enseignement en
+  // fournissant un motif obligatoire. Aucune validation par un responsable.
+  // Le volume, les heures et la progression ne sont JAMAIS modifiés.
+  clotureAnticipee     Boolean           @default(false)
+  motifCloture         String?
+  dateCloture          DateTime?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  seances              Seance[]
+
+  @@index([enseignantId])
+  @@index([mentionId, cycle])
+  @@index([clotureAnticipee])
+}
+
+model Seance {
+  id              String         @id @default(uuid())
+  enseignementId  String
+  dateSeance      DateTime
+  heureDebut      String
+  heureFin        String
+  duree           Float
+  contenuEnseigne String?
+  statut          StatutSeance   @default(PLANIFIEE)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  enseignement    Enseignement   @relation(fields: [enseignementId], references: [id])
+
+  @@index([enseignementId, dateSeance])
+}
+
+// Journal d'audit des actions réalisées sur les séances.
+// Le seanceId est volontairement SANS clé étrangère : la trace doit survivre à
+// la suppression de la séance. De même, les champs de périmètre
+// (enseignantId, mentionId, cycle, parcours) sont figés au moment de l'action
+// afin de pouvoir contrôler l'accès à l'historique même après suppression.
+enum ActionAuditSeance {
+  CREATION
+  DECLARATION_REALISEE
+  REALISATION
+  ANNULATION
+  MODIFICATION
+  CORRECTION
+  SUPPRESSION
+}
+
+model JournalAuditSeance {
+  id             String             @id @default(uuid())
+  seanceId       String
+  enseignementId String
+  // Auteur de l'action : toujours issu du contexte d'authentification.
+  utilisateurId  String
+  action         ActionAuditSeance
+  // Motif requis pour une annulation / correction / suppression (facultatif ailleurs).
+  motif          String?
+  statutAvant    StatutSeance?
+  statutApres    StatutSeance?
+  // Instantané des champs métier concernés, avant/après l'action.
+  valeursAvant   Json?
+  valeursApres   Json?
+  // Instantané de périmètre, pour le contrôle d'accès à l'historique.
+  enseignantId   String
+  mentionId      String
+  cycle          Cycle
+  parcours       String
+  createdAt      DateTime           @default(now())
+
+  @@index([seanceId])
+  @@index([enseignementId])
+  @@index([utilisateurId])
+  @@index([enseignantId])
+  @@index([createdAt])
+}
+
