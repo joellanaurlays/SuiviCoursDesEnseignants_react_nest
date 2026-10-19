@@ -98,7 +98,7 @@ export const ConstraintsManagementView: React.FC<ConstraintsManagementViewProps>
       <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-[#03045E]">Gestion des Contraintes de Planification (T25)</h2>
+            <h2 className="text-lg font-bold text-[#03045E]">Gestion des Contraintes de Planification </h2>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#CAF0F8] text-[#0077B6] font-semibold">
               Moteur de règles
             </span>

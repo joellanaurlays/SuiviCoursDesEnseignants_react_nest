@@ -48,7 +48,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </span>
                 <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#00B4D8]/20 border border-[#00B4D8] text-[#90E0EF] font-semibold flex items-center gap-1">
                   <Sparkles className="w-3 h-3 text-[#00B4D8]" />
-                  Membre 5 • Emploi du Temps (T21–T25)
+                  Emploi du Temps 
                 </span>
               </div>
               <p className="text-xs text-slate-300">
@@ -128,7 +128,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             <Calendar className="w-4 h-4 text-[#90E0EF]" />
-            <span>Consultation Emploi du Temps (T24)</span>
+            <span>Consultation Emploi du Temps </span>
           </button>
 
           <button
@@ -140,7 +140,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             <Layers className="w-4 h-4 text-[#00B4D8]" />
-            <span>Planificateur & Conflits (T22 & T23)</span>
+            <span>Planificateur & Conflits </span>
             {conflictCount > 0 && (
               <span className="w-2 h-2 rounded-full bg-rose-400 absolute top-2 right-2 animate-ping" />
             )}
@@ -155,7 +155,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             <Building2 className="w-4 h-4 text-[#90E0EF]" />
-            <span>Salles & Créneaux (T21)</span>
+            <span>Salles & Créneaux </span>
           </button>
 
           <button
@@ -167,7 +167,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             <ShieldAlert className="w-4 h-4 text-[#00B4D8]" />
-            <span>Contraintes (T25)</span>
+            <span>Contraintes </span>
           </button>
 
           <button

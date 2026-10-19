@@ -173,7 +173,7 @@ export default function App() {
 
           <div className="flex items-center space-x-4">
             <span className="px-2 py-0.5 rounded-full bg-[#CAF0F8] text-[#03045E] font-bold text-[11px]">
-              Module 5 : Emploi du Temps (T21 - T25)
+              Emploi du Temps 
             </span>
             <div className="flex items-center space-x-1" title="Palette de couleur officielle appliquée">
               <span className="w-3 h-3 rounded-full bg-[#03045E]" />
