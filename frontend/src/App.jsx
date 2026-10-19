@@ -2,7 +2,7 @@ import { useState } from 'react'
 import heroImg from './assets/hero.png'
 import reactLogo from './assets/react.svg'
 import viteLogo from './assets/vite.svg'
-import './App.css'
+import ExamsModuleFixed from './exams/ExamsModuleFixed.jsx'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -115,6 +115,9 @@ function App() {
 
       <div className="ticks"></div>
       <section id="spacer"></section>
+      <section id="module6-exams" style={{ padding: '0 24px 48px' }}>
+        <ExamsModuleFixed />
+      </section>
     </>
   )
 }
