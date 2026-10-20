@@ -1,6 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { SessionExamen } from './session-examen.entity.js';
-import { Alerte } from './alerte.entity.js';
 
 export type StatutExamen = 'A_VENIR' | 'EN_COURS' | 'TERMINE';
 
@@ -9,7 +8,7 @@ export class Examen {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => SessionExamen, (s) => s.examens, { onDelete: 'CASCADE' })
+  @ManyToOne(() => SessionExamen, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'session_id' })
   session: SessionExamen;
 
@@ -34,20 +33,17 @@ export class Examen {
   @Column({ name: 'heure_fin', type: 'time', nullable: true })
   heureFin: string | null;
 
-  @Column({ length: 50, nullable: true })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   salle: string | null;
 
-  @Column({ length: 20, default: 'A_VENIR' })
+  @Column({ type: 'varchar', length: 20, default: 'A_VENIR' })
   statut: StatutExamen;
 
-  @Column({ name: 'notes_remises', default: false })
+  @Column({ type: 'boolean', name: 'notes_remises', default: false })
   notesRemises: boolean;
 
   @Column({ name: 'date_remise_notes', type: 'timestamptz', nullable: true })
   dateRemiseNotes: Date | null;
-
-  @OneToMany(() => Alerte, (a) => a.examen)
-  alertes: Alerte[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

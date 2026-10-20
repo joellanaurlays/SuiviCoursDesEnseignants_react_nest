@@ -31,12 +31,15 @@ export class ExamsService {
   findExamens(sessionId?: string) {
     return this.examens.find({
       where: sessionId ? { sessionId } : {},
-      relations: ['session'],
+      relations: { session: true },
       order: { dateExamen: 'ASC' },
     });
   }
   createExamen(dto: CreateExamenDto) {
-    const e = this.examens.create({ ...dto });
+    const e = this.examens.create({
+      ...dto,
+      statut: dto.statut as Examen['statut'],
+    });
     return this.examens.save(e);
   }
   async changerStatut(id: string, statut: 'A_VENIR' | 'EN_COURS' | 'TERMINE') {
@@ -58,7 +61,7 @@ export class ExamsService {
   findAlertes(nonLues = false) {
     return this.alertes.find({
       where: nonLues ? { estLue: false } : {},
-      relations: ['examen'],
+      relations: { examen: true },
       order: { createdAt: 'DESC' },
     });
   }

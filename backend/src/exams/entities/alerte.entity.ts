@@ -6,7 +6,7 @@ export class Alerte {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Examen, (e) => e.alertes, { onDelete: 'CASCADE', nullable: true })
+  @ManyToOne(() => Examen, { onDelete: 'CASCADE', nullable: true })
   @JoinColumn({ name: 'examen_id' })
   examen: Examen | null;
 
@@ -19,10 +19,10 @@ export class Alerte {
   @Column({ type: 'text' })
   message: string;
 
-  @Column({ name: 'est_lue', default: false })
+  @Column({ type: 'boolean', name: 'est_lue', default: false })
   estLue: boolean;
 
-  @Column({ name: 'est_traitee', default: false })
+  @Column({ type: 'boolean', name: 'est_traitee', default: false })
   estTraitee: boolean;
 
   @CreateDateColumn({ name: 'created_at' })

@@ -1,5 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
-import { Examen } from './examen.entity.js';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity('sessions_examen')
 export class SessionExamen {
@@ -21,11 +20,8 @@ export class SessionExamen {
   @Column({ name: 'date_fin', type: 'date' })
   dateFin: string;
 
-  @Column({ name: 'est_cloturee', default: false })
+  @Column({ type: 'boolean', name: 'est_cloturee', default: false })
   estCloturee: boolean;
-
-  @OneToMany(() => Examen, (e) => e.session)
-  examens: Examen[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
