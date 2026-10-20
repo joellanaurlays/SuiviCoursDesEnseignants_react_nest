@@ -110,7 +110,7 @@ export const Member5DocumentationView: React.FC = () => {
                 Construction de l'Emploi du Temps
               </h3>
               <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                Génération automatique sans conflit (`PlanningAlgorithmService`) & Planification manuelle assistée. Prise en compte des volumes horaires et semestres.
+                Génération automatique sans conflit via l’API de planification & planification manuelle assistée. Prise en compte des volumes horaires et semestres chargés depuis PostgreSQL.
               </p>
             </div>
             <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-emerald-700 font-semibold">
@@ -407,7 +407,7 @@ export const Member5DocumentationView: React.FC = () => {
         <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
           <h3 className="font-bold text-sm text-[#03045E] flex items-center gap-2">
             <Database className="w-4 h-4 text-[#0077B6]" />
-            Schéma SQL PostgreSQL (`suivi_enseignements_db`)
+            Schéma SQL PostgreSQL (`suivicours_db`, configurable)
           </h3>
           <p className="text-xs text-slate-600">
             Structure des tables gérées par le Membre 5, en liaison avec les tables des autres membres :

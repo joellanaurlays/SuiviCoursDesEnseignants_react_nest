@@ -27,6 +27,7 @@ import {
   SalleEntity, 
   SeancePlanifieeEntity 
 } from '../types/schedule';
+import { ApiClient } from '../services/apiClient';
 
 interface RoomManagementViewProps {
   rooms: SalleEntity[];
@@ -36,18 +37,6 @@ interface RoomManagementViewProps {
   sessions: SeancePlanifieeEntity[];
   currentUser: CurrentUserSession;
 }
-
-const COMMON_EQUIPMENTS = [
-  'Vidéoprojecteur HD',
-  'Sonorisation',
-  'Micro HF',
-  'Climatisation',
-  'Accès PMR',
-  '45 PC Core i7',
-  'Réseau Gigabit',
-  'Tableau interactif',
-  'Stations iMac'
-];
 
 export const RoomManagementView: React.FC<RoomManagementViewProps> = ({
   rooms,
@@ -70,20 +59,38 @@ export const RoomManagementView: React.FC<RoomManagementViewProps> = ({
 
   // Form State
   const [roomName, setRoomName] = useState('');
-  const [capacity, setCapacity] = useState(40);
+  const [capacity, setCapacity] = useState(0);
   const [roomType, setRoomType] = useState<RoomType>('SALLE_TD');
-  const [building, setBuilding] = useState('Bâtiment Principal');
+  const [building, setBuilding] = useState('');
   const [selectedEquipments, setSelectedEquipments] = useState<string[]>([]);
   const [status, setStatus] = useState<RoomStatus>('ACTIF');
   const [notes, setNotes] = useState('');
+  const [slotDay, setSlotDay] = useState<DayOfWeek>('Lundi');
+  const [slotStart, setSlotStart] = useState('08:00');
+  const [slotEnd, setSlotEnd] = useState('10:00');
+  const [slotPeriod, setSlotPeriod] = useState<'Matin' | 'Apres-midi'>('Matin');
+  const equipmentOptions = [...new Set([...rooms.flatMap(room => room.equipements), ...selectedEquipments])].sort();
+
+  const handleCreateTimeSlot = async (event: React.FormEvent) => {
+    event.preventDefault();
+    try {
+      const created = await ApiClient.createTimeSlot({
+        jourSemaine: slotDay, heureDebut: slotStart, heureFin: slotEnd,
+        plage: slotPeriod, libelle: `${slotDay} ${slotStart}–${slotEnd}`, actif: true,
+      });
+      setTimeSlots(prev => [...prev, created].sort((a, b) => a.jourSemaine.localeCompare(b.jourSemaine) || a.heureDebut.localeCompare(b.heureDebut)));
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Impossible de créer ce créneau.');
+    }
+  };
 
   const openAddModal = () => {
     setEditingRoom(null);
     setRoomName('');
-    setCapacity(40);
+    setCapacity(0);
     setRoomType('SALLE_TD');
-    setBuilding('Bâtiment Principal');
-    setSelectedEquipments(['Vidéoprojecteur HD']);
+    setBuilding('');
+    setSelectedEquipments([]);
     setStatus('ACTIF');
     setNotes('');
     setIsModalOpen(true);
@@ -101,13 +108,11 @@ export const RoomManagementView: React.FC<RoomManagementViewProps> = ({
     setIsModalOpen(true);
   };
 
-  const handleSaveRoom = (e: React.FormEvent) => {
+  const handleSaveRoom = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!roomName.trim()) return;
+    if (!roomName.trim() || !building.trim() || capacity < 1) return;
 
-    if (editingRoom) {
-      setRooms(prev => prev.map(r => r.id === editingRoom.id ? {
-        ...r,
+    const roomData = {
         nom: roomName,
         capacite: Number(capacity),
         typeSalle: roomType,
@@ -116,40 +121,38 @@ export const RoomManagementView: React.FC<RoomManagementViewProps> = ({
         statut: status,
         estDisponible: status === 'ACTIF',
         remarques: notes
-      } : r));
-    } else {
-      const newRoom: SalleEntity = {
-        id: Math.max(10, ...rooms.map(r => r.id)) + 1,
-        nom: roomName,
-        capacite: Number(capacity),
-        typeSalle: roomType,
-        batiment: building,
-        equipements: selectedEquipments,
-        estDisponible: status === 'ACTIF',
-        statut: status,
-        remarques: notes
-      };
-      setRooms(prev => [...prev, newRoom]);
+    };
+    try {
+      const savedRoom = editingRoom
+        ? await ApiClient.updateRoom(editingRoom.id, roomData)
+        : await ApiClient.createRoom(roomData);
+      setRooms(prev => editingRoom
+        ? prev.map(room => room.id === savedRoom.id ? savedRoom : room)
+        : [...prev, savedRoom]);
+      setIsModalOpen(false);
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Impossible d’enregistrer la salle.');
     }
-    setIsModalOpen(false);
   };
 
-  const toggleRoomStatus = (roomId: number) => {
-    setRooms(prev => prev.map(r => {
-      if (r.id === roomId) {
-        const nextStatus: RoomStatus = r.statut === 'ACTIF' ? 'MAINTENANCE' : (r.statut === 'MAINTENANCE' ? 'DESACTIVE' : 'ACTIF');
-        return {
-          ...r,
-          statut: nextStatus,
-          estDisponible: nextStatus === 'ACTIF'
-        };
-      }
-      return r;
-    }));
+  const toggleRoomStatus = async (roomId: number) => {
+    try {
+      const updated = await ApiClient.toggleRoomStatus(roomId);
+      setRooms(prev => prev.map(room => room.id === roomId ? updated : room));
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Impossible de modifier la salle.');
+    }
   };
 
-  const toggleTimeSlot = (slotId: number) => {
-    setTimeSlots(prev => prev.map(s => s.id === slotId ? { ...s, actif: !s.actif } : s));
+  const toggleTimeSlot = async (slotId: number) => {
+    const slot = timeSlots.find(item => item.id === slotId);
+    if (!slot) return;
+    try {
+      const updated = await ApiClient.toggleTimeSlot(slotId, !slot.actif);
+      setTimeSlots(prev => prev.map(item => item.id === slotId ? updated : item));
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Impossible de modifier le créneau.');
+    }
   };
 
   // Calculate room occupancy rate
@@ -373,6 +376,20 @@ export const RoomManagementView: React.FC<RoomManagementViewProps> = ({
             </div>
 
             <div className="overflow-x-auto">
+              {(currentUser.role === 'CHEF_SCOLARITE' || currentUser.role === 'ADMINISTRATEUR') && (
+                <form onSubmit={handleCreateTimeSlot} className="mb-4 grid grid-cols-2 gap-2 md:grid-cols-5">
+                  <select aria-label="Jour du créneau" value={slotDay} onChange={event => setSlotDay(event.target.value as DayOfWeek)} className="rounded-lg border border-slate-200 px-2 py-2 text-xs">
+                    {(['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'] as DayOfWeek[]).map(day => <option key={day}>{day}</option>)}
+                  </select>
+                  <input aria-label="Heure de début" type="time" required value={slotStart} onChange={event => setSlotStart(event.target.value)} className="rounded-lg border border-slate-200 px-2 py-2 text-xs" />
+                  <input aria-label="Heure de fin" type="time" required value={slotEnd} onChange={event => setSlotEnd(event.target.value)} className="rounded-lg border border-slate-200 px-2 py-2 text-xs" />
+                  <select aria-label="Période" value={slotPeriod} onChange={event => setSlotPeriod(event.target.value as 'Matin' | 'Apres-midi')} className="rounded-lg border border-slate-200 px-2 py-2 text-xs">
+                    <option>Matin</option><option>Apres-midi</option>
+                  </select>
+                  <button type="submit" className="rounded-lg bg-[#0077B6] px-3 py-2 text-xs font-bold text-white">Ajouter un créneau</button>
+                </form>
+              )}
+              <div className="overflow-x-auto">
               <table className="w-full text-xs text-left">
                 <thead className="bg-[#03045E] text-white">
                   <tr>
@@ -398,7 +415,7 @@ export const RoomManagementView: React.FC<RoomManagementViewProps> = ({
                       </td>
                       <td className="py-2.5 px-4 font-mono font-bold text-slate-800">{slot.heureDebut}</td>
                       <td className="py-2.5 px-4 font-mono font-bold text-slate-800">{slot.heureFin}</td>
-                      <td className="py-2.5 px-4 text-slate-500">{slot.dureeMinutes} min (2h00)</td>
+                      <td className="py-2.5 px-4 text-slate-500">{slot.dureeMinutes} min ({Math.floor(slot.dureeMinutes / 60)}h{String(slot.dureeMinutes % 60).padStart(2, '0')})</td>
                       <td className="py-2.5 px-4">
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${slot.actif ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}`}>
                           {slot.actif ? 'Actif' : 'Désactivé'}
@@ -418,6 +435,7 @@ export const RoomManagementView: React.FC<RoomManagementViewProps> = ({
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           </div>
         </div>
@@ -506,7 +524,7 @@ export const RoomManagementView: React.FC<RoomManagementViewProps> = ({
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Équipements Disponibles</label>
                 <div className="grid grid-cols-2 gap-2 p-2 bg-slate-50 rounded-xl border border-slate-200 max-h-32 overflow-y-auto">
-                  {COMMON_EQUIPMENTS.map(eq => (
+                  {equipmentOptions.map(eq => (
                     <label key={eq} className="flex items-center space-x-2 text-[11px] text-slate-700 cursor-pointer">
                       <input
                         type="checkbox"

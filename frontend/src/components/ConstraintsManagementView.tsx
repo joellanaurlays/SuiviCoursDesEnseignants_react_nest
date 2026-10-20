@@ -20,6 +20,7 @@ import {
   EnseignementEntity, 
   SalleEntity 
 } from '../types/schedule';
+import { ApiClient } from '../services/apiClient';
 
 interface ConstraintsManagementViewProps {
   constraints: ContraintePlanificationEntity[];
@@ -47,20 +48,31 @@ export const ConstraintsManagementView: React.FC<ConstraintsManagementViewProps>
   const [description, setDescription] = useState('');
   const [day, setDay] = useState<DayOfWeek>('Vendredi');
 
-  const handleToggleActive = (constraintId: number) => {
-    setConstraints(prev => prev.map(c => c.id === constraintId ? { ...c, active: !c.active } : c));
+  const handleToggleActive = async (constraintId: number) => {
+    const current = constraints.find(item => item.id === constraintId);
+    if (!current) return;
+    try {
+      const updated = await ApiClient.toggleConstraint(constraintId, !current.active);
+      setConstraints(prev => prev.map(item => item.id === constraintId ? updated : item));
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Impossible de modifier cette contrainte.');
+    }
   };
 
-  const handleDeleteConstraint = (constraintId: number) => {
-    setConstraints(prev => prev.filter(c => c.id !== constraintId));
+  const handleDeleteConstraint = async (constraintId: number) => {
+    try {
+      await ApiClient.deleteConstraint(constraintId);
+      setConstraints(prev => prev.filter(item => item.id !== constraintId));
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Impossible de supprimer cette contrainte.');
+    }
   };
 
-  const handleAddConstraint = (e: React.FormEvent) => {
+  const handleAddConstraint = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
 
-    const newConstraint: ContraintePlanificationEntity = {
-      id: Math.max(10, ...constraints.map(c => c.id)) + 1,
+    const newConstraint: Partial<ContraintePlanificationEntity> = {
       titre: title,
       typeContrainte: type,
       niveauPriorite: priority,
@@ -73,10 +85,15 @@ export const ConstraintsManagementView: React.FC<ConstraintsManagementViewProps>
       active: true
     };
 
-    setConstraints(prev => [...prev, newConstraint]);
-    setIsAddModalOpen(false);
-    setTitle('');
-    setDescription('');
+    try {
+      const created = await ApiClient.createConstraint(newConstraint);
+      setConstraints(prev => [...prev, created]);
+      setIsAddModalOpen(false);
+      setTitle('');
+      setDescription('');
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Impossible de créer cette contrainte.');
+    }
   };
 
   const getTypeIcon = (cType: ConstraintTargetType) => {

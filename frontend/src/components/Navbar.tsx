@@ -12,13 +12,12 @@ import {
   Sparkles,
   Printer
 } from 'lucide-react';
-import { CurrentUserSession, UserRole, MentionCode } from '../types/schedule';
+import { CurrentUserSession } from '../types/schedule';
 
 interface NavbarProps {
   activeTab: 'calendar' | 'builder' | 'rooms' | 'constraints' | 'docs';
   setActiveTab: (tab: 'calendar' | 'builder' | 'rooms' | 'constraints' | 'docs') => void;
   currentUser: CurrentUserSession;
-  setCurrentUser: (user: CurrentUserSession) => void;
   conflictCount: number;
   onPrint: () => void;
 }
@@ -27,7 +26,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   setActiveTab,
   currentUser,
-  setCurrentUser,
   conflictCount,
   onPrint
 }) => {
@@ -84,35 +82,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="hidden md:inline">Imprimer</span>
             </button>
 
-            {/* Role switch simulation for permissions */}
+            {/* Role comes from the authenticated/deployment context. */}
             <div className="flex items-center space-x-2 bg-slate-900/60 px-3 py-1.5 rounded-xl border border-white/15">
               <UserCheck className="w-3.5 h-3.5 text-[#00B4D8]" />
-              <span className="text-xs text-slate-300 hidden md:inline">Rôle :</span>
-              <select
-                aria-label="Sélectionner le rôle actif"
-                value={currentUser.role}
-                onChange={(e) => {
-                  const role = e.target.value as UserRole;
-                  if (role === 'CHEF_SCOLARITE') {
-                    setCurrentUser({ id: 1, nom: 'Chef de Scolarité EMIT', role: 'CHEF_SCOLARITE' });
-                  } else if (role === 'ADMINISTRATEUR') {
-                    setCurrentUser({ id: 2, nom: 'Administrateur Planning', role: 'ADMINISTRATEUR' });
-                  } else if (role === 'RESPONSABLE_MENTION') {
-                    setCurrentUser({ id: 3, nom: 'Dr. Resp. Mention Informatique', role: 'RESPONSABLE_MENTION', mentionResponsable: 'Informatique' });
-                  } else if (role === 'ENSEIGNANT') {
-                    setCurrentUser({ id: 4, nom: 'Dr. Randrianarisoa Mamy', role: 'ENSEIGNANT', enseignantId: 12 });
-                  } else {
-                    setCurrentUser({ id: 5, nom: 'Étudiant L1 Informatique', role: 'ETUDIANT' });
-                  }
-                }}
-                className="bg-transparent text-xs text-white font-semibold focus:outline-none cursor-pointer pr-1"
-              >
-                <option value="CHEF_SCOLARITE" className="bg-[#03045E] text-white">Chef de Scolarité</option>
-                <option value="ADMINISTRATEUR" className="bg-[#03045E] text-white">Administrateur</option>
-                <option value="RESPONSABLE_MENTION" className="bg-[#03045E] text-white">Resp. Mention Info</option>
-                <option value="ENSEIGNANT" className="bg-[#03045E] text-white">Enseignant (Dr. Randria)</option>
-                <option value="ETUDIANT" className="bg-[#03045E] text-white">Étudiant (Consultation)</option>
-              </select>
+              <span className="text-xs text-slate-200">{currentUser.nom} · {currentUser.role}</span>
             </div>
           </div>
         </div>

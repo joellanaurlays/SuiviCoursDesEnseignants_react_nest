@@ -13,7 +13,6 @@ import {
   ShieldAlert, 
   Send, 
   X,
-  Zap,
   HelpCircle
 } from 'lucide-react';
 import { 
@@ -28,7 +27,7 @@ import {
   ConflictDetail 
 } from '../types/schedule';
 import { ConflictDetectorService, ConflictCheckResult } from '../services/ConflictDetectorService';
-import { PlanningAlgorithmService } from '../services/PlanningAlgorithmService';
+import { ApiClient } from '../services/apiClient';
 
 interface ScheduleBuilderViewProps {
   sessions: SeancePlanifieeEntity[];
@@ -38,7 +37,7 @@ interface ScheduleBuilderViewProps {
   teachings: EnseignementEntity[];
   constraints: ContraintePlanificationEntity[];
   scheduleMeta: EmploiDuTempsEntity;
-  setScheduleMeta: React.Dispatch<React.SetStateAction<EmploiDuTempsEntity>>;
+  setScheduleMeta: React.Dispatch<React.SetStateAction<EmploiDuTempsEntity | null>>;
   currentUser: CurrentUserSession;
   editingSession: SeancePlanifieeEntity | null;
   setEditingSession: (s: SeancePlanifieeEntity | null) => void;
@@ -58,15 +57,21 @@ export const ScheduleBuilderView: React.FC<ScheduleBuilderViewProps> = ({
   setEditingSession
 }) => {
   // Form State for planning a new or editing a session
-  const [selectedTeachingId, setSelectedTeachingId] = useState<number>(teachings[0]?.id || 301);
-  const [selectedSlotId, setSelectedSlotId] = useState<number>(timeSlots[0]?.id || 101);
-  const [selectedRoomId, setSelectedRoomId] = useState<number>(rooms[0]?.id || 1);
+  const [selectedTeachingId, setSelectedTeachingId] = useState<number>(teachings[0]?.id ?? 0);
+  const [selectedSlotId, setSelectedSlotId] = useState<number>(timeSlots[0]?.id ?? 0);
+  const [selectedRoomId, setSelectedRoomId] = useState<number>(rooms[0]?.id ?? 0);
   const [sessionType, setSessionType] = useState<'CM' | 'TD' | 'TP'>('CM');
   const [sessionNotes, setSessionNotes] = useState<string>('');
-  const [sessionDate, setSessionDate] = useState<string>('2026-10-19');
+  const [sessionDate, setSessionDate] = useState<string>(new Date().toISOString().slice(0, 10));
 
   // Generation notification / feedback
   const [generationReport, setGenerationReport] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!selectedTeachingId && teachings[0]) setSelectedTeachingId(teachings[0].id);
+    if (!selectedSlotId && timeSlots[0]) setSelectedSlotId(timeSlots[0].id);
+    if (!selectedRoomId && rooms[0]) setSelectedRoomId(rooms[0].id);
+  }, [teachings, timeSlots, rooms, selectedTeachingId, selectedSlotId, selectedRoomId]);
 
   // Sync form when editingSession changes
   React.useEffect(() => {
@@ -76,7 +81,7 @@ export const ScheduleBuilderView: React.FC<ScheduleBuilderViewProps> = ({
       setSelectedRoomId(editingSession.salleId);
       setSessionType(editingSession.typeSeance);
       setSessionNotes(editingSession.notes || '');
-      setSessionDate(editingSession.dateSeance || '2026-10-19');
+      setSessionDate(editingSession.dateSeance || new Date().toISOString().slice(0, 10));
     }
   }, [editingSession]);
 
@@ -123,7 +128,7 @@ export const ScheduleBuilderView: React.FC<ScheduleBuilderViewProps> = ({
   }, [selectedTeaching, selectedSlot, selectedRoom, sessionDate, sessions, rooms, constraints, editingSession]);
 
   // Handle Save / Add Session
-  const handleSaveSession = (forceSaveWithConflict = false) => {
+  const handleSaveSession = async (forceSaveWithConflict = false) => {
     if (!selectedTeaching || !selectedSlot || !selectedRoom) return;
 
     if (conflictReport.hasBlockingError && !forceSaveWithConflict) {
@@ -132,12 +137,7 @@ export const ScheduleBuilderView: React.FC<ScheduleBuilderViewProps> = ({
 
     const newStatut = conflictReport.hasConflict ? 'EN_CONFLIT' : 'VALIDE';
 
-    if (editingSession) {
-      // Update existing
-      setSessions(prev => prev.map(s => {
-        if (s.id === editingSession.id) {
-          return {
-            ...s,
+    const sessionData = {
             enseignementId: selectedTeaching.id,
             codeMatiere: selectedTeaching.codeMatiere,
             matiereNom: selectedTeaching.nomMatiere,
@@ -157,102 +157,48 @@ export const ScheduleBuilderView: React.FC<ScheduleBuilderViewProps> = ({
             dateSeance: sessionDate,
             statut: newStatut,
             conflits: conflictReport.conflicts,
-            notes: sessionNotes
-          };
-        }
-        return s;
-      }));
-      setEditingSession(null);
-    } else {
-      // Create new
-      const newSession: SeancePlanifieeEntity = {
-        id: Math.max(9020, ...sessions.map(s => s.id)) + 1,
-        emploiDuTempsId: scheduleMeta.id,
-        enseignementId: selectedTeaching.id,
-        codeMatiere: selectedTeaching.codeMatiere,
-        matiereNom: selectedTeaching.nomMatiere,
-        typeSeance: sessionType,
-        enseignantId: selectedTeaching.enseignantId,
-        nomEnseignant: selectedTeaching.nomEnseignant,
-        niveauId: selectedTeaching.niveauId,
-        codeNiveau: selectedTeaching.codeNiveau,
-        mentionNom: selectedTeaching.mentionNom,
-        semestreNom: selectedTeaching.semestreNom,
-        salleId: selectedRoom.id,
-        nomSalle: selectedRoom.nom,
-        creneauId: selectedSlot.id,
-        jourSemaine: selectedSlot.jourSemaine,
-        heureDebut: selectedSlot.heureDebut,
-        heureFin: selectedSlot.heureFin,
-        dateSeance: sessionDate,
-        statut: newStatut,
-        conflits: conflictReport.conflicts,
-        notes: sessionNotes
-      };
+            notes: sessionNotes,
+            forceSaveWithConflict,
+            emploiDuTempsId: scheduleMeta.id,
+    };
 
-      setSessions(prev => [...prev, newSession]);
+    try {
+      const savedSession = editingSession
+        ? await ApiClient.updateSession(editingSession.id, sessionData)
+        : await ApiClient.createSession(sessionData);
+      if (editingSession) {
+        setSessions(prev => prev.map(session => session.id === savedSession.id ? savedSession : session));
+        setEditingSession(null);
+      } else {
+        setSessions(prev => [...prev, savedSession]);
+      }
+      setSessionNotes('');
+    } catch (error) {
+      setGenerationReport(error instanceof Error ? error.message : 'Impossible d’enregistrer la séance.');
     }
-
-    setSessionNotes('');
   };
 
   // Run automated planning algorithm (T22)
-  const handleAutoGenerate = () => {
-    const result = PlanningAlgorithmService.generateAutomaticSchedule(
-      teachings,
-      rooms,
-      timeSlots,
-      sessions,
-      constraints,
-      scheduleMeta.semaineDu
-    );
-
-    if (result.success) {
-      setSessions(prev => [...prev, ...result.newSessions]);
+  const handleAutoGenerate = async () => {
+    try {
+      const result = await ApiClient.generateAutomaticPlanning(scheduleMeta.semaineDu);
+      const planning = await ApiClient.getPlanning();
+      setSessions(planning.sessions);
       setGenerationReport(result.message);
-    } else {
-      setGenerationReport(result.message);
+    } catch (error) {
+      setGenerationReport(error instanceof Error ? error.message : 'Impossible de générer le planning.');
     }
   };
 
-  // Inject a conflict scenario to test and demonstrate T23
-  const handleInjectConflictScenario = () => {
-    const conflictSession: SeancePlanifieeEntity = {
-      id: 9999,
-      emploiDuTempsId: scheduleMeta.id,
-      enseignementId: 303, // Bases de données avec Pr. Rakoto
-      codeMatiere: 'INF201',
-      matiereNom: 'Bases de Données Relationnelles (Conflit démo)',
-      typeSeance: 'CM',
-      enseignantId: 12, // Dr Randria (qui est déjà en Amphi A à ce moment !)
-      nomEnseignant: 'Dr. Randrianarisoa Mamy',
-      niveauId: 1, // L1 Informatique (qui a déjà Algo en Amphi A !)
-      codeNiveau: 'L1',
-      mentionNom: 'Informatique',
-      semestreNom: 'S1',
-      salleId: 1, // Amphi A (Déjà occupé !)
-      nomSalle: 'Amphithéâtre A',
-      creneauId: 101, // Lundi 08:00 - 10:00 (Même créneau !)
-      jourSemaine: 'Lundi',
-      heureDebut: '08:00',
-      heureFin: '10:00',
-      dateSeance: '2026-10-19',
-      statut: 'EN_CONFLIT',
-      notes: 'Séance injectée pour tester la détection multi-conflit (Salle + Prof + Niveau)'
-    };
-
-    setSessions(prev => [conflictSession, ...prev]);
-    setGenerationReport('Scénario de test injecté : 1 séance en triple conflit (Salle, Enseignant, Niveau) ajoutée pour démonstration.');
-  };
-
   // Resolve conflict by moving to an available slot/room
-  const handleAutoResolveConflict = (sessionId: number) => {
+  const handleAutoResolveConflict = async (sessionId: number) => {
     const targetSession = sessions.find(s => s.id === sessionId);
     if (!targetSession) return;
+    const requiredCapacity = teachings.find(teaching => teaching.id === targetSession.enseignementId)?.effectifEtudiants || 0;
 
     // Find first free slot & room
     for (const slot of timeSlots) {
-      for (const room of rooms.filter(r => r.statut === 'ACTIF' && r.capacite >= 50)) {
+      for (const room of rooms.filter(r => r.statut === 'ACTIF' && r.capacite >= requiredCapacity)) {
         const check = ConflictDetectorService.verifyConflicts(
           {
             seanceId: targetSession.id,
@@ -274,23 +220,16 @@ export const ScheduleBuilderView: React.FC<ScheduleBuilderViewProps> = ({
 
         if (!check.hasConflict) {
           // Resolved!
-          setSessions(prev => prev.map(s => {
-            if (s.id === sessionId) {
-              return {
-                ...s,
-                salleId: room.id,
-                nomSalle: room.nom,
-                creneauId: slot.id,
-                jourSemaine: slot.jourSemaine,
-                heureDebut: slot.heureDebut,
-                heureFin: slot.heureFin,
-                statut: 'VALIDE',
-                conflits: []
-              };
-            }
-            return s;
-          }));
-          setGenerationReport(`Conflit résolu ! Le cours a été réaffecté en ${room.nom} le ${slot.jourSemaine} (${slot.heureDebut} - ${slot.heureFin}).`);
+          try {
+            const updated = await ApiClient.updateSession(sessionId, {
+              salleId: room.id, creneauId: slot.id, statut: 'VALIDE',
+              jourSemaine: slot.jourSemaine, heureDebut: slot.heureDebut, heureFin: slot.heureFin,
+            });
+            setSessions(prev => prev.map(session => session.id === sessionId ? updated : session));
+            setGenerationReport(`Séance réaffectée en ${room.nom} le ${slot.jourSemaine} (${slot.heureDebut} - ${slot.heureFin}).`);
+          } catch (error) {
+            setGenerationReport(error instanceof Error ? error.message : 'Impossible de déplacer la séance.');
+          }
           return;
         }
       }
@@ -298,17 +237,16 @@ export const ScheduleBuilderView: React.FC<ScheduleBuilderViewProps> = ({
   };
 
   // Publication of timetable
-  const handlePublishTimetable = () => {
-    setScheduleMeta(prev => ({
-      ...prev,
-      estPublie: true,
-      estValide: true,
-      version: prev.version + 1,
-      dateMiseAJour: new Date().toISOString().replace('T', ' ').substring(0, 16)
-    }));
-    // All valid sessions become PLANIFIE
-    setSessions(prev => prev.map(s => s.statut === 'VALIDE' || s.statut === 'BROUILLON' ? { ...s, statut: 'PLANIFIE' } : s));
-    setGenerationReport('Emploi du temps validé et officiellement publié pour consultation par la scolarité et les étudiants.');
+  const handlePublishTimetable = async () => {
+    try {
+      const published = await ApiClient.publishPlanning();
+      const planning = await ApiClient.getPlanning();
+      setScheduleMeta(published);
+      setSessions(planning.sessions);
+      setGenerationReport('Emploi du temps publié.');
+    } catch (error) {
+      setGenerationReport(error instanceof Error ? error.message : 'Impossible de publier le planning.');
+    }
   };
 
   // Find all current conflicts across the schedule
@@ -368,15 +306,6 @@ export const ScheduleBuilderView: React.FC<ScheduleBuilderViewProps> = ({
             >
               <Sparkles className="w-4 h-4" />
               <span>Générateur Automatique</span>
-            </button>
-
-            <button
-              onClick={handleInjectConflictScenario}
-              className="flex items-center space-x-1.5 px-3 py-2 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-semibold transition"
-              title="Injecter une collision pour tester le ConflictDetectorService"
-            >
-              <Zap className="w-3.5 h-3.5 text-amber-600" />
-              <span>Tester Détection Conflit</span>
             </button>
 
             {(currentUser.role === 'CHEF_SCOLARITE' || currentUser.role === 'ADMINISTRATEUR') && (

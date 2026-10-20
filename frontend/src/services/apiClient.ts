@@ -2,6 +2,7 @@ import {
   ContraintePlanificationEntity, 
   CreneauHoraireEntity, 
   EmploiDuTempsEntity, 
+  EnseignementEntity,
   SalleEntity, 
   SeancePlanifieeEntity, 
   SeanceStatut 
@@ -15,82 +16,71 @@ export interface ConflictApiError {
 }
 
 export class ApiClient {
-  private static baseUrl = '/api';
+  private static baseUrl = import.meta.env.VITE_API_URL || '/api';
+
+  private static async request<T>(url: string, init?: RequestInit): Promise<T> {
+    const response = await fetch(url, init);
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body.message || body.error || `Erreur HTTP ${response.status}`);
+    }
+    return response.json() as Promise<T>;
+  }
 
   // --- 1. SALLES & CRÉNEAUX (T21) ---
   public static async getRooms(filters?: { typeSalle?: string; statut?: string }): Promise<SalleEntity[]> {
-    try {
-      const params = new URLSearchParams();
-      if (filters?.typeSalle && filters.typeSalle !== 'TOUS') params.append('typeSalle', filters.typeSalle);
-      if (filters?.statut && filters.statut !== 'TOUS') params.append('statut', filters.statut);
+    const params = new URLSearchParams();
+    if (filters?.typeSalle && filters.typeSalle !== 'TOUS') params.append('typeSalle', filters.typeSalle);
+    if (filters?.statut && filters.statut !== 'TOUS') params.append('statut', filters.statut);
+    return this.request(`${this.baseUrl}/rooms?${params.toString()}`);
+  }
 
-      const res = await fetch(`${this.baseUrl}/rooms?${params.toString()}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
-    } catch (err) {
-      console.warn('[ApiClient] Failed to fetch rooms from backend, using fallback', err);
-      return [];
-    }
+  public static getTeachings(): Promise<EnseignementEntity[]> {
+    return this.request(`${this.baseUrl}/teachings`);
   }
 
   public static async createRoom(data: Partial<SalleEntity>): Promise<SalleEntity> {
-    const res = await fetch(`${this.baseUrl}/rooms`, {
+    return this.request(`${this.baseUrl}/rooms`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (!res.ok) throw new Error(`Erreur ${res.status}`);
-    return await res.json();
   }
 
   public static async updateRoom(id: number, data: Partial<SalleEntity>): Promise<SalleEntity> {
-    const res = await fetch(`${this.baseUrl}/rooms/${id}`, {
+    return this.request(`${this.baseUrl}/rooms/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (!res.ok) throw new Error(`Erreur ${res.status}`);
-    return await res.json();
   }
 
   public static async toggleRoomStatus(id: number): Promise<SalleEntity> {
-    const res = await fetch(`${this.baseUrl}/rooms/${id}/toggle`, { method: 'PATCH' });
-    if (!res.ok) throw new Error(`Erreur ${res.status}`);
-    return await res.json();
+    return this.request(`${this.baseUrl}/rooms/${id}/toggle`, { method: 'PATCH' });
   }
 
   public static async getTimeSlots(): Promise<CreneauHoraireEntity[]> {
-    try {
-      const res = await fetch(`${this.baseUrl}/rooms/time-slots`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
-    } catch (err) {
-      console.warn('[ApiClient] Failed to fetch time slots', err);
-      return [];
-    }
+    return this.request(`${this.baseUrl}/rooms/time-slots`);
+  }
+
+  public static createTimeSlot(data: Omit<CreneauHoraireEntity, 'id' | 'dureeMinutes'> & { dureeMinutes?: number }): Promise<CreneauHoraireEntity> {
+    return this.request(`${this.baseUrl}/rooms/time-slots`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
+    });
   }
 
   public static async toggleTimeSlot(id: number, actif?: boolean): Promise<CreneauHoraireEntity> {
-    const res = await fetch(`${this.baseUrl}/rooms/time-slots/${id}/toggle`, {
+    return this.request(`${this.baseUrl}/rooms/time-slots/${id}/toggle`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ actif })
     });
-    if (!res.ok) throw new Error(`Erreur ${res.status}`);
-    return await res.json();
   }
 
   // --- 2. EMPLOI DU TEMPS (T22 & T24) ---
   public static async getPlanning(filters?: Record<string, string>): Promise<{ metadata: EmploiDuTempsEntity; sessions: SeancePlanifieeEntity[] }> {
-    try {
-      const params = new URLSearchParams(filters);
-      const res = await fetch(`${this.baseUrl}/planning?${params.toString()}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
-    } catch (err) {
-      console.warn('[ApiClient] Failed to fetch planning', err);
-      return { metadata: {} as any, sessions: [] };
-    }
+    const params = new URLSearchParams(filters);
+    return this.request(`${this.baseUrl}/planning?${params.toString()}`);
   }
 
   public static async createSession(data: any): Promise<SeancePlanifieeEntity> {
@@ -112,83 +102,67 @@ export class ApiClient {
     return await res.json();
   }
 
+  public static updateSession(id: number, data: Partial<SeancePlanifieeEntity>): Promise<SeancePlanifieeEntity> {
+    return this.request(`${this.baseUrl}/planning/session/${id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
+    });
+  }
+
   public static async updateSessionStatus(id: number, statut: SeanceStatut, notes?: string): Promise<SeancePlanifieeEntity> {
-    const res = await fetch(`${this.baseUrl}/planning/session/${id}/status`, {
+    return this.request(`${this.baseUrl}/planning/session/${id}/status`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ statut, notes })
     });
-    if (!res.ok) throw new Error(`Erreur ${res.status}`);
-    return await res.json();
   }
 
   public static async deleteSession(id: number): Promise<{ success: boolean; message: string }> {
-    const res = await fetch(`${this.baseUrl}/planning/session/${id}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error(`Erreur ${res.status}`);
-    return await res.json();
+    return this.request(`${this.baseUrl}/planning/session/${id}`, { method: 'DELETE' });
   }
 
   public static async generateAutomaticPlanning(semaineDu?: string): Promise<any> {
-    const res = await fetch(`${this.baseUrl}/planning/generate`, {
+    return this.request(`${this.baseUrl}/planning/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ semaineDu })
     });
-    if (!res.ok) throw new Error(`Erreur ${res.status}`);
-    return await res.json();
   }
 
   public static async publishPlanning(): Promise<EmploiDuTempsEntity> {
-    const res = await fetch(`${this.baseUrl}/planning/publish`, { method: 'POST' });
-    if (!res.ok) throw new Error(`Erreur ${res.status}`);
-    return await res.json();
+    return this.request(`${this.baseUrl}/planning/publish`, { method: 'POST' });
   }
 
   // --- 3. DÉTECTION CONFLITS (T23) ---
   public static async checkConflict(data: any): Promise<any> {
-    const res = await fetch(`${this.baseUrl}/conflicts/check`, {
+    return this.request(`${this.baseUrl}/conflicts/check`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    return await res.json();
   }
 
   // --- 4. CONTRAINTES (T25) ---
   public static async getConstraints(): Promise<ContraintePlanificationEntity[]> {
-    try {
-      const res = await fetch(`${this.baseUrl}/constraints`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
-    } catch (err) {
-      console.warn('[ApiClient] Failed to fetch constraints', err);
-      return [];
-    }
+    return this.request(`${this.baseUrl}/constraints`);
   }
 
   public static async createConstraint(data: Partial<ContraintePlanificationEntity>): Promise<ContraintePlanificationEntity> {
-    const res = await fetch(`${this.baseUrl}/constraints`, {
+    return this.request(`${this.baseUrl}/constraints`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    if (!res.ok) throw new Error(`Erreur ${res.status}`);
-    return await res.json();
   }
 
   public static async toggleConstraint(id: number, active?: boolean): Promise<ContraintePlanificationEntity> {
-    const res = await fetch(`${this.baseUrl}/constraints/${id}/toggle`, {
+    return this.request(`${this.baseUrl}/constraints/${id}/toggle`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ active })
     });
-    if (!res.ok) throw new Error(`Erreur ${res.status}`);
-    return await res.json();
   }
 
   public static async deleteConstraint(id: number): Promise<{ success: boolean; message: string }> {
-    const res = await fetch(`${this.baseUrl}/constraints/${id}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error(`Erreur ${res.status}`);
-    return await res.json();
+    return this.request(`${this.baseUrl}/constraints/${id}`, { method: 'DELETE' });
   }
 }

@@ -72,17 +72,20 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = ({
   // If user is logged in as Teacher, default filter to teacher
   React.useEffect(() => {
     if (currentUser.role === 'ENSEIGNANT' && currentUser.enseignantId) {
-      setFilterTeacher('Dr. Randrianarisoa Mamy');
+      const teacher = sessions.find(session => session.enseignantId === currentUser.enseignantId);
+      if (teacher) setFilterTeacher(teacher.nomEnseignant);
     } else if (currentUser.role === 'RESPONSABLE_MENTION' && currentUser.mentionResponsable) {
       setFilterMention(currentUser.mentionResponsable);
     }
-  }, [currentUser]);
+  }, [currentUser, sessions]);
 
   // Unique lists for filter dropdowns
   const teachersList = useMemo(() => {
     const list = Array.from(new Set(sessions.map(s => s.nomEnseignant)));
     return list.sort();
   }, [sessions]);
+  const mentionsList = useMemo(() => [...new Set(sessions.map(session => session.mentionNom))].sort(), [sessions]);
+  const levelsList = useMemo(() => [...new Set(sessions.map(session => session.codeNiveau))].sort(), [sessions]);
 
   // Filtered sessions
   const filteredSessions = useMemo(() => {
@@ -234,9 +237,7 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = ({
               className="w-full text-xs py-2 px-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0077B6]/30 font-medium text-slate-700"
             >
               <option value="Toutes">Toutes les mentions</option>
-              <option value="Informatique">Informatique</option>
-              <option value="Management">Management</option>
-              <option value="ICM">ICM</option>
+              {mentionsList.map(mention => <option key={mention} value={mention}>{mention}</option>)}
             </select>
           </div>
 
@@ -249,11 +250,7 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = ({
               className="w-full text-xs py-2 px-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0077B6]/30 font-medium text-slate-700"
             >
               <option value="Tous">Tous les niveaux</option>
-              <option value="L1">Licence 1 (L1)</option>
-              <option value="L2">Licence 2 (L2)</option>
-              <option value="L3">Licence 3 (L3)</option>
-              <option value="M1">Master 1 (M1)</option>
-              <option value="M2">Master 2 (M2)</option>
+              {levelsList.map(level => <option key={level} value={level}>{level}</option>)}
             </select>
           </div>
 

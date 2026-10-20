@@ -1,19 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { ScheduleCalendarView } from './components/ScheduleCalendarView';
 import { ScheduleBuilderView } from './components/ScheduleBuilderView';
 import { RoomManagementView } from './components/RoomManagementView';
 import { ConstraintsManagementView } from './components/ConstraintsManagementView';
 import { Member5DocumentationView } from './components/Member5DocumentationView';
-
-import { 
-  INITIAL_ROOMS, 
-  INITIAL_TIME_SLOTS, 
-  INITIAL_TEACHINGS, 
-  INITIAL_SESSIONS, 
-  INITIAL_CONSTRAINTS, 
-  INITIAL_SCHEDULE_METADATA 
-} from './data/mockAcademicData';
 
 import { 
   ContraintePlanificationEntity, 
@@ -26,24 +17,60 @@ import {
   SeanceStatut 
 } from './types/schedule';
 import { ConflictDetectorService } from './services/ConflictDetectorService';
+import { ApiClient } from './services/apiClient';
 
 export default function App() {
   // Navigation
   const [activeTab, setActiveTab] = useState<'calendar' | 'builder' | 'rooms' | 'constraints' | 'docs'>('calendar');
 
   // Application Data States (Membre 5 scope)
-  const [rooms, setRooms] = useState<SalleEntity[]>(INITIAL_ROOMS);
-  const [timeSlots, setTimeSlots] = useState<CreneauHoraireEntity[]>(INITIAL_TIME_SLOTS);
-  const [teachings] = useState<EnseignementEntity[]>(INITIAL_TEACHINGS);
-  const [sessions, setSessions] = useState<SeancePlanifieeEntity[]>(INITIAL_SESSIONS);
-  const [constraints, setConstraints] = useState<ContraintePlanificationEntity[]>(INITIAL_CONSTRAINTS);
-  const [scheduleMeta, setScheduleMeta] = useState<EmploiDuTempsEntity>(INITIAL_SCHEDULE_METADATA);
+  const [rooms, setRooms] = useState<SalleEntity[]>([]);
+  const [timeSlots, setTimeSlots] = useState<CreneauHoraireEntity[]>([]);
+  const [teachings, setTeachings] = useState<EnseignementEntity[]>([]);
+  const [sessions, setSessions] = useState<SeancePlanifieeEntity[]>([]);
+  const [constraints, setConstraints] = useState<ContraintePlanificationEntity[]>([]);
+  const [scheduleMeta, setScheduleMeta] = useState<EmploiDuTempsEntity | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const refreshData = async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const results = await Promise.allSettled([
+        ApiClient.getRooms(),
+        ApiClient.getTimeSlots(),
+        ApiClient.getTeachings(),
+        ApiClient.getPlanning(),
+        ApiClient.getConstraints()
+      ]);
+      const [roomsResult, slotsResult, teachingsResult, planningResult, constraintsResult] = results;
+      if (roomsResult.status === 'fulfilled') setRooms(roomsResult.value);
+      if (slotsResult.status === 'fulfilled') setTimeSlots(slotsResult.value);
+      if (teachingsResult.status === 'fulfilled') setTeachings(teachingsResult.value);
+      if (planningResult.status === 'fulfilled') {
+        setSessions(planningResult.value.sessions);
+        setScheduleMeta(planningResult.value.metadata);
+      }
+      if (constraintsResult.status === 'fulfilled') setConstraints(constraintsResult.value);
+      const failed = results.find(result => result.status === 'rejected');
+      if (failed?.status === 'rejected') {
+        throw failed.reason;
+      }
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Impossible de charger les données du serveur.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { void refreshData(); }, []);
 
   // Active User session simulation
-  const [currentUser, setCurrentUser] = useState<CurrentUserSession>({
-    id: 1,
-    nom: 'Chef de Scolarité EMIT',
-    role: 'CHEF_SCOLARITE'
+  const [currentUser] = useState<CurrentUserSession>({
+    id: Number(import.meta.env.VITE_USER_ID || 0),
+    nom: import.meta.env.VITE_USER_NAME || 'Utilisateur',
+    role: (import.meta.env.VITE_USER_ROLE || 'CHEF_SCOLARITE') as CurrentUserSession['role'],
   });
 
   // Session being edited in builder
@@ -84,11 +111,11 @@ export default function App() {
   };
 
   const handleDeleteSession = (sessionId: number) => {
-    setSessions(prev => prev.filter(s => s.id !== sessionId));
+    void ApiClient.deleteSession(sessionId).then(refreshData).catch(error => setLoadError(error.message));
   };
 
   const handleUpdateStatus = (sessionId: number, newStatus: SeanceStatut) => {
-    setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, statut: newStatus } : s));
+    void ApiClient.updateSessionStatus(sessionId, newStatus).then(refreshData).catch(error => setLoadError(error.message));
   };
 
   const handlePrint = () => {
@@ -102,13 +129,16 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         currentUser={currentUser}
-        setCurrentUser={setCurrentUser}
         conflictCount={conflictCount}
         onPrint={handlePrint}
       />
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {loading && <div role="status" className="rounded-xl bg-white p-6 text-slate-600">Chargement des données depuis le serveur…</div>}
+        {loadError && <div role="alert" className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">{loadError} <button className="ml-2 font-bold underline" onClick={() => void refreshData()}>Réessayer</button></div>}
+        {!loading && scheduleMeta && (
+        <>
         {activeTab === 'calendar' && (
           <ScheduleCalendarView
             sessions={sessions}
@@ -160,6 +190,9 @@ export default function App() {
         {activeTab === 'docs' && (
           <Member5DocumentationView />
         )}
+        </>
+        )}
+        {!loading && !loadError && !scheduleMeta && <div className="rounded-xl bg-white p-6 text-slate-600">Aucun emploi du temps n’est encore configuré dans la base.</div>}
       </main>
 
       {/* Footer */}
