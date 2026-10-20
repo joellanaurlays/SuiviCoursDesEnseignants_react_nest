@@ -1,4 +1,4 @@
-import { ConstraintPriority, ConstraintTargetType, RuleDefinition } from '../entities/contrainte-planification.entity';
+import { ConstraintPriority, ConstraintTargetType, RuleDefinition } from '../entities/contrainte-planification.entity.js';
 
 export interface CreateContrainteDto {
   titre: string;

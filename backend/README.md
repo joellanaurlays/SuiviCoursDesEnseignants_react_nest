@@ -21,9 +21,15 @@
   <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
   [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-## Description
+## Configuration PostgreSQL
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Le backend utilise `suivicours_db` par défaut et lit `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD` et `DB_DATABASE` (ou `DATABASE_URL`). Copiez `.env.example` en `.env`, puis mettez les identifiants réels uniquement dans `.env`.
+
+Le démarrage applique les créations de tables `IF NOT EXISTS` définies dans `src/database/schema.sql`, charge les salles, créneaux, séances, plannings et contraintes déjà présents, puis conserve les changements API dans PostgreSQL. Aucun jeu de démonstration n'est injecté.
+
+Les enseignements sont lus depuis les tables académiques `enseignement`, `enseignant` et `niveau`. Le lecteur reconnaît des noms de colonnes français courants. Si le schéma réel diffère, définissez `ACADEMIC_TEACHINGS_SQL` dans `.env` avec une requête qui renvoie les alias `id`, `code_matiere`, `nom_matiere`, `enseignant_id`, `nom_enseignant`, `niveau_id`, `code_niveau`, `mention_nom`, `semestre_nom`, `effectif_etudiants`, `volume_horaire_total`, `heures_planifiees`, `heures_realisees` et `type_salle_requis`.
+
+Le rôle et le nom affichés dans l'interface viennent de `VITE_USER_ROLE`, `VITE_USER_NAME` et `VITE_USER_ID` côté frontend. Une authentification n'est pas encore fournie par ce module.
 
 ## Project setup
 

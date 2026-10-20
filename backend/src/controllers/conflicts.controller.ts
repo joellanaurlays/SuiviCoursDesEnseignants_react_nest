@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { ConflictDetectorService } from '../services/conflict-detector.service';
+import { ConflictDetectorService } from '../services/conflict-detector.service.js';
 
 export const conflictsRouter = Router();
 const conflictDetector = new ConflictDetectorService();

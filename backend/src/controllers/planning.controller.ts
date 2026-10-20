@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { PlanningService, ConflictException } from '../services/planning.service';
+import { PlanningService, ConflictException } from '../services/planning.service.js';
 
 export const planningRouter = Router();
 const planningService = new PlanningService();
@@ -49,6 +49,18 @@ planningRouter.put('/session/:id/status', async (req: Request, res: Response) =>
     res.json(updated);
   } catch (error: any) {
     res.status(404).json({ error: error.message });
+  }
+});
+
+planningRouter.put('/session/:id', async (req: Request, res: Response) => {
+  try {
+    res.json(await planningService.updateSession(Number(req.params.id), req.body));
+  } catch (error: any) {
+    if (error instanceof ConflictException) {
+      res.status(409).json({ statusCode: 409, error: 'Conflict', message: error.message, details: error.details });
+    } else {
+      res.status(404).json({ error: error.message });
+    }
   }
 });
 

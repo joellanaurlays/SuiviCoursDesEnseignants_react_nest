@@ -1,8 +1,15 @@
-import { SalleEntity } from '../entities/salle.entity';
-import { CreneauHoraireEntity } from '../entities/creneau-horaire.entity';
-import { SeancePlanifieeEntity } from '../entities/seance-planifiee.entity';
-import { EmploiDuTempsEntity } from '../entities/emploi-du-temps.entity';
-import { ContraintePlanificationEntity } from '../entities/contrainte-planification.entity';
+import { config as loadEnv } from 'dotenv';
+import { Pool } from 'pg';
+import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { SalleEntity } from '../entities/salle.entity.js';
+import { CreneauHoraireEntity } from '../entities/creneau-horaire.entity.js';
+import { SeancePlanifieeEntity } from '../entities/seance-planifiee.entity.js';
+import { EmploiDuTempsEntity } from '../entities/emploi-du-temps.entity.js';
+import { ContraintePlanificationEntity } from '../entities/contrainte-planification.entity.js';
+
+// Charge toujours backend/.env, même quand Yarn est lancé depuis la racine du projet.
+loadEnv({ path: fileURLToPath(new URL('../../.env', import.meta.url)) });
 
 export interface EnseignementReference {
   id: number;
@@ -21,351 +28,255 @@ export interface EnseignementReference {
   typeSalleRequis: 'AMPHI' | 'SALLE_TP' | 'SALLE_TD' | 'LABO';
 }
 
-/**
- * DataStore Singleton servant de référentiel persistant en mémoire
- * pour le backend NestJS/Express.
- */
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  host: process.env.DB_HOST || process.env.PGHOST || 'localhost',
+  port: Number(process.env.DB_PORT || process.env.PGPORT || 5432),
+  database: process.env.DB_DATABASE || process.env.PGDATABASE || 'suivicours_db',
+  // node-postgres retombe sinon sur l'utilisateur système (ex. « joella »).
+  user: process.env.DB_USERNAME || process.env.PGUSER || 'postgres',
+  password: process.env.DB_PASSWORD || process.env.PGPASSWORD,
+  ssl: process.env.PGSSL === 'true' ? { rejectUnauthorized: false } : undefined,
+});
+
+function camelCaseRow(row: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(row).map(([key, value]) => [
+    key.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase()), value,
+  ]));
+}
+
+/** PostgreSQL-backed application state. No demo or fallback records are loaded. */
 export class DataStore {
   private static instance: DataStore;
-
   public rooms: SalleEntity[] = [];
   public timeSlots: CreneauHoraireEntity[] = [];
   public sessions: SeancePlanifieeEntity[] = [];
   public scheduleMeta!: EmploiDuTempsEntity;
   public constraints: ContraintePlanificationEntity[] = [];
   public teachings: EnseignementReference[] = [];
+  private initialized = false;
+  private persistedIds = { rooms: new Set<number>(), timeSlots: new Set<number>(), sessions: new Set<number>(), constraints: new Set<number>() };
 
-  private constructor() {
-    this.seed();
-  }
+  private constructor() {}
 
   public static getInstance(): DataStore {
-    if (!DataStore.instance) {
-      DataStore.instance = new DataStore();
-    }
+    if (!DataStore.instance) DataStore.instance = new DataStore();
     return DataStore.instance;
   }
 
-  private seed(): void {
-    // 1. Initial Rooms
-    this.rooms = [
-      new SalleEntity({
-        id: 1,
-        nom: 'Amphithéâtre A',
-        capacite: 180,
-        typeSalle: 'AMPHI',
-        batiment: 'Bâtiment Principal (RDC)',
-        equipements: ['Vidéoprojecteur HD', 'Sonorisation', 'Micro HF', 'Climatisation', 'Accès PMR'],
-        estDisponible: true,
-        statut: 'ACTIF',
-        remarques: 'Réservé en priorité aux cours magistraux de grands effectifs (L1/L2).'
-      }),
-      new SalleEntity({
-        id: 2,
-        nom: 'Amphithéâtre B',
-        capacite: 120,
-        typeSalle: 'AMPHI',
-        batiment: 'Bâtiment Principal (Étage 1)',
-        equipements: ['Vidéoprojecteur', 'Sonorisation', 'Tableau blanc'],
-        estDisponible: true,
-        statut: 'ACTIF',
-        remarques: 'Idéal pour promotions L3 et Master.'
-      }),
-      new SalleEntity({
-        id: 3,
-        nom: 'Salle Machine Info 1',
-        capacite: 45,
-        typeSalle: 'SALLE_TP',
-        batiment: 'Pôle Technologique',
-        equipements: ['45 PC Core i7', 'Réseau Gigabit', 'Serveur local', 'Vidéoprojecteur', 'Climatisation'],
-        estDisponible: true,
-        statut: 'ACTIF',
-        remarques: 'Travaux Pratiques Programmation & Systèmes.'
-      }),
-      new SalleEntity({
-        id: 4,
-        nom: 'Salle Machine Info 2',
-        capacite: 40,
-        typeSalle: 'SALLE_TP',
-        batiment: 'Pôle Technologique',
-        equipements: ['40 PC Linux/Windows', 'Switch manageable', 'Vidéoprojecteur'],
-        estDisponible: true,
-        statut: 'ACTIF',
-        remarques: 'TP Réseaux et Bases de données.'
-      }),
-      new SalleEntity({
-        id: 5,
-        nom: 'Salle TD 101',
-        capacite: 50,
-        typeSalle: 'SALLE_TD',
-        batiment: 'Bâtiment Annexe (RDC)',
-        equipements: ['Tableau interactif', 'Vidéoprojecteur mobile', 'Prises 220V aux tables'],
-        estDisponible: true,
-        statut: 'ACTIF',
-        remarques: 'Travaux dirigés et séminaires.'
-      }),
-      new SalleEntity({
-        id: 6,
-        nom: 'Salle TD 102',
-        capacite: 45,
-        typeSalle: 'SALLE_TD',
-        batiment: 'Bâtiment Annexe (Étage)',
-        equipements: ['Tableau blanc', 'Écran mural'],
-        estDisponible: true,
-        statut: 'ACTIF',
-        remarques: 'Cours théoriques et exercices.'
-      }),
-      new SalleEntity({
-        id: 7,
-        nom: 'Labo Multimédia & Audio (ICM)',
-        capacite: 32,
-        typeSalle: 'LABO',
-        batiment: 'Pôle Communication & Multimédia',
-        equipements: ['30 Stations iMac', 'Cartes son pro', 'Table de mixage', 'Insonorisation', 'Vidéoprojecteur 4K'],
-        estDisponible: true,
-        statut: 'ACTIF',
-        remarques: 'Dédié aux enseignements ICM, montage vidéo et graphisme.'
-      }),
-      new SalleEntity({
-        id: 8,
-        nom: 'Salle de Séminaire M2',
-        capacite: 35,
-        typeSalle: 'SALLE_TD',
-        batiment: 'Bâtiment Recherche & Master',
-        equipements: ['Visioconférence Zoom/Teams', 'Écran 75 pouces'],
-        estDisponible: false,
-        statut: 'MAINTENANCE',
-        remarques: 'Maintenance réseau en cours.'
-      })
-    ];
+  public async initialize(): Promise<void> {
+    if (this.initialized) return;
+    const schema = await readFile(fileURLToPath(new URL('./schema.sql', import.meta.url)), 'utf8');
+    await pool.query(schema);
+    await pool.query(`CREATE TABLE IF NOT EXISTS planning_app_state (
+      id SMALLINT PRIMARY KEY DEFAULT 1 CHECK (id = 1), state JSONB NOT NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`);
+    const { rows } = await pool.query('SELECT state FROM planning_app_state WHERE id = 1');
+    if (rows[0]) {
+      this.loadState(rows[0].state);
+      if (!this.scheduleMeta) {
+        const latest = await pool.query('SELECT * FROM emploi_du_temps ORDER BY id DESC LIMIT 1');
+        if (latest.rows[0]) this.scheduleMeta = new EmploiDuTempsEntity(camelCaseRow(latest.rows[0]) as any);
+        else await this.createInitialScheduleMetadata();
+        await this.save();
+      }
+    } else {
+      await this.importExistingPlanningTables();
+      if (!this.scheduleMeta) await this.createInitialScheduleMetadata();
+      this.capturePersistedIds();
+      await this.save();
+    }
+    // Les références académiques restent la source des tables des autres membres.
+    // Ne pas utiliser une copie JSON potentiellement périmée lors de la génération.
+    await this.refreshTeachings();
+    this.initialized = true;
+  }
 
-    // 2. Initial TimeSlots
-    this.timeSlots = [
-      new CreneauHoraireEntity({ id: 101, jourSemaine: 'Lundi', heureDebut: '08:00', heureFin: '10:00', dureeMinutes: 120, plage: 'Matin', libelle: 'Lundi M1', actif: true }),
-      new CreneauHoraireEntity({ id: 102, jourSemaine: 'Lundi', heureDebut: '10:15', heureFin: '12:15', dureeMinutes: 120, plage: 'Matin', libelle: 'Lundi M2', actif: true }),
-      new CreneauHoraireEntity({ id: 103, jourSemaine: 'Lundi', heureDebut: '13:30', heureFin: '15:30', dureeMinutes: 120, plage: 'Apres-midi', libelle: 'Lundi A1', actif: true }),
-      new CreneauHoraireEntity({ id: 104, jourSemaine: 'Lundi', heureDebut: '15:45', heureFin: '17:45', dureeMinutes: 120, plage: 'Apres-midi', libelle: 'Lundi A2', actif: true }),
+  public async save(): Promise<void> {
+    const state = {
+      rooms: this.rooms, timeSlots: this.timeSlots, sessions: this.sessions,
+      scheduleMeta: this.scheduleMeta ?? null, constraints: this.constraints, teachings: this.teachings,
+    };
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      if (this.scheduleMeta) await client.query(`INSERT INTO emploi_du_temps
+        (id,titre,semestre_nom,mention_nom,annee_universitaire,semaine_du,date_mise_a_jour,est_valide,est_publie,version)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT (id) DO UPDATE SET
+        titre=EXCLUDED.titre,semestre_nom=EXCLUDED.semestre_nom,mention_nom=EXCLUDED.mention_nom,
+        annee_universitaire=EXCLUDED.annee_universitaire,semaine_du=EXCLUDED.semaine_du,
+        date_mise_a_jour=EXCLUDED.date_mise_a_jour,est_valide=EXCLUDED.est_valide,
+        est_publie=EXCLUDED.est_publie,version=EXCLUDED.version`,
+      [this.scheduleMeta.id,this.scheduleMeta.titre,this.scheduleMeta.semestreNom,this.scheduleMeta.mentionNom,
+       this.scheduleMeta.anneeUniversitaire,this.scheduleMeta.semaineDu,this.scheduleMeta.dateMiseAJour,
+       this.scheduleMeta.estValide,this.scheduleMeta.estPublie,this.scheduleMeta.version]);
+      for (const r of this.rooms) await client.query(`INSERT INTO salle
+        (id,nom,capacite,type_salle,batiment,equipements,est_disponible,statut,remarques)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (id) DO UPDATE SET
+        nom=EXCLUDED.nom,capacite=EXCLUDED.capacite,type_salle=EXCLUDED.type_salle,
+        batiment=EXCLUDED.batiment,equipements=EXCLUDED.equipements,est_disponible=EXCLUDED.est_disponible,
+        statut=EXCLUDED.statut,remarques=EXCLUDED.remarques`,
+      [r.id,r.nom,r.capacite,r.typeSalle,r.batiment,r.equipements,r.estDisponible,r.statut,r.remarques ?? null]);
+      for (const s of this.timeSlots) await client.query(`INSERT INTO creneau_horaire
+        (id,jour_semaine,heure_debut,heure_fin,duree_minutes,plage,libelle,actif)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (id) DO UPDATE SET
+        jour_semaine=EXCLUDED.jour_semaine,heure_debut=EXCLUDED.heure_debut,heure_fin=EXCLUDED.heure_fin,
+        duree_minutes=EXCLUDED.duree_minutes,plage=EXCLUDED.plage,libelle=EXCLUDED.libelle,actif=EXCLUDED.actif`,
+      [s.id,s.jourSemaine,s.heureDebut,s.heureFin,s.dureeMinutes,s.plage,s.libelle,s.actif]);
+      for (const c of this.constraints) await client.query(`INSERT INTO contrainte_planification
+        (id,titre,type_contrainte,niveau_priorite,cible_id,cible_nom,description,regle_json,active)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9) ON CONFLICT (id) DO UPDATE SET
+        titre=EXCLUDED.titre,type_contrainte=EXCLUDED.type_contrainte,niveau_priorite=EXCLUDED.niveau_priorite,
+        cible_id=EXCLUDED.cible_id,cible_nom=EXCLUDED.cible_nom,description=EXCLUDED.description,
+        regle_json=EXCLUDED.regle_json,active=EXCLUDED.active`,
+      [c.id,c.titre,c.typeContrainte,c.niveauPriorite,c.cibleId ?? null,c.cibleNom,c.description,JSON.stringify(c.regle),c.active]);
+      for (const s of this.sessions) await client.query(`INSERT INTO seance_planifiee
+        (id,emploi_du_temps_id,enseignement_id,code_matiere,matiere_nom,type_seance,enseignant_id,
+         nom_enseignant,niveau_id,code_niveau,mention_nom,semestre_nom,salle_id,creneau_id,date_seance,statut,notes)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+        ON CONFLICT (id) DO UPDATE SET emploi_du_temps_id=EXCLUDED.emploi_du_temps_id,
+        enseignement_id=EXCLUDED.enseignement_id,code_matiere=EXCLUDED.code_matiere,
+        matiere_nom=EXCLUDED.matiere_nom,type_seance=EXCLUDED.type_seance,enseignant_id=EXCLUDED.enseignant_id,
+        nom_enseignant=EXCLUDED.nom_enseignant,niveau_id=EXCLUDED.niveau_id,code_niveau=EXCLUDED.code_niveau,
+        mention_nom=EXCLUDED.mention_nom,semestre_nom=EXCLUDED.semestre_nom,salle_id=EXCLUDED.salle_id,
+        creneau_id=EXCLUDED.creneau_id,date_seance=EXCLUDED.date_seance,statut=EXCLUDED.statut,notes=EXCLUDED.notes`,
+      [s.id,s.emploiDuTempsId,s.enseignementId,s.codeMatiere,s.matiereNom,s.typeSeance,s.enseignantId,
+       s.nomEnseignant,s.niveauId,s.codeNiveau,s.mentionNom,s.semestreNom,s.salleId,s.creneauId,s.dateSeance,s.statut,s.notes ?? null]);
+      await this.deleteRemoved(client, 'seance_planifiee', this.persistedIds.sessions, this.sessions.map(item => item.id));
+      await this.deleteRemoved(client, 'contrainte_planification', this.persistedIds.constraints, this.constraints.map(item => item.id));
+      await this.deleteRemoved(client, 'salle', this.persistedIds.rooms, this.rooms.map(item => item.id));
+      await this.deleteRemoved(client, 'creneau_horaire', this.persistedIds.timeSlots, this.timeSlots.map(item => item.id));
+      await client.query(`INSERT INTO planning_app_state (id,state,updated_at) VALUES (1,$1::jsonb,now())
+        ON CONFLICT (id) DO UPDATE SET state=EXCLUDED.state,updated_at=now()`, [JSON.stringify(state)]);
+      await client.query('COMMIT');
+      this.capturePersistedIds();
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
 
-      new CreneauHoraireEntity({ id: 201, jourSemaine: 'Mardi', heureDebut: '08:00', heureFin: '10:00', dureeMinutes: 120, plage: 'Matin', libelle: 'Mardi M1', actif: true }),
-      new CreneauHoraireEntity({ id: 202, jourSemaine: 'Mardi', heureDebut: '10:15', heureFin: '12:15', dureeMinutes: 120, plage: 'Matin', libelle: 'Mardi M2', actif: true }),
-      new CreneauHoraireEntity({ id: 203, jourSemaine: 'Mardi', heureDebut: '13:30', heureFin: '15:30', dureeMinutes: 120, plage: 'Apres-midi', libelle: 'Mardi A1', actif: true }),
-      new CreneauHoraireEntity({ id: 204, jourSemaine: 'Mardi', heureDebut: '15:45', heureFin: '17:45', dureeMinutes: 120, plage: 'Apres-midi', libelle: 'Mardi A2', actif: true }),
+  private async deleteRemoved(client: import('pg').PoolClient, table: string, oldIds: Set<number>, ids: number[]): Promise<void> {
+    const current = new Set(ids);
+    for (const id of oldIds) if (!current.has(id)) await client.query(`DELETE FROM ${table} WHERE id = $1`, [id]);
+  }
 
-      new CreneauHoraireEntity({ id: 301, jourSemaine: 'Mercredi', heureDebut: '08:00', heureFin: '10:00', dureeMinutes: 120, plage: 'Matin', libelle: 'Mercredi M1', actif: true }),
-      new CreneauHoraireEntity({ id: 302, jourSemaine: 'Mercredi', heureDebut: '10:15', heureFin: '12:15', dureeMinutes: 120, plage: 'Matin', libelle: 'Mercredi M2', actif: true }),
-      new CreneauHoraireEntity({ id: 303, jourSemaine: 'Mercredi', heureDebut: '13:30', heureFin: '15:30', dureeMinutes: 120, plage: 'Apres-midi', libelle: 'Mercredi A1', actif: true }),
-      new CreneauHoraireEntity({ id: 304, jourSemaine: 'Mercredi', heureDebut: '15:45', heureFin: '17:45', dureeMinutes: 120, plage: 'Apres-midi', libelle: 'Mercredi A2', actif: true }),
+  private capturePersistedIds(): void {
+    this.persistedIds = {
+      rooms: new Set(this.rooms.map(item => item.id)), timeSlots: new Set(this.timeSlots.map(item => item.id)),
+      sessions: new Set(this.sessions.map(item => item.id)), constraints: new Set(this.constraints.map(item => item.id)),
+    };
+  }
 
-      new CreneauHoraireEntity({ id: 401, jourSemaine: 'Jeudi', heureDebut: '08:00', heureFin: '10:00', dureeMinutes: 120, plage: 'Matin', libelle: 'Jeudi M1', actif: true }),
-      new CreneauHoraireEntity({ id: 402, jourSemaine: 'Jeudi', heureDebut: '10:15', heureFin: '12:15', dureeMinutes: 120, plage: 'Matin', libelle: 'Jeudi M2', actif: true }),
-      new CreneauHoraireEntity({ id: 403, jourSemaine: 'Jeudi', heureDebut: '13:30', heureFin: '15:30', dureeMinutes: 120, plage: 'Apres-midi', libelle: 'Jeudi A1', actif: true }),
-      new CreneauHoraireEntity({ id: 404, jourSemaine: 'Jeudi', heureDebut: '15:45', heureFin: '17:45', dureeMinutes: 120, plage: 'Apres-midi', libelle: 'Jeudi A2', actif: true }),
+  private loadState(state: Record<string, any>): void {
+    this.rooms = (state.rooms || []).map((item: any) => new SalleEntity(item));
+    this.timeSlots = (state.timeSlots || []).map((item: any) => new CreneauHoraireEntity(item));
+    this.sessions = (state.sessions || []).map((item: any) => new SeancePlanifieeEntity(item));
+    this.scheduleMeta = state.scheduleMeta ? new EmploiDuTempsEntity(state.scheduleMeta) : undefined!;
+    this.constraints = (state.constraints || []).map((item: any) => new ContraintePlanificationEntity(item));
+    this.teachings = state.teachings || [];
+    this.capturePersistedIds();
+  }
 
-      new CreneauHoraireEntity({ id: 501, jourSemaine: 'Vendredi', heureDebut: '08:00', heureFin: '10:00', dureeMinutes: 120, plage: 'Matin', libelle: 'Vendredi M1', actif: true }),
-      new CreneauHoraireEntity({ id: 502, jourSemaine: 'Vendredi', heureDebut: '10:15', heureFin: '12:15', dureeMinutes: 120, plage: 'Matin', libelle: 'Vendredi M2', actif: true }),
-      new CreneauHoraireEntity({ id: 503, jourSemaine: 'Vendredi', heureDebut: '13:30', heureFin: '15:30', dureeMinutes: 120, plage: 'Apres-midi', libelle: 'Vendredi A1', actif: true }),
-      new CreneauHoraireEntity({ id: 504, jourSemaine: 'Vendredi', heureDebut: '15:45', heureFin: '17:45', dureeMinutes: 120, plage: 'Apres-midi', libelle: 'Vendredi A2', actif: true }),
+  private async importExistingPlanningTables(): Promise<void> {
+    const available = await pool.query(`SELECT to_regclass('public.salle') AS salle,
+      to_regclass('public.creneau_horaire') AS creneau,
+      to_regclass('public.emploi_du_temps') AS planning,
+      to_regclass('public.seance_planifiee') AS seance,
+      to_regclass('public.contrainte_planification') AS contrainte`);
+    const tables = available.rows[0];
+    if (tables.salle) this.rooms = (await pool.query('SELECT * FROM salle ORDER BY id')).rows.map(row => new SalleEntity(camelCaseRow(row) as any));
+    if (tables.creneau) this.timeSlots = (await pool.query('SELECT * FROM creneau_horaire ORDER BY id')).rows.map(row => new CreneauHoraireEntity(camelCaseRow(row) as any));
+    if (tables.planning) {
+      const row = (await pool.query('SELECT * FROM emploi_du_temps ORDER BY id DESC LIMIT 1')).rows[0];
+      if (row) this.scheduleMeta = new EmploiDuTempsEntity(camelCaseRow(row) as any);
+    }
+    if (tables.seance) this.sessions = (await pool.query(`SELECT s.*, r.nom AS nom_salle, c.jour_semaine, c.heure_debut, c.heure_fin
+      FROM seance_planifiee s JOIN salle r ON r.id = s.salle_id
+      JOIN creneau_horaire c ON c.id = s.creneau_id ORDER BY s.id`)).rows.map(row => new SeancePlanifieeEntity(camelCaseRow(row) as any));
+    if (tables.contrainte) this.constraints = (await pool.query('SELECT *, regle_json AS regle FROM contrainte_planification ORDER BY id')).rows.map(row => new ContraintePlanificationEntity(camelCaseRow(row) as any));
+  }
 
-      new CreneauHoraireEntity({ id: 601, jourSemaine: 'Samedi', heureDebut: '08:00', heureFin: '10:00', dureeMinutes: 120, plage: 'Matin', libelle: 'Samedi M1', actif: true }),
-      new CreneauHoraireEntity({ id: 602, jourSemaine: 'Samedi', heureDebut: '10:15', heureFin: '12:15', dureeMinutes: 120, plage: 'Matin', libelle: 'Samedi M2', actif: true })
-    ];
+  private async createInitialScheduleMetadata(): Promise<void> {
+    const today = new Date();
+    const monday = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+    monday.setUTCDate(monday.getUTCDate() - ((monday.getUTCDay() + 6) % 7));
+    const weekStart = monday.toISOString().slice(0, 10);
+    const year = today.getUTCFullYear();
+    const semesterName = process.env.SEMESTRE_NOM || '';
+    const academicYear = process.env.ANNEE_UNIVERSITAIRE || `${year}-${year + 1}`;
+    const { rows } = await pool.query(`INSERT INTO emploi_du_temps
+      (titre, semestre_nom, mention_nom, annee_universitaire, semaine_du)
+      VALUES ($1, $2, 'Toutes', $3, $4) RETURNING *`,
+    [`Emploi du temps ${semesterName}`.trim(), semesterName, academicYear, weekStart]);
+    this.scheduleMeta = new EmploiDuTempsEntity(camelCaseRow(rows[0]) as any);
+  }
 
-    // 3. Schedule Metadata
-    this.scheduleMeta = new EmploiDuTempsEntity({
-      id: 1,
-      titre: 'Emploi du Temps Officiel — Semestre 1 (S1 / S3 / S5 / S7)',
-      semestreNom: 'Semestre 1',
-      mentionNom: 'Toutes',
-      anneeUniversitaire: '2026 - 2027',
-      semaineDu: '2026-10-19',
-      dateMiseAJour: '2026-10-19 08:30',
-      estValide: true,
-      estPublie: true,
-      version: 1
-    });
+  public async refreshTeachings(): Promise<void> {
+    const configuredQuery = process.env.ACADEMIC_TEACHINGS_SQL;
+    if (configuredQuery) {
+      const result = await pool.query(configuredQuery);
+      this.teachings = result.rows.map(row => camelCaseRow(row) as unknown as EnseignementReference);
+      return;
+    }
 
-    // 4. Initial Teachings
-    this.teachings = [
-      { id: 301, codeMatiere: 'INF101', nomMatiere: 'Algorithmique & Structures de Données', enseignantId: 12, nomEnseignant: 'Dr. Randrianarisoa Mamy', niveauId: 1, codeNiveau: 'L1', mentionNom: 'Informatique', semestreNom: 'S1', effectifEtudiants: 110, volumeHoraireTotal: 40, heuresPlanifiees: 24, heuresRealisees: 16, typeSalleRequis: 'AMPHI' },
-      { id: 302, codeMatiere: 'INF102', nomMatiere: 'Architecture des Ordinateurs & Assembleur', enseignantId: 14, nomEnseignant: 'Mme Razafindrakoto Fanja', niveauId: 1, codeNiveau: 'L1', mentionNom: 'Informatique', semestreNom: 'S1', effectifEtudiants: 110, volumeHoraireTotal: 30, heuresPlanifiees: 18, heuresRealisees: 12, typeSalleRequis: 'AMPHI' },
-      { id: 303, codeMatiere: 'INF201', nomMatiere: 'Bases de Données Relationnelles & SQL', enseignantId: 15, nomEnseignant: 'Pr. Rakotondrabe Jean', niveauId: 2, codeNiveau: 'L2', mentionNom: 'Informatique', semestreNom: 'S3', effectifEtudiants: 85, volumeHoraireTotal: 35, heuresPlanifiees: 20, heuresRealisees: 14, typeSalleRequis: 'AMPHI' },
-      { id: 304, codeMatiere: 'INF202', nomMatiere: 'TP Administration Systèmes Linux', enseignantId: 14, nomEnseignant: 'Mme Razafindrakoto Fanja', niveauId: 2, codeNiveau: 'L2', mentionNom: 'Informatique', semestreNom: 'S3', effectifEtudiants: 40, volumeHoraireTotal: 30, heuresPlanifiees: 16, heuresRealisees: 10, typeSalleRequis: 'SALLE_TP' },
-      { id: 305, codeMatiere: 'INF301', nomMatiere: 'Génie Logiciel & Architecture Microservices', enseignantId: 12, nomEnseignant: 'Dr. Randrianarisoa Mamy', niveauId: 3, codeNiveau: 'L3', mentionNom: 'Informatique', semestreNom: 'S5', effectifEtudiants: 55, volumeHoraireTotal: 35, heuresPlanifiees: 22, heuresRealisees: 18, typeSalleRequis: 'AMPHI' },
-      { id: 306, codeMatiere: 'MGT101', nomMatiere: 'Principes de Gestion & Comptabilité Générale', enseignantId: 16, nomEnseignant: 'M. Ravelomanana Hery', niveauId: 4, codeNiveau: 'L1', mentionNom: 'Management', semestreNom: 'S1', effectifEtudiants: 95, volumeHoraireTotal: 36, heuresPlanifiees: 20, heuresRealisees: 12, typeSalleRequis: 'AMPHI' },
-      { id: 307, codeMatiere: 'ICM101', nomMatiere: 'Design Graphique, Typographie & UX', enseignantId: 18, nomEnseignant: 'Mme Andriambelo Sarah', niveauId: 5, codeNiveau: 'L1', mentionNom: 'ICM', semestreNom: 'S1', effectifEtudiants: 30, volumeHoraireTotal: 30, heuresPlanifiees: 16, heuresRealisees: 8, typeSalleRequis: 'LABO' },
-      { id: 308, codeMatiere: 'INF501', nomMatiere: 'Intelligence Artificielle & Deep Learning', enseignantId: 19, nomEnseignant: 'Dr. Andriamampianina Tsiry', niveauId: 6, codeNiveau: 'M1', mentionNom: 'Informatique', semestreNom: 'S7', effectifEtudiants: 30, volumeHoraireTotal: 35, heuresPlanifiees: 14, heuresRealisees: 8, typeSalleRequis: 'SALLE_TP' }
-    ];
-
-    // 5. Initial Sessions
-    this.sessions = [
-      new SeancePlanifieeEntity({
-        id: 9001,
-        emploiDuTempsId: 1,
-        enseignementId: 301,
-        codeMatiere: 'INF101',
-        matiereNom: 'Algorithmique & Structures de Données',
-        typeSeance: 'CM',
-        enseignantId: 12,
-        nomEnseignant: 'Dr. Randrianarisoa Mamy',
-        niveauId: 1,
-        codeNiveau: 'L1',
-        mentionNom: 'Informatique',
-        semestreNom: 'S1',
-        salleId: 1,
-        nomSalle: 'Amphithéâtre A',
-        creneauId: 101,
-        jourSemaine: 'Lundi',
-        heureDebut: '08:00',
-        heureFin: '10:00',
-        dateSeance: '2026-10-19',
-        statut: 'PLANIFIE',
-        notes: 'Séance inaugurale : Récursivité et Complexité'
-      }),
-      new SeancePlanifieeEntity({
-        id: 9002,
-        emploiDuTempsId: 1,
-        enseignementId: 302,
-        codeMatiere: 'INF102',
-        matiereNom: 'Architecture des Ordinateurs & Assembleur',
-        typeSeance: 'CM',
-        enseignantId: 14,
-        nomEnseignant: 'Mme Razafindrakoto Fanja',
-        niveauId: 1,
-        codeNiveau: 'L1',
-        mentionNom: 'Informatique',
-        semestreNom: 'S1',
-        salleId: 1,
-        nomSalle: 'Amphithéâtre A',
-        creneauId: 102,
-        jourSemaine: 'Lundi',
-        heureDebut: '10:15',
-        heureFin: '12:15',
-        dateSeance: '2026-10-19',
-        statut: 'PLANIFIE'
-      }),
-      new SeancePlanifieeEntity({
-        id: 9003,
-        emploiDuTempsId: 1,
-        enseignementId: 306,
-        codeMatiere: 'MGT101',
-        matiereNom: 'Principes de Gestion & Comptabilité Générale',
-        typeSeance: 'CM',
-        enseignantId: 16,
-        nomEnseignant: 'M. Ravelomanana Hery',
-        niveauId: 4,
-        codeNiveau: 'L1',
-        mentionNom: 'Management',
-        semestreNom: 'S1',
-        salleId: 2,
-        nomSalle: 'Amphithéâtre B',
-        creneauId: 101,
-        jourSemaine: 'Lundi',
-        heureDebut: '08:00',
-        heureFin: '10:00',
-        dateSeance: '2026-10-19',
-        statut: 'PLANIFIE'
-      }),
-      new SeancePlanifieeEntity({
-        id: 9004,
-        emploiDuTempsId: 1,
-        enseignementId: 307,
-        codeMatiere: 'ICM101',
-        matiereNom: 'Design Graphique, Typographie & UX',
-        typeSeance: 'TP',
-        enseignantId: 18,
-        nomEnseignant: 'Mme Andriambelo Sarah',
-        niveauId: 5,
-        codeNiveau: 'L1',
-        mentionNom: 'ICM',
-        semestreNom: 'S1',
-        salleId: 7,
-        nomSalle: 'Labo Multimédia & Audio (ICM)',
-        creneauId: 103,
-        jourSemaine: 'Lundi',
-        heureDebut: '13:30',
-        heureFin: '15:30',
-        dateSeance: '2026-10-19',
-        statut: 'PLANIFIE'
-      }),
-      new SeancePlanifieeEntity({
-        id: 9005,
-        emploiDuTempsId: 1,
-        enseignementId: 303,
-        codeMatiere: 'INF201',
-        matiereNom: 'Bases de Données Relationnelles & SQL',
-        typeSeance: 'CM',
-        enseignantId: 15,
-        nomEnseignant: 'Pr. Rakotondrabe Jean',
-        niveauId: 2,
-        codeNiveau: 'L2',
-        mentionNom: 'Informatique',
-        semestreNom: 'S3',
-        salleId: 2,
-        nomSalle: 'Amphithéâtre B',
-        creneauId: 201,
-        jourSemaine: 'Mardi',
-        heureDebut: '08:00',
-        heureFin: '10:00',
-        dateSeance: '2026-10-20',
-        statut: 'PLANIFIE'
-      }),
-      new SeancePlanifieeEntity({
-        id: 9006,
-        emploiDuTempsId: 1,
-        enseignementId: 304,
-        codeMatiere: 'INF202',
-        matiereNom: 'TP Administration Systèmes Linux',
-        typeSeance: 'TP',
-        enseignantId: 14,
-        nomEnseignant: 'Mme Razafindrakoto Fanja',
-        niveauId: 2,
-        codeNiveau: 'L2',
-        mentionNom: 'Informatique',
-        semestreNom: 'S3',
-        salleId: 3,
-        nomSalle: 'Salle Machine Info 1',
-        creneauId: 202,
-        jourSemaine: 'Mardi',
-        heureDebut: '10:15',
-        heureFin: '12:15',
-        dateSeance: '2026-10-20',
-        statut: 'PLANIFIE'
-      })
-    ];
-
-    // 6. Constraints
-    this.constraints = [
-      new ContraintePlanificationEntity({
-        id: 1,
-        titre: 'Indisponibilité Hebdomadaire Pr. Rakotondrabe',
-        typeContrainte: 'ENSEIGNANT',
-        niveauPriorite: 'BLOQUANTE',
-        cibleId: 15,
-        cibleNom: 'Pr. Rakotondrabe Jean',
-        description: 'En mission de recherche universitaire les vendredis après-midi.',
-        regle: { jourSemaine: 'Vendredi', creneauId: 503 },
-        active: true
-      }),
-      new ContraintePlanificationEntity({
-        id: 2,
-        titre: 'Exigence Matériel TP Réseau & Machines',
-        typeContrainte: 'SALLE',
-        niveauPriorite: 'BLOQUANTE',
-        cibleNom: 'Séances TP Informatique',
-        description: 'Les séances de TP doivent obligatoirement être affectées à une Salle TP ou Labo avec ordinateurs.',
-        regle: { typeSalleExige: 'SALLE_TP' },
-        active: true
-      }),
-      new ContraintePlanificationEntity({
-        id: 3,
-        titre: 'Plafond Horaire Étudiants L1 (Maximum 6h / jour)',
-        typeContrainte: 'NIVEAU',
-        niveauPriorite: 'PREFERENTIELLE',
-        cibleNom: 'Licence 1 (Toutes Mentions)',
-        description: 'Éviter de surcharger les étudiants de première année au-delà de 3 blocs de 2h par jour.',
-        regle: { maxHeuresJour: 6 },
-        active: true
-      })
-    ];
+    const getColumns = async (table: string) => {
+      const result = await pool.query(`SELECT column_name FROM information_schema.columns
+        WHERE table_schema = current_schema() AND table_name = $1`, [table]);
+      return new Set(result.rows.map(row => row.column_name as string));
+    };
+    const pick = (columns: Set<string>, names: string[], required = true): string | undefined => {
+      const found = names.find(name => columns.has(name));
+      if (!found && required) throw new Error(`Schéma académique incompatible: colonne attendue parmi ${names.join(', ')}`);
+      return found;
+    };
+    const q = (name: string) => `"${name.replaceAll('"', '""')}"`;
+    const [course, teacher, level] = await Promise.all([
+      getColumns('enseignement'), getColumns('enseignant'), getColumns('niveau'),
+    ]);
+    if (!course.size || !teacher.size || !level.size) {
+      throw new Error('Tables académiques manquantes: enseignement, enseignant et niveau. Définissez ACADEMIC_TEACHINGS_SQL si leurs noms diffèrent.');
+    }
+    const c = (candidates: string[], required = true) => pick(course, candidates, required);
+    const t = (candidates: string[], required = true) => pick(teacher, candidates, required);
+    const n = (candidates: string[], required = true) => pick(level, candidates, required);
+    const courseTeacherId = c(['enseignant_id', 'id_enseignant']);
+    const courseLevelId = c(['niveau_id', 'id_niveau']);
+    const teacherName = t(['nom_complet', 'nom_enseignant', 'nom', 'name']);
+    const teacherFirstName = t(['prenom', 'first_name'], false);
+    const fullTeacherName = teacherName && teacherFirstName
+      ? `concat_ws(' ', t.${q(teacherFirstName)}, t.${q(teacherName)})`
+      : teacherName ? `t.${q(teacherName)}` : `t.${q(t(['prenom', 'first_name'])!)}`;
+    const levelId = n(['id']);
+    const courseCode = c(['code_matiere', 'code', 'code_enseignement']);
+    const courseName = c(['nom_matiere', 'intitule', 'libelle', 'nom']);
+    const levelCode = n(['code_niveau', 'code', 'libelle', 'nom']);
+    const mention = n(['mention_nom', 'mention', 'nom_mention'], false);
+    const semester = c(['semestre_nom', 'code_semestre', 'semestre'], false);
+    const count = n(['effectif_etudiants', 'effectif', 'nombre_etudiants'], false);
+    const hours = c(['volume_horaire_total', 'volume_horaire', 'heures'], false);
+    const id = c(['id']);
+    const volume = hours ? `e.${q(hours)}` : '0';
+    const result = await pool.query(`SELECT e.${q(id!)} AS id,
+      e.${q(courseCode!)} AS code_matiere, e.${q(courseName!)} AS nom_matiere,
+      t.${q(t(['id'])!)} AS enseignant_id, ${fullTeacherName} AS nom_enseignant,
+      n.${q(levelId!)} AS niveau_id, n.${q(levelCode!)} AS code_niveau,
+      ${mention ? `n.${q(mention)}` : "''"} AS mention_nom,
+      ${semester ? `e.${q(semester)}` : "''"} AS semestre_nom,
+      ${count ? `n.${q(count)}` : '0'} AS effectif_etudiants,
+      ${volume} AS volume_horaire_total,
+      COALESCE((SELECT SUM(ch.duree_minutes) / 60.0 FROM seance_planifiee sp
+        JOIN creneau_horaire ch ON ch.id = sp.creneau_id
+        WHERE sp.enseignement_id = e.${q(id!)} AND sp.statut <> 'ANNULE'), 0) AS heures_planifiees,
+      COALESCE((SELECT SUM(ch.duree_minutes) / 60.0 FROM seance_planifiee sr
+        JOIN creneau_horaire ch ON ch.id = sr.creneau_id
+        WHERE sr.enseignement_id = e.${q(id!)} AND sr.statut = 'REALISE'), 0) AS heures_realisees,
+      'SALLE_TD' AS type_salle_requis
+      FROM enseignement e LEFT JOIN enseignant t ON t.${q(t(['id'])!)} = e.${q(courseTeacherId!)}
+      LEFT JOIN niveau n ON n.${q(levelId!)} = e.${q(courseLevelId!)} ORDER BY e.${q(id!)}`);
+    this.teachings = result.rows.map(row => camelCaseRow(row) as unknown as EnseignementReference);
   }
 }

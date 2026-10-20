@@ -1,4 +1,4 @@
-import { RoomStatus, RoomType } from '../entities/salle.entity';
+import { RoomStatus, RoomType } from '../entities/salle.entity.js';
 
 export interface CreateSalleDto {
   nom: string;

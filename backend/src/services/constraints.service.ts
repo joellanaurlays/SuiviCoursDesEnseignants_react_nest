@@ -1,6 +1,6 @@
-import { DataStore } from '../database/data-store';
-import { CreateContrainteDto, ToggleContrainteDto } from '../dto/create-contrainte.dto';
-import { ContraintePlanificationEntity } from '../entities/contrainte-planification.entity';
+import { DataStore } from '../database/data-store.js';
+import { CreateContrainteDto, ToggleContrainteDto } from '../dto/create-contrainte.dto.js';
+import { ContraintePlanificationEntity } from '../entities/contrainte-planification.entity.js';
 
 export class ConstraintsService {
   private store = DataStore.getInstance();
@@ -10,7 +10,7 @@ export class ConstraintsService {
   }
 
   async create(dto: CreateContrainteDto): Promise<ContraintePlanificationEntity> {
-    const nextId = Math.max(10, ...this.store.constraints.map(c => c.id)) + 1;
+    const nextId = Math.max(0, ...this.store.constraints.map(c => c.id)) + 1;
     const newConstraint = new ContraintePlanificationEntity({
       id: nextId,
       titre: dto.titre,
@@ -24,6 +24,7 @@ export class ConstraintsService {
     });
 
     this.store.constraints.push(newConstraint);
+    await this.store.save();
     return newConstraint;
   }
 
@@ -32,6 +33,7 @@ export class ConstraintsService {
     if (!constraint) throw new Error(`Contrainte #${id} introuvable`);
 
     constraint.active = dto !== undefined ? dto.active : !constraint.active;
+    await this.store.save();
     return constraint;
   }
 
@@ -40,6 +42,7 @@ export class ConstraintsService {
     if (index === -1) throw new Error(`Contrainte #${id} introuvable`);
 
     this.store.constraints.splice(index, 1);
+    await this.store.save();
     return { success: true, message: `Contrainte #${id} supprimée avec succès.` };
   }
 }

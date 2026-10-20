@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { ConstraintsService } from '../services/constraints.service';
+import { ConstraintsService } from '../services/constraints.service.js';
 
 export const constraintsRouter = Router();
 const constraintsService = new ConstraintsService();

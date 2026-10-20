@@ -1,8 +1,8 @@
-import { DataStore } from '../database/data-store';
-import { CreateSalleDto, UpdateSalleDto } from '../dto/create-salle.dto';
-import { CreateCreneauDto, ToggleCreneauDto } from '../dto/create-creneau.dto';
-import { SalleEntity } from '../entities/salle.entity';
-import { CreneauHoraireEntity } from '../entities/creneau-horaire.entity';
+import { DataStore } from '../database/data-store.js';
+import { CreateSalleDto, UpdateSalleDto } from '../dto/create-salle.dto.js';
+import { CreateCreneauDto, ToggleCreneauDto } from '../dto/create-creneau.dto.js';
+import { SalleEntity } from '../entities/salle.entity.js';
+import { CreneauHoraireEntity } from '../entities/creneau-horaire.entity.js';
 
 export class RoomsService {
   private store = DataStore.getInstance();
@@ -41,13 +41,13 @@ export class RoomsService {
   }
 
   async createRoom(dto: CreateSalleDto): Promise<SalleEntity> {
-    const nextId = Math.max(10, ...this.store.rooms.map(r => r.id)) + 1;
+    const nextId = Math.max(0, ...this.store.rooms.map(r => r.id)) + 1;
     const newRoom = new SalleEntity({
       id: nextId,
       nom: dto.nom,
       capacite: Number(dto.capacite),
       typeSalle: dto.typeSalle,
-      batiment: dto.batiment || 'Bâtiment Principal',
+      batiment: dto.batiment || '',
       equipements: dto.equipements || [],
       estDisponible: dto.statut ? dto.statut === 'ACTIF' : true,
       statut: dto.statut || 'ACTIF',
@@ -55,6 +55,7 @@ export class RoomsService {
     });
 
     this.store.rooms.push(newRoom);
+    await this.store.save();
     return newRoom;
   }
 
@@ -73,6 +74,7 @@ export class RoomsService {
     });
 
     this.store.rooms[index] = updated;
+    await this.store.save();
     return updated;
   }
 
@@ -83,6 +85,7 @@ export class RoomsService {
     const nextStatut = room.statut === 'ACTIF' ? 'MAINTENANCE' : (room.statut === 'MAINTENANCE' ? 'DESACTIVE' : 'ACTIF');
     room.statut = nextStatut;
     room.estDisponible = nextStatut === 'ACTIF';
+    await this.store.save();
     return room;
   }
 
@@ -91,11 +94,27 @@ export class RoomsService {
     return [...this.store.timeSlots];
   }
 
+  async createTimeSlot(dto: CreateCreneauDto): Promise<CreneauHoraireEntity> {
+    const id = Math.max(0, ...this.store.timeSlots.map(slot => slot.id)) + 1;
+    const start = dto.heureDebut.split(':').map(Number);
+    const end = dto.heureFin.split(':').map(Number);
+    const duration = dto.dureeMinutes ?? (end[0] * 60 + end[1]) - (start[0] * 60 + start[1]);
+    if (duration <= 0) throw new Error('L’heure de fin doit être après l’heure de début.');
+    if (this.store.timeSlots.some(slot => slot.jourSemaine === dto.jourSemaine && slot.heureDebut === dto.heureDebut && slot.heureFin === dto.heureFin)) {
+      throw new Error('Ce créneau existe déjà.');
+    }
+    const slot = new CreneauHoraireEntity({ ...dto, id, dureeMinutes: duration, libelle: dto.libelle || `${dto.jourSemaine} ${dto.heureDebut}–${dto.heureFin}`, actif: dto.actif ?? true });
+    this.store.timeSlots.push(slot);
+    await this.store.save();
+    return slot;
+  }
+
   async toggleTimeSlot(id: number, dto?: ToggleCreneauDto): Promise<CreneauHoraireEntity> {
     const slot = this.store.timeSlots.find(s => s.id === id);
     if (!slot) throw new Error(`Créneau #${id} introuvable`);
 
     slot.actif = dto ? dto.actif : !slot.actif;
+    await this.store.save();
     return slot;
   }
 }

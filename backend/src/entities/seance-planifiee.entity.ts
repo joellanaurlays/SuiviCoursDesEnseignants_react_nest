@@ -1,4 +1,4 @@
-import { DayOfWeek } from './creneau-horaire.entity';
+import { DayOfWeek } from './creneau-horaire.entity.js';
 
 export type SeanceStatut = 
   | 'BROUILLON' 

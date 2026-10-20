@@ -1,5 +1,5 @@
-import { DayOfWeek } from '../entities/creneau-horaire.entity';
-import { SeanceStatut, SessionType } from '../entities/seance-planifiee.entity';
+import { DayOfWeek } from '../entities/creneau-horaire.entity.js';
+import { SeanceStatut, SessionType } from '../entities/seance-planifiee.entity.js';
 
 export interface CreateSeanceDto {
   emploiDuTempsId?: number;

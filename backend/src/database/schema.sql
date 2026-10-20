@@ -1,7 +1,7 @@
 -- ====================================================================
 -- APPLICATION DE SUIVI DES ENSEIGNEMENTS — EMIT (Université de Fianarantsoa)
 -- MODULE 5 : GESTION DE L'EMPLOI DU TEMPS (feature/schedule)
--- Base de données : suivi_enseignements_db
+-- Base de données : suivicours_db par défaut (configurable via DB_DATABASE)
 -- ====================================================================
 
 -- 1. Table des Salles et Locaux de l'EMIT (T21)
@@ -100,4 +100,11 @@ CREATE TABLE IF NOT EXISTS contrainte_planification (
     regle_json JSONB DEFAULT '{}',
     active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- État persistant du module, notamment pour les API de planification.
+CREATE TABLE IF NOT EXISTS planning_app_state (
+    id SMALLINT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+    state JSONB NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

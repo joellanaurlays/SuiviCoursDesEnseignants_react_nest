@@ -1,4 +1,4 @@
-import { DayOfWeek, TimeSlotPeriod } from '../entities/creneau-horaire.entity';
+import { DayOfWeek, TimeSlotPeriod } from '../entities/creneau-horaire.entity.js';
 
 export interface CreateCreneauDto {
   jourSemaine: DayOfWeek;

@@ -1,9 +1,9 @@
-import { DataStore } from '../database/data-store';
-import { CreateSeanceDto, UpdateSeanceStatusDto } from '../dto/create-seance.dto';
-import { GeneratePlanningDto, GenerationSummaryDto } from '../dto/generate-planning.dto';
-import { SeancePlanifieeEntity, SeanceStatut } from '../entities/seance-planifiee.entity';
-import { EmploiDuTempsEntity } from '../entities/emploi-du-temps.entity';
-import { ConflictDetectorService } from './conflict-detector.service';
+import { DataStore } from '../database/data-store.js';
+import { CreateSeanceDto, UpdateSeanceStatusDto } from '../dto/create-seance.dto.js';
+import { GeneratePlanningDto, GenerationSummaryDto } from '../dto/generate-planning.dto.js';
+import { SeancePlanifieeEntity, SeanceStatut } from '../entities/seance-planifiee.entity.js';
+import { EmploiDuTempsEntity } from '../entities/emploi-du-temps.entity.js';
+import { ConflictDetectorService } from './conflict-detector.service.js';
 
 export class ConflictException extends Error {
   public statusCode = 409;
@@ -52,6 +52,7 @@ export class PlanningService {
       list = list.filter(s => s.statut === filters.statut);
     }
 
+    await this.store.save();
     return {
       metadata: this.store.scheduleMeta,
       sessions: list
@@ -83,7 +84,7 @@ export class PlanningService {
     }
 
     const room = this.store.rooms.find(r => r.id === dto.salleId);
-    const nextId = Math.max(9050, ...this.store.sessions.map(s => s.id)) + 1;
+    const nextId = Math.max(0, ...this.store.sessions.map(s => s.id)) + 1;
 
     const newSession = new SeancePlanifieeEntity({
       id: nextId,
@@ -97,7 +98,7 @@ export class PlanningService {
       niveauId: dto.niveauId,
       codeNiveau: dto.codeNiveau,
       mentionNom: dto.mentionNom,
-      semestreNom: dto.semestreNom || 'S1',
+      semestreNom: dto.semestreNom || this.store.scheduleMeta.semestreNom,
       salleId: dto.salleId,
       nomSalle: room ? room.nom : dto.nomSalle || 'Salle',
       creneauId: dto.creneauId,
@@ -110,6 +111,7 @@ export class PlanningService {
     });
 
     this.store.sessions.push(newSession);
+    await this.store.save();
     return newSession;
   }
 
@@ -124,7 +126,33 @@ export class PlanningService {
     if (dto.notes !== undefined) {
       session.notes = dto.notes;
     }
+    await this.store.save();
     return session;
+  }
+
+  async updateSession(id: number, changes: Partial<SeancePlanifieeEntity>): Promise<SeancePlanifieeEntity> {
+    const current = this.store.sessions.find(item => item.id === id);
+    if (!current) throw new Error(`Séance #${id} introuvable`);
+    const session = { ...current, ...changes, id };
+    const room = this.store.rooms.find(item => item.id === session.salleId);
+    const slot = this.store.timeSlots.find(item => item.id === session.creneauId);
+    if (room) session.nomSalle = room.nom;
+    if (slot) {
+      session.jourSemaine = slot.jourSemaine;
+      session.heureDebut = slot.heureDebut;
+      session.heureFin = slot.heureFin;
+    }
+    const teaching = this.store.teachings.find(item => item.id === session.enseignementId);
+    const conflict = await this.conflictDetector.checkConflicts({
+      seanceId: id, salleId: session.salleId, enseignantId: session.enseignantId,
+      niveauId: session.niveauId, codeNiveau: session.codeNiveau, mentionNom: session.mentionNom,
+      dateSeance: session.dateSeance, creneauId: session.creneauId, jourSemaine: session.jourSemaine,
+      heureDebut: session.heureDebut, heureFin: session.heureFin, effectifPrevu: teaching?.effectifEtudiants,
+    });
+    if (conflict.hasBlockingError) throw new ConflictException('La modification crée un conflit bloquant.', conflict);
+    Object.assign(current, session);
+    await this.store.save();
+    return current;
   }
 
   /**
@@ -135,6 +163,7 @@ export class PlanningService {
     if (index === -1) throw new Error(`Séance #${id} introuvable`);
 
     this.store.sessions.splice(index, 1);
+    await this.store.save();
     return { success: true, message: `Séance #${id} supprimée avec succès.` };
   }
 
@@ -142,14 +171,16 @@ export class PlanningService {
    * Génération automatique de l'emploi du temps sans conflit (T22)
    */
   async generateAutomaticPlanning(dto: GeneratePlanningDto): Promise<GenerationSummaryDto> {
+    await this.store.refreshTeachings();
     const baseDateWeek = dto.semaineDu || this.store.scheduleMeta.semaineDu;
     const dayOffsets: Record<string, number> = {
       'Lundi': 0, 'Mardi': 1, 'Mercredi': 2, 'Jeudi': 3, 'Vendredi': 4, 'Samedi': 5
     };
 
     let generatedCount = 0;
+    let generatedHours = 0;
     const skippedCourses: Array<{ codeMatiere: string; nomMatiere: string; motif: string }> = [];
-    let nextId = Math.max(9100, ...this.store.sessions.map(s => s.id)) + 1;
+    let nextId = Math.max(0, ...this.store.sessions.map(s => s.id)) + 1;
 
     for (const teaching of this.store.teachings) {
       const remainingHours = teaching.volumeHoraireTotal - teaching.heuresPlanifiees;
@@ -178,7 +209,7 @@ export class PlanningService {
         if (placed) break;
 
         const offset = dayOffsets[slot.jourSemaine] ?? 0;
-        const sessionDate = new Date(baseDateWeek);
+        const sessionDate = new Date(`${baseDateWeek}T00:00:00Z`);
         sessionDate.setDate(sessionDate.getDate() + offset);
         const dateStr = sessionDate.toISOString().split('T')[0];
 
@@ -221,8 +252,10 @@ export class PlanningService {
               statut: 'VALIDE',
               notes: 'Généré automatiquement par le moteur sans conflit'
             }));
-            teaching.heuresPlanifiees += 2;
+            teaching.heuresPlanifiees += slot.dureeMinutes / 60;
             generatedCount++;
+            generatedHours += slot.dureeMinutes / 60;
+            await this.store.save();
             placed = true;
             break;
           }
@@ -241,8 +274,8 @@ export class PlanningService {
     return {
       success: generatedCount > 0,
       generatedSessionsCount: generatedCount,
-      totalPlannedHours: generatedCount * 2,
-      message: `${generatedCount} séances (soit ${generatedCount * 2} heures) générées sans aucun conflit.`,
+      totalPlannedHours: generatedHours,
+      message: `${generatedCount} séances générées (${generatedHours} heures).`,
       skippedCourses
     };
   }
@@ -258,6 +291,7 @@ export class PlanningService {
         s.statut = 'PLANIFIE';
       }
     });
+    await this.store.save();
     return this.store.scheduleMeta;
   }
 }

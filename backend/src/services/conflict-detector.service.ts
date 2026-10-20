@@ -1,5 +1,5 @@
-import { DataStore } from '../database/data-store';
-import { CheckConflictDto, ConflictDetailDto, ConflictResponseDto } from '../dto/check-conflict.dto';
+import { DataStore } from '../database/data-store.js';
+import { CheckConflictDto, ConflictDetailDto, ConflictResponseDto } from '../dto/check-conflict.dto.js';
 
 export class ConflictDetectorService {
   private store = DataStore.getInstance();

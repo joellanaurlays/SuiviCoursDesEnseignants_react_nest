@@ -1,5 +1,5 @@
-import { DayOfWeek } from './creneau-horaire.entity';
-import { RoomType } from './salle.entity';
+import { DayOfWeek } from './creneau-horaire.entity.js';
+import { RoomType } from './salle.entity.js';
 
 export type ConstraintTargetType = 'ENSEIGNANT' | 'SALLE' | 'NIVEAU' | 'GLOBAL';
 export type ConstraintPriority = 'BLOQUANTE' | 'PREFERENTIELLE';

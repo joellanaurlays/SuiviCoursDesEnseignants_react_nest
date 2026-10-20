@@ -1,4 +1,4 @@
-import { DayOfWeek } from '../entities/creneau-horaire.entity';
+import { DayOfWeek } from '../entities/creneau-horaire.entity.js';
 
 export interface CheckConflictDto {
   seanceId?: number; // Ignorer la séance en cours de modification
