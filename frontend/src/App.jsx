@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage.jsx'
 import ProfilePage from './pages/ProfilePage.jsx'
 import UserFormPage from './pages/UserFormPage.jsx'
 import UsersListPage from './pages/UsersListPage.jsx'
+import ExamsModuleFixed from './exams/ExamsModuleFixed.jsx'
 import './styles/index.css'
 
 const MANAGE_USERS_ROLES = ['CHEF_SCOLARITE', 'ADMINISTRATEUR']
@@ -50,6 +51,14 @@ function App() {
         element={
           <ProtectedRoute allowedRoles={MANAGE_USERS_ROLES}>
             <UserFormPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/exams"
+        element={
+          <ProtectedRoute>
+            <ExamsModuleFixed />
           </ProtectedRoute>
         }
       />
