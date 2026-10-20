@@ -4,6 +4,13 @@ import { useAuth } from '../../auth/AuthContext';
 import { seanceService } from '../../services/seance.service';
 import { Seance } from '../../types/enseignement';
 import { formatDate, formatDuree, formatHoraire } from '../../utils/format';
+import {
+  CONTENU_MIN,
+  ErreursRealisation,
+  OPTIONS_TYPE_SEANCE,
+  PLACEHOLDER_SALLE,
+  validerRealisation,
+} from '../../utils/seance-form-options';
 import { SeanceStatutBadge } from './SeanceStatutBadge';
 import { HistoriqueSeance } from './HistoriqueSeance';
 
@@ -15,8 +22,6 @@ interface SeanceDetailModalProps {
 }
 
 type Mode = 'detail' | 'realiser' | 'annuler' | 'corriger';
-
-const CONTENU_MIN = 3;
 
 function toDateInput(iso: string): string {
   const date = new Date(iso);
@@ -36,6 +41,16 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
+/** Message d'erreur affiché sous un champ du formulaire. */
+function ChampErreur({ message }: { message?: string }) {
+  if (!message) return null;
+  return (
+    <p className="mt-1 text-xs text-red-600" role="alert">
+      {message}
+    </p>
+  );
+}
+
 /**
  * Détail d'une séance. Tous les utilisateurs autorisés peuvent la consulter.
  * Seul l'enseignant responsable d'une séance PLANIFIEE voit les actions de
@@ -50,6 +65,8 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
   const [mode, setMode] = useState<Mode>('detail');
   const [submitting, setSubmitting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<ErreursRealisation>({});
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Formulaire de réalisation : informations réellement observées.
@@ -57,6 +74,8 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
   const [heureDebut, setHeureDebut] = useState('');
   const [heureFin, setHeureFin] = useState('');
   const [contenuEnseigne, setContenuEnseigne] = useState('');
+  const [salle, setSalle] = useState('');
+  const [typeSeance, setTypeSeance] = useState('');
   const [motifAnnulation, setMotifAnnulation] = useState('');
   const [motifCorrection, setMotifCorrection] = useState('');
 
@@ -70,6 +89,8 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
       setHeureDebut(detail.heureDebut);
       setHeureFin(detail.heureFin);
       setContenuEnseigne(detail.contenuEnseigne ?? '');
+      setSalle(detail.salle ?? '');
+      setTypeSeance(detail.typeSeance ?? '');
     } catch (e) {
       const err = e as { status?: number; message?: string };
       setLoadError(
@@ -90,19 +111,41 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
     charger();
   }, [charger]);
 
+  /** Efface l'erreur d'un champ dès que l'enseignant le modifie. */
+  const effacerErreur = (champ: keyof ErreursRealisation) => {
+    setFieldErrors((prev) => ({ ...prev, [champ]: undefined }));
+  };
+
+  /** Passe en mode formulaire en réinitialisant les messages. */
+  const ouvrirMode = (nouveauMode: Mode) => {
+    setActionError(null);
+    setActionSuccess(null);
+    setFieldErrors({});
+    setMode(nouveauMode);
+  };
+
   const confirmerRealisation = async () => {
     if (!seance) return;
-    if (heureFin <= heureDebut) {
-      setActionError("L'heure de fin doit être postérieure à l'heure de début.");
-      return;
-    }
-    if (contenuEnseigne.trim().length < CONTENU_MIN) {
-      setActionError('Le contenu enseigné est obligatoire pour marquer la séance comme réalisée.');
+
+    // Validation locale AVANT tout appel API : salle et type sont
+    // obligatoires, les erreurs s'affichent sous chaque champ concerné.
+    const erreurs = validerRealisation({
+      dateSeance,
+      heureDebut,
+      heureFin,
+      contenuEnseigne,
+      salle,
+      typeSeance,
+    });
+    setFieldErrors(erreurs);
+    if (Object.values(erreurs).some(Boolean)) {
+      setActionError(null);
       return;
     }
 
     setSubmitting(true);
     setActionError(null);
+    setActionSuccess(null);
     try {
       await seanceService.realiser(
         seance.id,
@@ -111,10 +154,13 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
           heureDebut,
           heureFin,
           contenuEnseigne: contenuEnseigne.trim(),
+          salle: salle.trim(),
+          typeSeance,
         },
         headers,
       );
       setMode('detail');
+      setActionSuccess('La séance a bien été marquée comme réalisée.');
       onChanged?.();
       setRefreshKey((k) => k + 1);
       await charger();
@@ -129,6 +175,7 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
     if (!seance) return;
     setSubmitting(true);
     setActionError(null);
+    setActionSuccess(null);
     try {
       await seanceService.annuler(
         seance.id,
@@ -136,6 +183,7 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
         headers,
       );
       setMode('detail');
+      setActionSuccess('La séance a bien été annulée.');
       onChanged?.();
       setRefreshKey((k) => k + 1);
       await charger();
@@ -159,6 +207,7 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
 
     setSubmitting(true);
     setActionError(null);
+    setActionSuccess(null);
     try {
       await seanceService.corriger(
         seance.id,
@@ -167,11 +216,14 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
           heureDebut,
           heureFin,
           contenuEnseigne: contenuEnseigne.trim(),
+          salle: salle.trim() || undefined,
+          typeSeance: typeSeance || undefined,
           motif: motifCorrection.trim() || undefined,
         },
         headers,
       );
       setMode('detail');
+      setActionSuccess('La correction a bien été enregistrée.');
       onChanged?.();
       setRefreshKey((k) => k + 1);
       await charger();
@@ -234,6 +286,8 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                 <InfoRow label="Durée réalisée" value={formatDuree(seance.duree)} />
               )}
               <InfoRow label="Contenu enseigné" value={seance.contenuEnseigne} />
+              <InfoRow label="Salle" value={seance.salle} />
+              <InfoRow label="Type de séance" value={seance.typeSeance} />
               <InfoRow label="Créée le" value={formatDate(seance.createdAt)} />
               <InfoRow label="Dernière modification" value={formatDate(seance.updatedAt)} />
             </div>
@@ -244,15 +298,18 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
               </p>
             )}
 
+            {actionSuccess && mode === 'detail' && (
+              <p className="text-sm text-green-700 font-semibold" role="status">
+                {actionSuccess}
+              </p>
+            )}
+
             {/* Mode détail : actions éventuelles */}
             {mode === 'detail' && (seance.peutRealiser || seance.peutAnnuler || seance.peutCorriger) && (
               <div className="flex flex-col sm:flex-row gap-3 border-t border-gray-100 pt-4">
                 {seance.peutRealiser && (
                   <button
-                    onClick={() => {
-                      setActionError(null);
-                      setMode('realiser');
-                    }}
+                    onClick={() => ouvrirMode('realiser')}
                     className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-[#0088aa] text-white rounded-md text-sm font-medium hover:bg-[#007799] transition-colors"
                   >
                     <CheckCircle2 size={16} className="mr-2" />
@@ -261,10 +318,7 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                 )}
                 {seance.peutCorriger && (
                   <button
-                    onClick={() => {
-                      setActionError(null);
-                      setMode('corriger');
-                    }}
+                    onClick={() => ouvrirMode('corriger')}
                     className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-[#0088aa] text-[#006688] rounded-md text-sm font-medium hover:bg-cyan-50 transition-colors"
                   >
                     <Pencil size={16} className="mr-2" />
@@ -273,10 +327,7 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                 )}
                 {seance.peutAnnuler && (
                   <button
-                    onClick={() => {
-                      setActionError(null);
-                      setMode('annuler');
-                    }}
+                    onClick={() => ouvrirMode('annuler')}
                     className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-red-300 text-red-700 rounded-md text-sm font-medium hover:bg-red-50 transition-colors"
                   >
                     <XCircle size={16} className="mr-2" />
@@ -294,15 +345,31 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                   <span>Confirmez les informations réellement observées.</span>
                 </div>
 
+                {/* Récapitulatif de la séance concernée */}
+                <div className="rounded-md border border-gray-200 bg-gray-50 px-4 py-3 text-sm">
+                  <p className="font-semibold text-[#0a0a32]">
+                    {seance.enseignement?.matiereId ?? '—'}
+                  </p>
+                  <p className="text-gray-600">
+                    Prévu le {formatDate(seance.dateSeance)} ·{' '}
+                    {formatHoraire(seance.heureDebut, seance.heureFin)} · Durée prévue{' '}
+                    {formatDuree(seance.duree)}
+                  </p>
+                </div>
+
                 <div>
                   <label className={labelClass}>Date effective *</label>
                   <input
                     type="date"
                     className={inputClass}
                     value={dateSeance}
-                    onChange={(e) => setDateSeance(e.target.value)}
+                    onChange={(e) => {
+                      setDateSeance(e.target.value);
+                      effacerErreur('dateSeance');
+                    }}
                     disabled={submitting}
                   />
+                  <ChampErreur message={fieldErrors.dateSeance} />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -312,9 +379,13 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                       type="time"
                       className={inputClass}
                       value={heureDebut}
-                      onChange={(e) => setHeureDebut(e.target.value)}
+                      onChange={(e) => {
+                        setHeureDebut(e.target.value);
+                        effacerErreur('heureDebut');
+                      }}
                       disabled={submitting}
                     />
+                    <ChampErreur message={fieldErrors.heureDebut} />
                   </div>
                   <div>
                     <label className={labelClass}>Heure fin *</label>
@@ -322,10 +393,53 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                       type="time"
                       className={inputClass}
                       value={heureFin}
-                      onChange={(e) => setHeureFin(e.target.value)}
+                      onChange={(e) => {
+                        setHeureFin(e.target.value);
+                        effacerErreur('heureFin');
+                      }}
                       disabled={submitting}
                     />
+                    <ChampErreur message={fieldErrors.heureFin} />
                   </div>
+                </div>
+
+                <div>
+                  <label className={labelClass}>Salle *</label>
+                  <input
+                    type="text"
+                    className={inputClass}
+                    value={salle}
+                    onChange={(e) => {
+                      setSalle(e.target.value);
+                      effacerErreur('salle');
+                    }}
+                    disabled={submitting}
+                    placeholder={PLACEHOLDER_SALLE}
+                    aria-invalid={Boolean(fieldErrors.salle)}
+                  />
+                  <ChampErreur message={fieldErrors.salle} />
+                </div>
+
+                <div>
+                  <label className={labelClass}>Type de séance *</label>
+                  <select
+                    className={inputClass}
+                    value={typeSeance}
+                    onChange={(e) => {
+                      setTypeSeance(e.target.value);
+                      effacerErreur('typeSeance');
+                    }}
+                    disabled={submitting}
+                    aria-invalid={Boolean(fieldErrors.typeSeance)}
+                  >
+                    <option value="">-- Sélectionner --</option>
+                    {OPTIONS_TYPE_SEANCE.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChampErreur message={fieldErrors.typeSeance} />
                 </div>
 
                 <div>
@@ -333,20 +447,25 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                   <textarea
                     className={`${inputClass} min-h-[100px]`}
                     value={contenuEnseigne}
-                    onChange={(e) => setContenuEnseigne(e.target.value)}
+                    onChange={(e) => {
+                      setContenuEnseigne(e.target.value);
+                      effacerErreur('contenuEnseigne');
+                    }}
                     disabled={submitting}
                     placeholder="Contenu réellement traité durant la séance..."
+                    aria-invalid={Boolean(fieldErrors.contenuEnseigne)}
                   />
+                  <ChampErreur message={fieldErrors.contenuEnseigne} />
                 </div>
 
                 <div className="flex justify-end gap-3 pt-2">
                   <button
                     type="button"
-                    onClick={() => setMode('detail')}
+                    onClick={() => ouvrirMode('detail')}
                     disabled={submitting}
                     className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
                   >
-                    Retour
+                    Annuler
                   </button>
                   <button
                     type="button"
@@ -447,6 +566,35 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                       disabled={submitting}
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className={labelClass}>Salle</label>
+                  <input
+                    type="text"
+                    className={inputClass}
+                    value={salle}
+                    onChange={(e) => setSalle(e.target.value)}
+                    disabled={submitting}
+                    placeholder={PLACEHOLDER_SALLE}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>Type de séance</label>
+                  <select
+                    className={inputClass}
+                    value={typeSeance}
+                    onChange={(e) => setTypeSeance(e.target.value)}
+                    disabled={submitting}
+                  >
+                    <option value="">-- Sélectionner --</option>
+                    {OPTIONS_TYPE_SEANCE.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>

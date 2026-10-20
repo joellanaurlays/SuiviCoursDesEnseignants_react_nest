@@ -94,6 +94,8 @@ export interface Seance {
   heureFin: string;
   duree: number;
   contenuEnseigne: string | null;
+  salle?: string | null;
+  typeSeance?: string | null;
   statut: StatutSeance;
   createdAt: string;
   updatedAt: string;
@@ -126,6 +128,8 @@ export interface ValeursSeanceAudit {
   heureFin?: string | null;
   duree?: number | null;
   contenuEnseigne?: string | null;
+  salle?: string | null;
+  typeSeance?: string | null;
   statut?: StatutSeance | null;
 }
 
@@ -186,6 +190,8 @@ export interface CreateSeancePayload {
   heureDebut: string;
   heureFin: string;
   contenuEnseigne?: string;
+  salle?: string;
+  typeSeance?: string;
   statut?: StatutSeance;
 }
 
@@ -195,6 +201,8 @@ export interface RealiserSeancePayload {
   heureDebut?: string;
   heureFin?: string;
   contenuEnseigne?: string;
+  salle?: string;
+  typeSeance?: string;
 }
 
 /** Justification facultative de l'annulation (conservée dans le journal d'audit). */
@@ -208,6 +216,8 @@ export interface CorrigerSeancePayload {
   heureDebut?: string;
   heureFin?: string;
   contenuEnseigne?: string;
+  salle?: string;
+  typeSeance?: string;
   motif?: string;
 }
 

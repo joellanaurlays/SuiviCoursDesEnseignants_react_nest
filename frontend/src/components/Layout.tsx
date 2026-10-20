@@ -177,16 +177,16 @@ export function Layout({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen bg-gray-50 font-sans">
       <aside className="w-64 bg-[#0a0a32] text-white flex flex-col shrink-0">
         <div className="p-6 flex items-center space-x-3">
-          <div className="w-10 h-10 bg-[#00e5ff] text-[#0a0a32] rounded-md flex items-center justify-center font-bold text-xl">
-            S
+          <div className="w-10 h-10 bg-[#00e5ff] rounded-md flex items-center justify-center">
+            <GraduationCap size={24} className="text-[#03045e]" aria-hidden="true" />
           </div>
           <div>
             <h1 className="font-bold leading-tight">
-              Suivi
+              Suivi des
               <br />
-              Enseignements
+              Enseignants
             </h1>
-            <p className="text-xs text-[#00e5ff] mt-1">UNIVERSITÉ ERP</p>
+            <p className="text-xs text-[#00e5ff] mt-1">de l'EMIT</p>
           </div>
         </div>
 

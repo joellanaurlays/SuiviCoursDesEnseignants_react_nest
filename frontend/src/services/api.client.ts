@@ -17,11 +17,22 @@ export async function request<T>(
   authHeaders: Record<string, string> = {},
 ): Promise<T> {
   const hasBody = body !== undefined;
-  const res = await fetch(`/api${path}`, {
-    method,
-    headers: headersForMethod(authHeaders, hasBody),
-    body: hasBody ? JSON.stringify(body) : undefined,
-  });
+
+  let res: Response;
+  try {
+    res = await fetch(`/api${path}`, {
+      method,
+      headers: headersForMethod(authHeaders, hasBody),
+      body: hasBody ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    // Échec réseau (backend arrêté, coupure de connexion…) : message lisible.
+    throw {
+      status: 0,
+      message:
+        'Connexion au serveur impossible. Vérifiez votre connexion puis réessayez.',
+    } as ApiError;
+  }
 
   if (!res.ok) {
     let message = `Erreur ${res.status}`;
@@ -42,5 +53,9 @@ export async function request<T>(
     return undefined as T;
   }
 
-  return (await res.json()) as T;
+  try {
+    return (await res.json()) as T;
+  } catch {
+    throw { status: res.status, message: 'Réponse invalide du serveur.' } as ApiError;
+  }
 }

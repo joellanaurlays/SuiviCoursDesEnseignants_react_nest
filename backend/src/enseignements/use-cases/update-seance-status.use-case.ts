@@ -19,6 +19,8 @@ export interface RealisationSeanceOptions {
   heureDebut?: string;
   heureFin?: string;
   contenuEnseigne?: string;
+  salle?: string;
+  typeSeance?: string;
   /** Motif de l'annulation (facultatif), conservé dans le journal d'audit. */
   motif?: string;
 }
@@ -28,7 +30,9 @@ export interface RealisationSeanceOptions {
  *
  * Règles métier :
  * - Seul l'enseignant responsable de la séance peut la réaliser ou l'annuler.
- * - PLANIFIEE → REALISEE : autorisée, après validation des données observées.
+ * - PLANIFIEE → REALISEE : autorisée, après validation des données observées
+ *   (contenu enseigné, salle et type de séance obligatoires ; horaires
+ *   recalculés côté serveur).
  * - PLANIFIEE → ANNULEE  : autorisée, aucune heure comptabilisée.
  * - REALISEE  → REALISEE : idempotente (aucun double comptage).
  * - ANNULEE   → ANNULEE  : idempotente (aucune nouvelle annulation).
@@ -123,6 +127,23 @@ export class UpdateSeanceStatusUseCase {
       );
     }
 
+    // La salle et le type de séance sont obligatoires au moment de la
+    // réalisation. À défaut de valeur fournie, la valeur déjà planifiée sur
+    // la séance est réutilisée ; sinon la réalisation est refusée (400).
+    const salle = this.premiereValeurRenseignee(options.salle, seance.salle);
+    if (!salle) {
+      throw new BadRequestException(
+        'La salle est obligatoire pour marquer une séance comme réalisée',
+      );
+    }
+
+    const typeSeance = this.premiereValeurRenseignee(options.typeSeance, seance.typeSeance);
+    if (!typeSeance) {
+      throw new BadRequestException(
+        'Le type de séance est obligatoire pour marquer une séance comme réalisée',
+      );
+    }
+
     let dateSeance = seance.dateSeance;
     if (options.dateSeance !== undefined) {
       dateSeance = new Date(options.dateSeance);
@@ -145,6 +166,8 @@ export class UpdateSeanceStatusUseCase {
           heureFin,
           duree,
           contenuEnseigne,
+          salle,
+          typeSeance,
         },
       });
 
@@ -210,6 +233,18 @@ export class UpdateSeanceStatusUseCase {
     });
   }
 
+  /** Première valeur non vide (après suppression des espaces) parmi les candidats. */
+  private premiereValeurRenseignee(
+    ...candidats: Array<string | null | undefined>
+  ): string {
+    for (const candidat of candidats) {
+      if (typeof candidat === 'string' && candidat.trim() !== '') {
+        return candidat.trim();
+      }
+    }
+    return '';
+  }
+
   private perimetre(seance: SeanceAvecEnseignement) {
     return {
       enseignantId: seance.enseignement.enseignantId,
@@ -260,6 +295,8 @@ interface SeanceAvecEnseignement {
   heureFin: string;
   duree: number;
   contenuEnseigne: string | null;
+  salle: string | null;
+  typeSeance: string | null;
   statut: string;
   enseignement: {
     id: string;

@@ -252,6 +252,8 @@ export class EnseignementsService {
         heureDebut: autresChamps.heureDebut,
         heureFin: autresChamps.heureFin,
         contenuEnseigne: autresChamps.contenuEnseigne,
+        salle: autresChamps.salle,
+        typeSeance: autresChamps.typeSeance,
         motif,
       });
     }

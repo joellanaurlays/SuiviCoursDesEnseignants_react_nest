@@ -85,6 +85,8 @@ export function SuiviDetailView({ enseignement, seances, backLabel, backLink, ac
                   <tr>
                     <th className="px-4 py-3 font-medium">Date</th>
                     <th className="px-4 py-3 font-medium">Horaire</th>
+                    <th className="px-4 py-3 font-medium">Salle</th>
+                    <th className="px-4 py-3 font-medium">Type</th>
                     <th className="px-4 py-3 font-medium">Durée</th>
                     <th className="px-4 py-3 font-medium">Statut</th>
                     <th className="px-4 py-3 font-medium">Contenu enseigné</th>
@@ -98,6 +100,12 @@ export function SuiviDetailView({ enseignement, seances, backLabel, backLink, ac
                       </td>
                       <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
                         {seance.heureDebut} - {seance.heureFin}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                        {seance.salle || <span className="italic text-gray-400">—</span>}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                        {seance.typeSeance || <span className="italic text-gray-400">—</span>}
                       </td>
                       <td className="px-4 py-3 font-medium whitespace-nowrap">{formatDuree(seance.duree)}</td>
                       <td className="px-4 py-3">

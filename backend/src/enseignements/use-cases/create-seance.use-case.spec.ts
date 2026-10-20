@@ -86,6 +86,8 @@ describe('CreateSeanceUseCase', () => {
         heureFin: '12:00',
         duree: 2,
         contenuEnseigne: 'Introduction',
+        salle: null,
+        typeSeance: null,
         statut: StatutSeance.PLANIFIEE,
       },
     });

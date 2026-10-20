@@ -17,6 +17,8 @@ interface SeanceRow {
   heureFin: string;
   duree: number;
   contenuEnseigne: string | null;
+  salle: string | null;
+  typeSeance: string | null;
   statut: string;
 }
 
@@ -123,11 +125,20 @@ function ajouterSeance(fake: FakePrisma, overrides: Partial<SeanceRow> = {}): Se
     heureFin: overrides.heureFin ?? '10:00',
     duree: overrides.duree ?? 2,
     contenuEnseigne: overrides.contenuEnseigne ?? null,
+    salle: overrides.salle ?? null,
+    typeSeance: overrides.typeSeance ?? null,
     statut: overrides.statut ?? StatutSeance.PLANIFIEE,
   };
   fake.seances.push(seance);
   return seance;
 }
+
+/** Données minimales valides pour réaliser une séance (salle et type obligatoires). */
+const realisationValide = {
+  contenuEnseigne: 'Cours réel',
+  salle: 'B303',
+  typeSeance: 'CM',
+};
 
 const enseignantResponsable: AuthContext = { userId: 'Prof A', role: Role.ENSEIGNANT };
 const autreEnseignant: AuthContext = { userId: 'Prof B', role: Role.ENSEIGNANT };
@@ -149,11 +160,13 @@ describe('UpdateSeanceStatusUseCase', () => {
       'seance-1',
       StatutSeance.REALISEE,
       enseignantResponsable,
-      { contenuEnseigne: 'Cours réel' },
+      { ...realisationValide },
     );
 
     expect(updated.statut).toBe(StatutSeance.REALISEE);
     expect(updated.contenuEnseigne).toBe('Cours réel');
+    expect(updated.salle).toBe('B303');
+    expect(updated.typeSeance).toBe('CM');
     expect(fake.enseignementRow.heuresRealisees).toBe(2);
     expect(fake.enseignementRow.progression).toBeCloseTo(6.67, 2);
     expect(fake.enseignementRow.etat).toBe('EN_COURS');
@@ -264,6 +277,7 @@ describe('UpdateSeanceStatusUseCase', () => {
     ajouterSeance(fake, { id: 's2', duree: 2, statut: StatutSeance.PLANIFIEE, heureDebut: '10:00', heureFin: '12:00' });
 
     await useCase.execute('s2', StatutSeance.REALISEE, enseignantResponsable, {
+      ...realisationValide,
       contenuEnseigne: 'b',
     });
 
@@ -278,7 +292,10 @@ describe('UpdateSeanceStatusUseCase', () => {
     ajouterSeance(fake, { id: 's2', statut: StatutSeance.PLANIFIEE, heureDebut: '09:00', heureFin: '11:00' });
 
     await expect(
-      useCase.execute('s2', StatutSeance.REALISEE, enseignantResponsable, { contenuEnseigne: 'b' }),
+      useCase.execute('s2', StatutSeance.REALISEE, enseignantResponsable, {
+        ...realisationValide,
+        contenuEnseigne: 'b',
+      }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
@@ -294,7 +311,7 @@ describe('UpdateSeanceStatusUseCase', () => {
     ajouterSeance(fake);
 
     await useCase.execute('seance-1', StatutSeance.REALISEE, enseignantResponsable, {
-      contenuEnseigne: 'Cours réel',
+      ...realisationValide,
     });
 
     expect(audit.entrees).toHaveLength(1);
@@ -305,6 +322,8 @@ describe('UpdateSeanceStatusUseCase', () => {
       statutApres: StatutSeance.REALISEE,
     });
     expect(audit.entrees[0].valeursApres?.contenuEnseigne).toBe('Cours réel');
+    expect(audit.entrees[0].valeursApres?.salle).toBe('B303');
+    expect(audit.entrees[0].valeursApres?.typeSeance).toBe('CM');
     expect(audit.entrees[0].valeursApres?.statut).toBe(StatutSeance.REALISEE);
   });
 
@@ -343,5 +362,81 @@ describe('UpdateSeanceStatusUseCase', () => {
       useCase.execute('seance-1', StatutSeance.REALISEE, autreEnseignant, { contenuEnseigne: 'x' }),
     ).rejects.toBeInstanceOf(ForbiddenException);
     expect(audit.entrees).toHaveLength(0);
+  });
+
+  it('salle obligatoire — refuse une réalisation sans salle et laisse la séance planifiée', async () => {
+    const { fake, useCase } = monter();
+    ajouterSeance(fake);
+
+    await expect(
+      useCase.execute('seance-1', StatutSeance.REALISEE, enseignantResponsable, {
+        contenuEnseigne: 'Cours réel',
+        typeSeance: 'CM',
+      }),
+    ).rejects.toThrow('La salle est obligatoire pour marquer une séance comme réalisée');
+
+    expect(fake.seances[0].statut).toBe(StatutSeance.PLANIFIEE);
+    expect(fake.enseignementRow.heuresRealisees).toBe(0);
+  });
+
+  it('salle obligatoire — refuse une salle constituée uniquement d’espaces', async () => {
+    const { fake, useCase } = monter();
+    ajouterSeance(fake);
+
+    await expect(
+      useCase.execute('seance-1', StatutSeance.REALISEE, enseignantResponsable, {
+        ...realisationValide,
+        salle: '   ',
+      }),
+    ).rejects.toThrow('La salle est obligatoire pour marquer une séance comme réalisée');
+
+    expect(fake.seances[0].statut).toBe(StatutSeance.PLANIFIEE);
+  });
+
+  it('type obligatoire — refuse une réalisation sans type de séance', async () => {
+    const { fake, useCase } = monter();
+    ajouterSeance(fake);
+
+    await expect(
+      useCase.execute('seance-1', StatutSeance.REALISEE, enseignantResponsable, {
+        contenuEnseigne: 'Cours réel',
+        salle: 'B303',
+      }),
+    ).rejects.toThrow('Le type de séance est obligatoire pour marquer une séance comme réalisée');
+
+    expect(fake.seances[0].statut).toBe(StatutSeance.PLANIFIEE);
+  });
+
+  it('réutilise la salle et le type déjà planifiés si le payload ne les fournit pas', async () => {
+    const { fake, useCase } = monter();
+    ajouterSeance(fake, { salle: 'A101', typeSeance: 'TD' });
+
+    const updated = await useCase.execute(
+      'seance-1',
+      StatutSeance.REALISEE,
+      enseignantResponsable,
+      { contenuEnseigne: 'Cours réel' },
+    );
+
+    expect(updated.statut).toBe(StatutSeance.REALISEE);
+    expect(updated.salle).toBe('A101');
+    expect(updated.typeSeance).toBe('TD');
+  });
+
+  it('persiste la salle et le type saisis (espaces superflus retirés)', async () => {
+    const { fake, useCase } = monter();
+    ajouterSeance(fake, { salle: 'Ancienne salle', typeSeance: 'TP' });
+
+    const updated = await useCase.execute(
+      'seance-1',
+      StatutSeance.REALISEE,
+      enseignantResponsable,
+      { ...realisationValide, salle: '  C204  ', typeSeance: 'CM + TD' },
+    );
+
+    expect(updated.salle).toBe('C204');
+    expect(updated.typeSeance).toBe('CM + TD');
+    expect(fake.seances[0].salle).toBe('C204');
+    expect(fake.seances[0].typeSeance).toBe('CM + TD');
   });
 });

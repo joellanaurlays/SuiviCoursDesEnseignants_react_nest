@@ -33,6 +33,14 @@ export class CreateSeanceDto {
   @IsOptional()
   contenuEnseigne?: string;
 
+  @IsString()
+  @IsOptional()
+  salle?: string;
+
+  @IsString()
+  @IsOptional()
+  typeSeance?: string;
+
   @IsEnum(StatutSeance)
   @IsOptional()
   statut?: StatutSeance;

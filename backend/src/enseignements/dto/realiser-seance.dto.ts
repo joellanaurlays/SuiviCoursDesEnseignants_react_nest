@@ -4,9 +4,12 @@ import { IsDateString, IsOptional, IsString, Matches } from 'class-validator';
  * Réalisation d'une séance planifiée.
  *
  * L'enseignant responsable confirme les informations réellement observées :
- * date effective, horaires et contenu enseigné. Tous les champs sont
- * optionnels : s'ils sont absents, les valeurs déjà enregistrées sur la
- * séance sont conservées. La durée est TOUJOURS recalculée côté serveur à
+ * date effective, horaires, contenu enseigné, salle et type de séance.
+ *
+ * La salle et le type de séance sont OBLIGATOIRES pour marquer une séance
+ * comme réalisée (message explicite en cas d'absence). Les autres champs
+ * restent optionnels : s'ils sont absents, les valeurs déjà enregistrées sur
+ * la séance sont conservées. La durée est TOUJOURS recalculée côté serveur à
  * partir des horaires, jamais fournie par le client.
  */
 export class RealiserSeanceDto {
@@ -31,4 +34,12 @@ export class RealiserSeanceDto {
   @IsString()
   @IsOptional()
   contenuEnseigne?: string;
+
+  @IsString({ message: 'La salle est obligatoire pour marquer une séance comme réalisée' })
+  salle?: string;
+
+  @IsString({
+    message: 'Le type de séance est obligatoire pour marquer une séance comme réalisée',
+  })
+  typeSeance?: string;
 }
