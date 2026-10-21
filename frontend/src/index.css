@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@theme {
+  --color-emit-navy: #03045E;
+  --color-emit-blue: #0077B6;
+  --color-emit-cyan: #00B4D8;
+  --color-emit-sky: #90E0EF;
+  --color-emit-ice: #CAF0F8;
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+:root {
+  --emit-navy: #03045E;
+  --emit-blue: #0077B6;
+  --emit-cyan: #00B4D8;
+  --emit-sky: #90E0EF;
+  --emit-ice: #CAF0F8;
+}
+
+/* Custom scrollbar for schedule tables */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+@media print {
+  body {
+    background: white !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .print-break-inside-avoid {
+    break-inside: avoid;
+  }
+}
