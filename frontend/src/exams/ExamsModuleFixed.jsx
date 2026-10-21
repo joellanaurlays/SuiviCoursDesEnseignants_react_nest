@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react';
-const API = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// Le backend Nest expose tout sous le préfixe global /api (main.ts).
+const API = `${import.meta.env.VITE_API_URL || ''}/api`;
 async function api(p, o = {}) {
-  const r = await fetch(API + p, { headers: { 'Content-Type': 'application/json' }, ...o });
+  const token = localStorage.getItem('emit_access_token');
+  const r = await fetch(API + p, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    ...o,
+  });
   if (!r.ok) throw new Error(await r.text());
   return r.json();
 }

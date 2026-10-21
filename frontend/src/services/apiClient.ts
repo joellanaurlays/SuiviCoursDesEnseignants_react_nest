@@ -16,7 +16,9 @@ export interface ConflictApiError {
 }
 
 export class ApiClient {
-  private static baseUrl = import.meta.env.VITE_API_URL || '/api';
+  // Le backend Nest expose tout sous le préfixe global /api (main.ts),
+  // comme le client de session du module authentification.
+  private static baseUrl = `${import.meta.env.VITE_API_URL || ''}/api`;
 
   // Le backend accepte le JWT émis par POST /api/auth/login (garde dual-mode).
   private static authHeaders(): Record<string, string> {

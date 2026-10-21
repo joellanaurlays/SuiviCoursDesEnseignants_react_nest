@@ -1,56 +1,85 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
-import { getSession, saveSession } from '../services/auth.service';
+import { createContext, useContext, useMemo, ReactNode } from 'react';
+import { useAuth as useJwtAuth } from '../context/AuthContext.jsx';
 import { getAuthHeaders } from '../services/auth.service';
-import { defaultSessionUser, profileToSession } from './identities';
-import { RoleProfile, UserSession } from '../types/enseignement';
+import { Cycle, Parcours, UserRole, UserSession } from '../types/enseignement';
 
+/**
+ * Pont d'identité entre la session JWT réelle (Membre 1) et le contrat
+ * d'identité du module suivi des enseignements (Membres 2/4) : ce module
+ * authentifie encore par en-têtes x-user-* et identifie un enseignant par son
+ * nom affiché (Enseignement.enseignantId). La session n'est plus un profil
+ * factice choisi dans un switcher : elle est DÉRIVÉE du compte connecté
+ * (rôle mappé comme côté backend, périmètre responsable porté par les champs
+ * du compte). Toutes les pages qui consomment ce contexte sont sous
+ * <ProtectedRoute> : `user` y est toujours non null au rendu.
+ */
 interface AuthContextValue {
   session: UserSession;
-  profile: RoleProfile | undefined;
   headers: Record<string, string>;
-  changeProfile: (profile: RoleProfile) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const STORAGE_EVENT = 'suivi-auth-changed';
+type RoleName =
+  | 'CHEF_SCOLARITE'
+  | 'ADMINISTRATEUR'
+  | 'RESPONSABLE_LICENCE'
+  | 'RESPONSABLE_MASTER'
+  | 'ENSEIGNANT';
+
+interface JwtUser {
+  id: string | number;
+  firstName: string;
+  lastName: string;
+  role: RoleName;
+  mentionId?: string | null;
+  cycles?: string[] | null;
+  parcours?: string | null;
+}
+
+const NO_SESSION: UserSession = { userId: '', role: 'ENSEIGNANT' };
+
+function toBackendRole(role: RoleName): UserRole {
+  switch (role) {
+    case 'CHEF_SCOLARITE':
+      return 'SCOLARITE';
+    case 'RESPONSABLE_LICENCE':
+    case 'RESPONSABLE_MASTER':
+      return 'RESPONSABLE_MENTION';
+    case 'ADMINISTRATEUR':
+      return 'ADMINISTRATEUR';
+    default:
+      return 'ENSEIGNANT';
+  }
+}
+
+function sessionFromUser(user: JwtUser): UserSession {
+  const role = toBackendRole(user.role);
+  const cycles = (user.cycles ?? [])
+    .map((c) => String(c).toUpperCase())
+    .filter((c): c is Cycle => c === 'LICENCE' || c === 'MASTER');
+  if (role === 'RESPONSABLE_MENTION' && cycles.length === 0) {
+    cycles.push(user.role === 'RESPONSABLE_MASTER' ? 'MASTER' : 'LICENCE');
+  }
+  return {
+    userId: `${user.firstName} ${user.lastName}`.trim(),
+    role,
+    mentionId: user.mentionId ?? undefined,
+    cycles,
+    parcours: (user.parcours as Parcours | null) ?? undefined,
+  };
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const stored = getSession();
-  const [session, setSession] = useState<UserSession>(
-    stored ?? profileToSession(defaultSessionUser()),
+  const { user } = useJwtAuth() as { user: JwtUser | null };
+
+  const session = useMemo(() => (user ? sessionFromUser(user) : NO_SESSION), [user]);
+  const headers = useMemo(
+    () => (user ? getAuthHeaders(session) : {}),
+    [user, session],
   );
-  const [profile, setProfile] = useState<RoleProfile | undefined>(
-    stored ? undefined : defaultSessionUser(),
-  );
 
-  useEffect(() => {
-    const onStorage = () => {
-      const s = getSession();
-      if (s) setSession(s);
-    };
-    window.addEventListener('storage', onStorage);
-    window.addEventListener(STORAGE_EVENT, onStorage);
-    return () => {
-      window.removeEventListener('storage', onStorage);
-      window.removeEventListener(STORAGE_EVENT, onStorage);
-    };
-  }, []);
-
-  const changeProfile = useCallback((p: RoleProfile) => {
-    const next = profileToSession(p);
-    saveSession(next);
-    setSession(next);
-    setProfile(p);
-    window.dispatchEvent(new Event(STORAGE_EVENT));
-  }, []);
-
-  const headers = useMemo(() => getAuthHeaders(session), [session]);
-
-  const value = useMemo(
-    () => ({ session, profile, headers, changeProfile }),
-    [session, profile, headers, changeProfile],
-  );
+  const value = useMemo(() => ({ session, headers }), [session, headers]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

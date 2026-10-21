@@ -11,7 +11,9 @@ export class Examen {
 
   @ManyToOne(() => SessionExamen, (s) => s.examens, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'session_id' })
-  session: SessionExamen;
+  // Union explicite : emitDecoratorMetadata évalue design:type au chargement
+  // du module ; un type simple créerait une référence circulaire TDZ.
+  session: SessionExamen | undefined;
 
   @Column({ name: 'session_id' })
   sessionId: string;
@@ -34,10 +36,10 @@ export class Examen {
   @Column({ name: 'heure_fin', type: 'time', nullable: true })
   heureFin: string | null;
 
-  @Column({ length: 50, nullable: true })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   salle: string | null;
 
-  @Column({ length: 20, default: 'A_VENIR' })
+  @Column({ type: 'varchar', length: 20, default: 'A_VENIR' })
   statut: StatutExamen;
 
   @Column({ name: 'notes_remises', default: false })

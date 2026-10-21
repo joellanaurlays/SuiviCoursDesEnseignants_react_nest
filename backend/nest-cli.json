@@ -4,6 +4,7 @@
   "sourceRoot": "src",
   "compilerOptions": {
     "deleteOutDir": true,
+    "assets": ["database/*.sql"],
     "plugins": ["@nestjs/swagger"]
   }
 }

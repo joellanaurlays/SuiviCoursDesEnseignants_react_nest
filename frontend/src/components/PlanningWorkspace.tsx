@@ -18,6 +18,16 @@ import {
 } from '../types/schedule';
 import { ConflictDetectorService } from '../services/ConflictDetectorService';
 import { ApiClient } from '../services/apiClient.ts';
+import { useAuth } from '../context/AuthContext.jsx';
+
+// Le référentiel planning (types/schedule) connaît RESPONSABLE_MENTION alors
+// que la session JWT distingue RESPONSABLE_LICENCE / RESPONSABLE_MASTER.
+function toPlanningRole(roleName: string): CurrentUserSession['role'] {
+  if (roleName === 'RESPONSABLE_LICENCE' || roleName === 'RESPONSABLE_MASTER') {
+    return 'RESPONSABLE_MENTION';
+  }
+  return roleName as CurrentUserSession['role'];
+}
 
 export default function PlanningWorkspace() {
   // Navigation
@@ -66,12 +76,16 @@ export default function PlanningWorkspace() {
 
   useEffect(() => { void refreshData(); }, []);
 
-  // Active User session simulation
-  const [currentUser] = useState<CurrentUserSession>({
-    id: Number(import.meta.env.VITE_USER_ID || 0),
-    nom: import.meta.env.VITE_USER_NAME || 'Utilisateur',
-    role: (import.meta.env.VITE_USER_ROLE || 'CHEF_SCOLARITE') as CurrentUserSession['role'],
-  });
+  // Identité réelle de la session authentifiée (module Membre 1).
+  // useAuth vient d'un fichier .jsx sans typage : on type le strict nécessaire.
+  const { user: sessionUser } = useAuth() as {
+    user: { id: string | number; firstName: string; lastName: string; role: string } | null;
+  };
+  const currentUser: CurrentUserSession = {
+    id: Number(sessionUser?.id ?? 0),
+    nom: sessionUser ? `${sessionUser.firstName} ${sessionUser.lastName}` : 'Utilisateur',
+    role: toPlanningRole(sessionUser?.role ?? 'CHEF_SCOLARITE'),
+  };
 
   // Session being edited in builder
   const [editingSession, setEditingSession] = useState<SeancePlanifieeEntity | null>(null);
