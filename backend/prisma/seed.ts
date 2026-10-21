@@ -25,24 +25,58 @@ async function main() {
     });
   }
 
-  // Utilisateur de test uniquement — la création réelle d'utilisateurs sera gérée en T02
-  const adminRole = await prisma.role.findUniqueOrThrow({
-    where: { name: 'ADMINISTRATEUR' },
-  });
-
+  // Comptes de démonstration — un par rôle, mot de passe commun 'Admin123!'.
   const hashedPassword = await bcrypt.hash('Admin123!', 10);
 
-  await prisma.user.upsert({
-    where: { email: 'admin@emit.mg' },
-    update: {},
-    create: {
-      email: 'admin@emit.mg',
-      password: hashedPassword,
-      firstName: 'Admin',
-      lastName: 'EMIT',
-      roleId: adminRole.id,
+  const demoUsers: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    roleName: RoleName;
+    mentionId?: string;
+    cycles?: string[];
+    parcours?: string;
+  }[] = [
+    { email: 'admin@emit.mg', firstName: 'Admin', lastName: 'EMIT', roleName: 'ADMINISTRATEUR' },
+    { email: 'scolarite@emit.mg', firstName: 'Chef', lastName: 'Scolarité', roleName: 'CHEF_SCOLARITE' },
+    {
+      email: 'resp.licence.info@emit.mg',
+      firstName: 'Raingo',
+      lastName: 'Licence',
+      roleName: 'RESPONSABLE_LICENCE',
+      mentionId: 'INFORMATIQUE',
+      cycles: ['LICENCE'],
+      parcours: 'Informatique',
     },
-  });
+    {
+      email: 'resp.master.info@emit.mg',
+      firstName: 'Raingo',
+      lastName: 'Master',
+      roleName: 'RESPONSABLE_MASTER',
+      mentionId: 'INFORMATIQUE',
+      cycles: ['MASTER'],
+      parcours: 'Informatique',
+    },
+    { email: 'prof@emit.mg', firstName: 'Nirina', lastName: 'Rakoto', roleName: 'ENSEIGNANT' },
+  ];
+
+  for (const demo of demoUsers) {
+    const role = await prisma.role.findUniqueOrThrow({ where: { name: demo.roleName } });
+    await prisma.user.upsert({
+      where: { email: demo.email },
+      update: { password: hashedPassword },
+      create: {
+        email: demo.email,
+        password: hashedPassword,
+        firstName: demo.firstName,
+        lastName: demo.lastName,
+        roleId: role.id,
+        mentionId: demo.mentionId,
+        cycles: demo.cycles ?? [],
+        parcours: demo.parcours,
+      },
+    });
+  }
 }
 
 main()

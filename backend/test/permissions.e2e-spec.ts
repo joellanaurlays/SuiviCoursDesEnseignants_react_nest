@@ -21,7 +21,7 @@ describe('Permissions par rôle (e2e)', () => {
     // Connexion avec le compte admin seedé
     const adminLogin = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email: 'admin@emit.mg', password: '12345678' });
+      .send({ email: 'admin@emit.mg', password: 'Admin123!' });
     adminToken = adminLogin.body.accessToken;
 
     // Création d'un enseignant de test dédié à cette suite (email unique)

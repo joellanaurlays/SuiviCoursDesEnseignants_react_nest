@@ -4,7 +4,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module.js';
 
-describe('AppController (e2e)', () => {
+describe('App (e2e)', () => {
   let app: INestApplication<App>;
 
   beforeEach(async () => {
@@ -16,11 +16,15 @@ describe('AppController (e2e)', () => {
     await app.init();
   });
 
-  it('/ (GET)', () => {
+  it('POST /auth/login avec de mauvais identifiants → 401 (route publique, pas de 404)', () => {
     return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
+      .post('/auth/login')
+      .send({ email: 'inconnu@emit.mg', password: 'peu-importe' })
+      .expect(401);
+  });
+
+  it('GET /users sans identité → 401 (garde global dual-mode)', () => {
+    return request(app.getHttpServer()).get('/users').expect(401);
   });
 
   afterEach(async () => {

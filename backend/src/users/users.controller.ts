@@ -1,11 +1,11 @@
 import {
   Body, Controller, DefaultValuePipe, Get, Param,
-  ParseIntPipe, Patch, Post, Query, Req, UseGuards,
+  ParseIntPipe, Patch, Post, Query,
 } from '@nestjs/common';
-import type { Request } from 'express';
-import { Roles } from '../auth/decorators/roles.decorator.js';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
-import { RolesGuard } from '../auth/guards/roles.guard.js';
+import { CurrentUser } from '../auth/current-user.decorator.js';
+import { Roles } from '../auth/roles.decorator.js';
+import { Role } from '../auth/roles.enum.js';
+import type { AuthContext } from '../auth/auth-context.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
@@ -13,16 +13,11 @@ import { UpdateUserDto } from './dto/update-user.dto.js';
 import { UsersService } from './users.service.js';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
-interface AuthenticatedRequest extends Request {
-  user: { id: number };
-}
-
-const MANAGE_USERS_ROLES = ['CHEF_SCOLARITE', 'ADMINISTRATEUR'];
+const MANAGE_USERS_ROLES = [Role.SCOLARITE, Role.ADMINISTRATEUR];
 
 @ApiTags('Users')
 @ApiBearerAuth('access-token')
 @Controller('users')
-@UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
@@ -45,18 +40,18 @@ export class UsersController {
   }
 
   @Get('me')
-  getMe(@Req() req: AuthenticatedRequest) {
-    return this.usersService.getProfile(req.user.id);
+  getMe(@CurrentUser() auth: AuthContext) {
+    return this.usersService.getProfile(Number(auth.userId));
   }
 
   @Patch('me')
-  updateMe(@Req() req: AuthenticatedRequest, @Body() dto: UpdateProfileDto) {
-    return this.usersService.updateProfile(req.user.id, dto);
+  updateMe(@CurrentUser() auth: AuthContext, @Body() dto: UpdateProfileDto) {
+    return this.usersService.updateProfile(Number(auth.userId), dto);
   }
 
   @Patch('me/password')
-  changeMyPassword(@Req() req: AuthenticatedRequest, @Body() dto: ChangePasswordDto) {
-    return this.usersService.changePassword(req.user.id, dto);
+  changeMyPassword(@CurrentUser() auth: AuthContext, @Body() dto: ChangePasswordDto) {
+    return this.usersService.changePassword(Number(auth.userId), dto);
   }
 
   @Get(':id')

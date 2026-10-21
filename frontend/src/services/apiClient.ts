@@ -18,8 +18,17 @@ export interface ConflictApiError {
 export class ApiClient {
   private static baseUrl = import.meta.env.VITE_API_URL || '/api';
 
+  // Le backend accepte le JWT émis par POST /api/auth/login (garde dual-mode).
+  private static authHeaders(): Record<string, string> {
+    const token = localStorage.getItem('emit_access_token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
   private static async request<T>(url: string, init?: RequestInit): Promise<T> {
-    const response = await fetch(url, init);
+    const response = await fetch(url, {
+      ...init,
+      headers: { ...this.authHeaders(), ...(init?.headers as Record<string, string>) },
+    });
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
       throw new Error(body.message || body.error || `Erreur HTTP ${response.status}`);
@@ -86,7 +95,7 @@ export class ApiClient {
   public static async createSession(data: any): Promise<SeancePlanifieeEntity> {
     const res = await fetch(`${this.baseUrl}/planning/session`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...this.authHeaders() },
       body: JSON.stringify(data)
     });
 

@@ -1,7 +1,10 @@
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 
-function ProtectedRoute({ children, allowedRoles }) {
+/**
+ * @param {{ children: import('react').ReactNode, allowedRoles?: string[] | null }} props
+ */
+function ProtectedRoute({ children, allowedRoles = null }) {
   const { user, isLoading } = useAuth()
 
   if (isLoading) {

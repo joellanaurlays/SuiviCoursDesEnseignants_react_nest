@@ -24,10 +24,11 @@ import {
   EnseignementEntity,
   SalleEntity,
   SeancePlanifieeEntity,
+  SeanceStatut,
   ConflictDetail
 } from '../types/schedule';
 import { ConflictDetectorService, ConflictCheckResult } from '../services/ConflictDetectorService';
-import { ApiClient } from '../services/apiClient';
+import { ApiClient } from '../services/apiClient.ts';
 
 interface ScheduleBuilderViewProps {
   sessions: SeancePlanifieeEntity[];
@@ -135,7 +136,7 @@ export const ScheduleBuilderView: React.FC<ScheduleBuilderViewProps> = ({
       return; // Block save if strict collision
     }
 
-    const newStatut = conflictReport.hasConflict ? 'EN_CONFLIT' : 'VALIDE';
+    const newStatut: SeanceStatut = conflictReport.hasConflict ? 'EN_CONFLIT' : 'VALIDE';
 
     const sessionData = {
             enseignementId: selectedTeaching.id,

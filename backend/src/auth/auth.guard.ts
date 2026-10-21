@@ -5,24 +5,111 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { Reflector } from '@nestjs/core';
 import { AuthContext, AUTH_HEADERS } from './auth-context.js';
 import { Role } from './roles.enum.js';
 import { ROLES_KEY } from './roles.decorator.js';
+import { IS_PUBLIC_KEY } from './decorators/public.decorator.js';
+import { toBackendRole } from './role-mapping.js';
+
+interface JwtClaims {
+  sub: number;
+  email: string;
+  role: string;
+  mentionId?: string;
+  cycles?: string[];
+  parcours?: string;
+}
 
 /**
- * Construit le contexte utilisateur à partir des headers d'identité
- * (x-user-id, x-user-role, x-user-mention, x-user-cycle) puis vérifie
- * le rôle autorisé pour la route via @Roles(...).
+ * Garde global dual-mode :
+ * 1. Si un `Authorization: Bearer <jwt>` est présent, l'identité provient du
+ *    token (rôle + périmètre responsable de mention portés par les claims).
+ * 2. Sinon, on retombe sur les headers d'identité (x-user-id, x-user-role, …)
+ *    utilisés par les modules non encore migrés vers l'authentification JWT.
+ * Dans les deux cas, un `AuthContext` est posé sur la requête et les rôles
+ * requis par @Roles(...) sont vérifiés de la même façon.
  */
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly jwtService: JwtService,
+  ) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest();
-    const headers = request.headers as Record<string, string | undefined>;
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPublic) {
+      return true;
+    }
 
+    const request = context.switchToHttp().getRequest();
+    const authContext = this.buildAuthContext(request);
+
+    const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    if (requiredRoles && requiredRoles.length > 0 && !requiredRoles.includes(authContext.role)) {
+      throw new ForbiddenException(
+        `Le rôle ${authContext.role} n'est pas autorisé pour cette opération`,
+      );
+    }
+
+    request.authContext = authContext;
+    return true;
+  }
+
+  private buildAuthContext(request: { headers: Record<string, string | undefined> }): AuthContext {
+    const authorization = request.headers['authorization'];
+    if (authorization && authorization.startsWith('Bearer ')) {
+      return this.contextFromJwt(authorization.slice('Bearer '.length).trim(), request);
+    }
+    return this.contextFromHeaders(request.headers);
+  }
+
+  private contextFromJwt(
+    token: string,
+    request: Record<string, unknown>,
+  ): AuthContext {
+    let claims: JwtClaims;
+    try {
+      claims = this.jwtService.verify<JwtClaims>(token);
+    } catch {
+      throw new UnauthorizedException('Jeton invalide ou expiré.');
+    }
+
+    const role = toBackendRole(claims.role);
+    if (!role) {
+      throw new UnauthorizedException(`Rôle invalide: ${claims.role}`);
+    }
+
+    const authContext: AuthContext = { userId: String(claims.sub), role };
+    if (claims.mentionId) {
+      authContext.mentionId = claims.mentionId;
+    }
+
+    if (role === Role.RESPONSABLE_MENTION) {
+      authContext.cycles = (claims.cycles ?? []).map((c) => c.toUpperCase());
+      authContext.parcours = claims.parcours ?? '';
+      if (authContext.cycles.length === 0 || !authContext.parcours) {
+        throw new UnauthorizedException(
+          'Le périmètre (cycles et parcours) est requis pour un responsable de mention.',
+        );
+      }
+    }
+
+    // Compat avec les contrôleurs lisant request.user (id numérique, RoleName brut).
+    request.user = { id: claims.sub, email: claims.email, role: claims.role };
+    return authContext;
+  }
+
+  private contextFromHeaders(headers: Record<string, string | undefined>): AuthContext {
     const userId = headers[AUTH_HEADERS.userId] ?? '';
     const rawRole = headers[AUTH_HEADERS.role] ?? '';
 
@@ -67,18 +154,11 @@ export class AuthGuard implements CanActivate {
       authContext.parcours = parcours;
     }
 
-    const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-
-    if (requiredRoles && requiredRoles.length > 0 && !requiredRoles.includes(role)) {
-      throw new ForbiddenException(
-        `Le rôle ${role} n'est pas autorisé pour cette opération`,
-      );
+    const mentionId = (headers[AUTH_HEADERS.mentionId] ?? '').trim();
+    if (mentionId) {
+      authContext.mentionId = mentionId;
     }
 
-    request.authContext = authContext;
-    return true;
+    return authContext;
   }
 }

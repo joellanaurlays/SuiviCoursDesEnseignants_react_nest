@@ -20,7 +20,7 @@ import {
   EnseignementEntity,
   SalleEntity
 } from '../types/schedule';
-import { ApiClient } from '../services/apiClient';
+import { ApiClient } from '../services/apiClient.ts';
 
 interface ConstraintsManagementViewProps {
   constraints: ContraintePlanificationEntity[];

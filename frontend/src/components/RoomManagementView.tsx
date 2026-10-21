@@ -27,7 +27,7 @@ import {
   SalleEntity,
   SeancePlanifieeEntity
 } from '../types/schedule';
-import { ApiClient } from '../services/apiClient';
+import { ApiClient } from '../services/apiClient.ts';
 
 interface RoomManagementViewProps {
   rooms: SalleEntity[];

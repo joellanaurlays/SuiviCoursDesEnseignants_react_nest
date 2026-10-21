@@ -23,10 +23,16 @@ export class AuthService {
       throw new UnauthorizedException('Identifiants incorrects.');
     }
 
+    // Les claims portent le rôle (RoleName Prisma) et le périmètre
+    // responsable de mention pour que le guard reconstruise l'AuthContext
+    // sans interpeller la base.
     const payload = {
       sub: user.id,
       email: user.email,
       role: user.role.name,
+      mentionId: user.mentionId ?? undefined,
+      cycles: user.cycles ?? [],
+      parcours: user.parcours ?? undefined,
     };
 
     return {
@@ -36,6 +42,7 @@ export class AuthService {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        phone: user.phone,
         role: user.role.name,
       },
     };
