@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { fetchProfile, loginRequest, logoutRequest } from '../services/authApi.js'
-import { SESSION_EXPIRED_EVENT, TOKEN_KEY } from '../services/apiClient.js'
+import { SESSION_EXPIRED_EVENT, TOKEN_KEY } from '../services/sessionApi.js'
 
 const AuthContext = createContext(null)
 

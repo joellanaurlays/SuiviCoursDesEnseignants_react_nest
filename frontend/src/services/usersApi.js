@@ -1,4 +1,4 @@
-import { apiFetch } from './apiClient.js'
+import { apiFetch } from './sessionApi.js'
 
 export function updateProfile(payload) {
   return apiFetch('/users/me', { method: 'PATCH', body: payload })
