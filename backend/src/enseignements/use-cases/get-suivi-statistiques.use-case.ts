@@ -1,10 +1,10 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
-import { AuthContext } from '../../auth/auth-context';
-import { PermissionsService } from '../permissions/permissions.service';
-import { PrismaService } from '../../prisma/prisma.service';
-import { calculerSuivi, EtatEnseignement, TypeCloture } from '../domain/calcul-suivi';
-import { construireWhereSuivi } from '../domain/filtres-suivi';
-import { SuiviQueryDto } from '../dto/suivi-query.dto';
+import { AuthContext } from '../../auth/auth-context.js';
+import { PermissionsService } from '../permissions/permissions.service.js';
+import { PrismaService } from '../../prisma/prisma.service.js';
+import { calculerSuivi, EtatEnseignement, TypeCloture } from '../domain/calcul-suivi.js';
+import { construireWhereSuivi } from '../domain/filtres-suivi.js';
+import { SuiviQueryDto } from '../dto/suivi-query.dto.js';
 
 /** Agrégats de suivi calculés sur les données réelles du périmètre de l'utilisateur. */
 export interface SuiviStatistiques {

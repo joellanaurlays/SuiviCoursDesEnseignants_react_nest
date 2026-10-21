@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from '../../prisma/prisma.service';
-import { calculerSuivi } from '../domain/calcul-suivi';
+import { PrismaService } from '../../prisma/prisma.service.js';
+import { calculerSuivi } from '../domain/calcul-suivi.js';
 
 /**
  * Met à jour les colonnes agrégées d'un enseignement (heuresRealisees,

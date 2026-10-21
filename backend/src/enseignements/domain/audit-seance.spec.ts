@@ -2,7 +2,7 @@ import {
   ActionAuditSeance,
   champsModifies,
   instantaneSeance,
-} from './audit-seance';
+} from './audit-seance.js';
 
 describe('audit-seance — domaine', () => {
   it('instantaneSeance normalise la date en ISO et conserve les champs métier', () => {

@@ -1,10 +1,10 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { SuiviQueryDto } from '../dto/suivi-query.dto';
-import { AuthContext } from '../../auth/auth-context';
-import { PermissionsService } from '../permissions/permissions.service';
-import { construireSuivi, SuiviEnseignement } from '../domain/construire-suivi';
-import { construireWhereSuivi } from '../domain/filtres-suivi';
+import { PrismaService } from '../../prisma/prisma.service.js';
+import { SuiviQueryDto } from '../dto/suivi-query.dto.js';
+import { AuthContext } from '../../auth/auth-context.js';
+import { PermissionsService } from '../permissions/permissions.service.js';
+import { construireSuivi, SuiviEnseignement } from '../domain/construire-suivi.js';
+import { construireWhereSuivi } from '../domain/filtres-suivi.js';
 
 const includeSuivi = { seances: true } as const;
 

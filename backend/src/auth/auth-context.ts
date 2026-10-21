@@ -1,4 +1,4 @@
-import { Role } from './roles.enum';
+import { Role } from './roles.enum.js';
 
 export interface AuthContext {
   userId: string;

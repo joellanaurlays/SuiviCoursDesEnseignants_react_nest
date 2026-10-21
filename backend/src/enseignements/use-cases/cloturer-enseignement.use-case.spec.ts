@@ -5,14 +5,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { validateSync } from 'class-validator';
-import { PrismaService } from '../../prisma/prisma.service';
-import { PermissionsService } from '../permissions/permissions.service';
-import { CloturerEnseignementDto } from '../dto/cloturer-enseignement.dto';
-import { CloturerEnseignementUseCase } from './cloturer-enseignement.use-case';
-import { GetClotureEnseignementUseCase } from './get-cloture-enseignement.use-case';
-import { SuiviRecalculService } from '../services/suivi-recalcul.service';
-import { AuthContext } from '../../auth/auth-context';
-import { Role } from '../../auth/roles.enum';
+import { PrismaService } from '../../prisma/prisma.service.js';
+import { PermissionsService } from '../permissions/permissions.service.js';
+import { CloturerEnseignementDto } from '../dto/cloturer-enseignement.dto.js';
+import { CloturerEnseignementUseCase } from './cloturer-enseignement.use-case.js';
+import { GetClotureEnseignementUseCase } from './get-cloture-enseignement.use-case.js';
+import { SuiviRecalculService } from '../services/suivi-recalcul.service.js';
+import { AuthContext } from '../../auth/auth-context.js';
+import { Role } from '../../auth/roles.enum.js';
 
 /* ------------------------------------------------------------------ */
 /* Faux Prisma minimal : seules findUnique (include) et update sont     */

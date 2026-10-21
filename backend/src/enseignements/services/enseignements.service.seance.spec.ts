@@ -1,17 +1,17 @@
 import { vi } from 'vitest';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { EnseignementsService } from './enseignements.service';
-import { PermissionsService } from '../permissions/permissions.service';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CreateSeanceUseCase } from '../use-cases/create-seance.use-case';
-import { GetSuiviUseCase } from '../use-cases/get-suivi.use-case';
-import { UpdateSeanceStatusUseCase } from '../use-cases/update-seance-status.use-case';
-import { GetTeacherDashboardUseCase } from '../use-cases/get-teacher-dashboard.use-case';
-import { SuiviRecalculService } from './suivi-recalcul.service';
-import { AuditSeanceService } from './audit-seance.service';
-import { StatutSeance } from '../domain/calcul-suivi';
-import { AuthContext } from '../../auth/auth-context';
-import { Role } from '../../auth/roles.enum';
+import { EnseignementsService } from './enseignements.service.js';
+import { PermissionsService } from '../permissions/permissions.service.js';
+import { PrismaService } from '../../prisma/prisma.service.js';
+import { CreateSeanceUseCase } from '../use-cases/create-seance.use-case.js';
+import { GetSuiviUseCase } from '../use-cases/get-suivi.use-case.js';
+import { UpdateSeanceStatusUseCase } from '../use-cases/update-seance-status.use-case.js';
+import { GetTeacherDashboardUseCase } from '../use-cases/get-teacher-dashboard.use-case.js';
+import { SuiviRecalculService } from './suivi-recalcul.service.js';
+import { AuditSeanceService } from './audit-seance.service.js';
+import { StatutSeance } from '../domain/calcul-suivi.js';
+import { AuthContext } from '../../auth/auth-context.js';
+import { Role } from '../../auth/roles.enum.js';
 
 function seancePlanifiee(enseignantId: string) {
   return {

@@ -1,5 +1,5 @@
 import { IsString, IsNumber, IsDateString, IsOptional, IsEnum, Min, Matches } from 'class-validator';
-import { StatutSeance } from '../domain/calcul-suivi';
+import { StatutSeance } from '../domain/calcul-suivi.js';
 
 // StatutSeance est défini dans le domaine (source de vérité unique).
 export { StatutSeance };

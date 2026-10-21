@@ -1,11 +1,11 @@
 import { vi, type Mock } from 'vitest';
-import { GetSuiviStatistiquesUseCase } from './get-suivi-statistiques.use-case';
-import { PermissionsService } from '../permissions/permissions.service';
-import { PrismaService } from '../../prisma/prisma.service';
-import { AuthContext } from '../../auth/auth-context';
-import { Role } from '../../auth/roles.enum';
-import { StatutSeance } from '../domain/calcul-suivi';
-import { SuiviQueryDto } from '../dto/suivi-query.dto';
+import { GetSuiviStatistiquesUseCase } from './get-suivi-statistiques.use-case.js';
+import { PermissionsService } from '../permissions/permissions.service.js';
+import { PrismaService } from '../../prisma/prisma.service.js';
+import { AuthContext } from '../../auth/auth-context.js';
+import { Role } from '../../auth/roles.enum.js';
+import { StatutSeance } from '../domain/calcul-suivi.js';
+import { SuiviQueryDto } from '../dto/suivi-query.dto.js';
 
 /**
  * Jeu de données en mémoire : il reproduit ce qu'un vrai `findMany` renverrait

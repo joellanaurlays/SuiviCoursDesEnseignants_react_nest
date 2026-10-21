@@ -1,5 +1,5 @@
 import { IsEnum, IsOptional, IsString } from 'class-validator';
-import { EtatEnseignement, FiltreCloture } from '../domain/calcul-suivi';
+import { EtatEnseignement, FiltreCloture } from '../domain/calcul-suivi.js';
 
 /**
  * Filtres du module "suivi des enseignements".

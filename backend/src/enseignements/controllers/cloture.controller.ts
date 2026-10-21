@@ -1,12 +1,12 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
-import { Roles } from '../../auth/roles.decorator';
-import { CurrentUser } from '../../auth/current-user.decorator';
-import { AuthContext } from '../../auth/auth-context';
-import { Role } from '../../auth/roles.enum';
-import { CloturerEnseignementDto } from '../dto/cloturer-enseignement.dto';
-import { CloturerEnseignementUseCase } from '../use-cases/cloturer-enseignement.use-case';
-import { GetClotureEnseignementUseCase } from '../use-cases/get-cloture-enseignement.use-case';
-import { AuthGuard } from '../../auth/auth.guard';
+import { Roles } from '../../auth/roles.decorator.js';
+import { CurrentUser } from '../../auth/current-user.decorator.js';
+import { AuthContext } from '../../auth/auth-context.js';
+import { Role } from '../../auth/roles.enum.js';
+import { CloturerEnseignementDto } from '../dto/cloturer-enseignement.dto.js';
+import { CloturerEnseignementUseCase } from '../use-cases/cloturer-enseignement.use-case.js';
+import { GetClotureEnseignementUseCase } from '../use-cases/get-cloture-enseignement.use-case.js';
+import { AuthGuard } from '../../auth/auth.guard.js';
 
 /**
  * Clôture anticipée d'un enseignement.

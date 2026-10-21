@@ -1,9 +1,9 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { calculerSuivi, StatutSeance, TypeCloture } from '../domain/calcul-suivi';
-import { AuthContext } from '../../auth/auth-context';
-import { Role } from '../../auth/roles.enum';
-import { PermissionsService } from '../permissions/permissions.service';
+import { PrismaService } from '../../prisma/prisma.service.js';
+import { calculerSuivi, StatutSeance, TypeCloture } from '../domain/calcul-suivi.js';
+import { AuthContext } from '../../auth/auth-context.js';
+import { Role } from '../../auth/roles.enum.js';
+import { PermissionsService } from '../permissions/permissions.service.js';
 
 export interface DashboardResponse {
   stats: {

@@ -31,7 +31,7 @@ export class ExamsService {
   findExamens(sessionId?: string) {
     return this.examens.find({
       where: sessionId ? { sessionId } : {},
-      relations: ['session'],
+      relations: { session: true },
       order: { dateExamen: 'ASC' },
     });
   }
@@ -58,7 +58,7 @@ export class ExamsService {
   findAlertes(nonLues = false) {
     return this.alertes.find({
       where: nonLues ? { estLue: false } : {},
-      relations: ['examen'],
+      relations: { examen: true },
       order: { createdAt: 'DESC' },
     });
   }

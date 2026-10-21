@@ -5,13 +5,13 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CloturerEnseignementDto } from '../dto/cloturer-enseignement.dto';
-import { AuthContext } from '../../auth/auth-context';
-import { PermissionsService } from '../permissions/permissions.service';
-import { SuiviRecalculService } from '../services/suivi-recalcul.service';
-import { construireSuivi, EnseignementSuiviLigne } from '../domain/construire-suivi';
-import { calculerSuivi, EtatEnseignement } from '../domain/calcul-suivi';
+import { PrismaService } from '../../prisma/prisma.service.js';
+import { CloturerEnseignementDto } from '../dto/cloturer-enseignement.dto.js';
+import { AuthContext } from '../../auth/auth-context.js';
+import { PermissionsService } from '../permissions/permissions.service.js';
+import { SuiviRecalculService } from '../services/suivi-recalcul.service.js';
+import { construireSuivi, EnseignementSuiviLigne } from '../domain/construire-suivi.js';
+import { calculerSuivi, EtatEnseignement } from '../domain/calcul-suivi.js';
 
 const includeSuivi = { seances: true } as const;
 

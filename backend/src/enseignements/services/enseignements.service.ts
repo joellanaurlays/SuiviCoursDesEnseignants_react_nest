@@ -1,25 +1,25 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CreateEnseignementDto } from '../dto/create-enseignement.dto';
-import { UpdateEnseignementDto } from '../dto/update-enseignement.dto';
-import { CreateSeanceDto } from '../dto/create-seance.dto';
-import { UpdateSeanceDto } from '../dto/update-seance.dto';
-import { SuiviQueryDto } from '../dto/suivi-query.dto';
-import { CreateSeanceUseCase } from '../use-cases/create-seance.use-case';
-import { GetSuiviUseCase } from '../use-cases/get-suivi.use-case';
+import { PrismaService } from '../../prisma/prisma.service.js';
+import { CreateEnseignementDto } from '../dto/create-enseignement.dto.js';
+import { UpdateEnseignementDto } from '../dto/update-enseignement.dto.js';
+import { CreateSeanceDto } from '../dto/create-seance.dto.js';
+import { UpdateSeanceDto } from '../dto/update-seance.dto.js';
+import { SuiviQueryDto } from '../dto/suivi-query.dto.js';
+import { CreateSeanceUseCase } from '../use-cases/create-seance.use-case.js';
+import { GetSuiviUseCase } from '../use-cases/get-suivi.use-case.js';
 import {
   UpdateSeanceStatusUseCase,
   RealisationSeanceOptions,
-} from '../use-cases/update-seance-status.use-case';
-import { GetTeacherDashboardUseCase } from '../use-cases/get-teacher-dashboard.use-case';
-import { SuiviRecalculService } from './suivi-recalcul.service';
-import { AuditSeanceService, FiltresJournalAudit } from './audit-seance.service';
-import { calculerDureeSeance, StatutSeance } from '../domain/calcul-suivi';
-import { ActionAuditSeance, champsModifies, instantaneSeance } from '../domain/audit-seance';
-import { construireSuivi } from '../domain/construire-suivi';
-import { AuthContext } from '../../auth/auth-context';
-import { PermissionsService } from '../permissions/permissions.service';
+} from '../use-cases/update-seance-status.use-case.js';
+import { GetTeacherDashboardUseCase } from '../use-cases/get-teacher-dashboard.use-case.js';
+import { SuiviRecalculService } from './suivi-recalcul.service.js';
+import { AuditSeanceService, FiltresJournalAudit } from './audit-seance.service.js';
+import { calculerDureeSeance, StatutSeance } from '../domain/calcul-suivi.js';
+import { ActionAuditSeance, champsModifies, instantaneSeance } from '../domain/audit-seance.js';
+import { construireSuivi } from '../domain/construire-suivi.js';
+import { AuthContext } from '../../auth/auth-context.js';
+import { PermissionsService } from '../permissions/permissions.service.js';
 
 const includeSuivi = { seances: true } as const;
 

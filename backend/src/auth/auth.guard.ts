@@ -6,9 +6,9 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { AuthContext, AUTH_HEADERS } from './auth-context';
-import { Role } from './roles.enum';
-import { ROLES_KEY } from './roles.decorator';
+import { AuthContext, AUTH_HEADERS } from './auth-context.js';
+import { Role } from './roles.enum.js';
+import { ROLES_KEY } from './roles.decorator.js';
 
 /**
  * Construit le contexte utilisateur à partir des headers d'identité

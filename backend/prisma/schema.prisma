@@ -1,10 +1,10 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum RoleName {
@@ -40,4 +40,97 @@ model User {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("users")
+}
+
+enum Cycle {
+  LICENCE
+  MASTER
+}
+
+enum EtatEnseignement {
+  NON_COMMENCE
+  EN_COURS
+  TERMINE
+}
+
+enum StatutSeance {
+  PLANIFIEE
+  REALISEE
+  ANNULEE
+}
+
+enum ActionAuditSeance {
+  CREATION
+  DECLARATION_REALISEE
+  REALISATION
+  ANNULATION
+  MODIFICATION
+  CORRECTION
+  SUPPRESSION
+}
+
+model Enseignement {
+  id                  String           @id @default(cuid())
+  matiereId           String
+  enseignantId        String
+  mentionId           String
+  cycle               Cycle
+  niveauId            String
+  parcours            String
+  semestreId          String
+  anneeUniversitaireId String
+  volumePrevu         Int
+  heuresRealisees     Float            @default(0)
+  progression         Float            @default(0)
+  etat                EtatEnseignement @default(NON_COMMENCE)
+  clotureAnticipee    Boolean          @default(false)
+  motifCloture        String?
+  dateCloture         DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  seances             Seance[]
+
+  @@index([enseignantId])
+  @@index([mentionId, cycle])
+  @@index([clotureAnticipee])
+}
+
+model Seance {
+  id              String       @id @default(cuid())
+  enseignementId  String
+  dateSeance      DateTime
+  heureDebut      String
+  heureFin        String
+  duree           Float
+  contenuEnseigne String?
+  statut          StatutSeance @default(PLANIFIEE)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  enseignement   Enseignement @relation(fields: [enseignementId], references: [id])
+
+  @@index([enseignementId, dateSeance])
+}
+
+model JournalAuditSeance {
+  id             String           @id @default(cuid())
+  seanceId       String
+  enseignementId String
+  utilisateurId  String
+  action         ActionAuditSeance
+  motif          String?
+  statutAvant    StatutSeance?
+  statutApres    StatutSeance?
+  valeursAvant   Json?
+  valeursApres   Json?
+  enseignantId   String
+  mentionId      String
+  cycle          Cycle
+  parcours       String
+  createdAt      DateTime         @default(now())
+
+  @@index([seanceId])
+  @@index([enseignementId])
+  @@index([utilisateurId])
+  @@index([enseignantId])
+  @@index([createdAt])
 }

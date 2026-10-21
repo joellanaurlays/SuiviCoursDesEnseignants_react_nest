@@ -4,7 +4,7 @@ import {
   calculerSuivi,
   EtatEnseignement,
   TypeCloture,
-} from './calcul-suivi';
+} from './calcul-suivi.js';
 
 /** Colonnes d'enseignement nécessaires au calcul du suivi. */
 export const seanceCalculSelect = {

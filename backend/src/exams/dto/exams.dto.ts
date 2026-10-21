@@ -18,11 +18,11 @@ export class CreateExamenDto {
   @IsOptional() @IsString() heureDebut?: string;
   @IsOptional() @IsString() heureFin?: string;
   @IsOptional() @IsString() salle?: string;
-  @IsOptional() @IsIn(['A_VENIR', 'EN_COURS', 'TERMINE']) statut?: string;
+  @IsOptional() @IsIn(['A_VENIR', 'EN_COURS', 'TERMINE']) statut?: 'A_VENIR' | 'EN_COURS' | 'TERMINE';
 }
 
 export class UpdateStatutDto {
-  @IsIn(['A_VENIR', 'EN_COURS', 'TERMINE']) statut: string;
+  @IsIn(['A_VENIR', 'EN_COURS', 'TERMINE']) statut: 'A_VENIR' | 'EN_COURS' | 'TERMINE';
 }
 
 export class CreateAlerteDto {

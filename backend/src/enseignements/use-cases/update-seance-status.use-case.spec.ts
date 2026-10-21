@@ -1,13 +1,13 @@
 import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { PermissionsService } from '../permissions/permissions.service';
-import { SuiviRecalculService } from '../services/suivi-recalcul.service';
-import { AuditSeanceService, EntreeAudit } from '../services/audit-seance.service';
-import { ActionAuditSeance } from '../domain/audit-seance';
-import { UpdateSeanceStatusUseCase } from './update-seance-status.use-case';
-import { StatutSeance } from '../domain/calcul-suivi';
-import { AuthContext } from '../../auth/auth-context';
-import { Role } from '../../auth/roles.enum';
+import { PrismaService } from '../../prisma/prisma.service.js';
+import { PermissionsService } from '../permissions/permissions.service.js';
+import { SuiviRecalculService } from '../services/suivi-recalcul.service.js';
+import { AuditSeanceService, EntreeAudit } from '../services/audit-seance.service.js';
+import { ActionAuditSeance } from '../domain/audit-seance.js';
+import { UpdateSeanceStatusUseCase } from './update-seance-status.use-case.js';
+import { StatutSeance } from '../domain/calcul-suivi.js';
+import { AuthContext } from '../../auth/auth-context.js';
+import { Role } from '../../auth/roles.enum.js';
 
 interface SeanceRow {
   id: string;

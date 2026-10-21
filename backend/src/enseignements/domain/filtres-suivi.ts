@@ -1,6 +1,6 @@
 import { Cycle, Prisma } from '@prisma/client';
-import { FiltreCloture } from './calcul-suivi';
-import { SuiviQueryDto } from '../dto/suivi-query.dto';
+import { FiltreCloture } from './calcul-suivi.js';
+import { SuiviQueryDto } from '../dto/suivi-query.dto.js';
 
 /**
  * Construit la clause WHERE correspondant aux filtres du suivi.
