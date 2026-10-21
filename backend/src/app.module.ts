@@ -1,14 +1,14 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { createObserveModule } from '@nestjs/observe';
-import { AppController } from './app.controller.js';
-import { AppService } from './app.service.js';
+import { AuthGuard } from './auth/auth.guard.js';
+import { EnseignementsModule } from './enseignements/enseignements.module.js';
+import { PrismaModule } from './prisma/prisma.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
 @Module({
   imports: [PrismaModule, EnseignementsModule],
-  controllers: [],
   providers: [
     {
       provide: APP_GUARD,
