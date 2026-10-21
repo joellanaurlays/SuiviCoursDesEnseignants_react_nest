@@ -6,6 +6,9 @@ dist/
 build/
 .next/
 
+# TypeScript incremental build artifacts
+*.tsbuildinfo
+
 # Environment
 .env
 .env.local
@@ -26,6 +29,15 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Local database artifacts
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Prisma generated client (regenerated via `prisma generate`)
+backend/src/generated/
 
 # Coverage
 coverage/

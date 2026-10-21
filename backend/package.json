@@ -22,8 +22,7 @@
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
-    "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
-    "postinstall": "prisma generate && (prisma skills sync || exit 0)"
+    "test:e2e": "vitest run --config ./vitest.config.e2e.ts"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",
@@ -33,15 +32,6 @@
     "@nestjs/observe": "^0.1.8",
     "@nestjs/passport": "^12.0.0",
     "@nestjs/platform-express": "^12.0.1",
-    "@nestjs/swagger": "^12.0.1",
-    "@prisma/adapter-pg": "^7.10.0",
-    "@prisma/client": "7.10.0",
-    "bcrypt": "^6.0.0",
-    "class-transformer": "^0.5.1",
-    "class-validator": "^0.15.1",
-    "passport": "^0.7.0",
-    "passport-jwt": "^4.0.1",
-    "pg": "^8.23.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "typeorm": "^1.1.2"
@@ -61,7 +51,6 @@
     "dotenv": "^18.0.1",
     "oxlint": "^1.58.0",
     "prettier": "^3.4.2",
-    "prisma": "7.10.0",
     "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",
     "tsx": "^4.23.14",
