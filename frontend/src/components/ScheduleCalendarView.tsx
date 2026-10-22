@@ -220,6 +220,9 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = ({
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
             <input
+              id="planning-search"
+              name="recherche"
+              aria-label="Rechercher une matière ou un enseignant"
               type="text"
               placeholder="Rechercher matière, prof..."
               value={searchQuery}
@@ -230,8 +233,10 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = ({
 
           {/* Mention Filter */}
           <div>
-            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Mention</label>
+            <label htmlFor="planning-filter-mention" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Mention</label>
             <select
+              id="planning-filter-mention"
+              name="mention"
               value={filterMention}
               onChange={(e) => setFilterMention(e.target.value)}
               className="w-full text-xs py-2 px-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0077B6]/30 font-medium text-slate-700"
@@ -243,8 +248,10 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = ({
 
           {/* Level Filter */}
           <div>
-            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Niveau</label>
+            <label htmlFor="planning-filter-level" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Niveau</label>
             <select
+              id="planning-filter-level"
+              name="niveau"
               value={filterLevel}
               onChange={(e) => setFilterLevel(e.target.value)}
               className="w-full text-xs py-2 px-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0077B6]/30 font-medium text-slate-700"
@@ -256,8 +263,10 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = ({
 
           {/* Teacher Filter */}
           <div>
-            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Enseignant</label>
+            <label htmlFor="planning-filter-teacher" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Enseignant</label>
             <select
+              id="planning-filter-teacher"
+              name="enseignant"
               value={filterTeacher}
               onChange={(e) => setFilterTeacher(e.target.value)}
               className="w-full text-xs py-2 px-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0077B6]/30 font-medium text-slate-700"
@@ -271,8 +280,10 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = ({
 
           {/* Room Filter */}
           <div>
-            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Salle</label>
+            <label htmlFor="planning-filter-room" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Salle</label>
             <select
+              id="planning-filter-room"
+              name="salle"
               value={filterRoom}
               onChange={(e) => setFilterRoom(e.target.value)}
               className="w-full text-xs py-2 px-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0077B6]/30 font-medium text-slate-700"
@@ -286,8 +297,10 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = ({
 
           {/* Status Filter */}
           <div>
-            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Statut</label>
+            <label htmlFor="planning-filter-status" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Statut</label>
             <select
+              id="planning-filter-status"
+              name="statut"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
               className="w-full text-xs py-2 px-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0077B6]/30 font-medium text-slate-700"

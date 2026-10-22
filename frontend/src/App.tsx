@@ -6,6 +6,7 @@ import UsersListPage from './pages/UsersListPage.jsx';
 import UserFormPage from './pages/UserFormPage.jsx';
 import ExamsModuleFixed from './exams/ExamsModuleFixed.jsx';
 import PlanningWorkspace from './components/PlanningWorkspace';
+import RoleHomeRedirect from './routing/RoleHomeRedirect.jsx';
 
 // Pont identité JWT -> en-têtes x-user-* pour le module suivi (Membres 2/4).
 import { AuthProvider as SuiviAuthProvider } from './auth/AuthContext';
@@ -45,19 +46,19 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
 
-        {/* L'espace du membre 5 est la page d'accueil après authentification. */}
+        {/* Une seule règle choisit le tableau de bord selon le rôle connecté. */}
+        <Route path="/" element={<RoleHomeRedirect />} />
+        <Route path="/dashboard" element={<RoleHomeRedirect />} />
+
+        {/* Espace membre 5, disponible à cette URL pour tous les comptes connectés. */}
         <Route
-          path="/"
+          path="/planning"
           element={
             <ProtectedRoute>
               <PlanningWorkspace />
             </ProtectedRoute>
           }
         />
-
-        {/* Ancienne page dashboard conservée en commentaire pendant l'aperçu M5 :
-            <Route path="/dashboard" element={<DashboardPlaceholder />} /> */}
-        <Route path="/dashboard" element={<Navigate to="/" replace />} />
 
         <Route
           path="/users"
@@ -340,9 +341,7 @@ export default function App() {
           }
         />
 
-        {/* Ancienne redirection des routes inconnues vers le dashboard :
-            <Route path="*" element={<Navigate to="/dashboard" replace />} /> */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<RoleHomeRedirect />} />
       </Routes>
     </SuiviAuthProvider>
   );

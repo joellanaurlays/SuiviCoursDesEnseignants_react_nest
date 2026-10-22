@@ -221,6 +221,9 @@ export const RoomManagementView: React.FC<RoomManagementViewProps> = ({
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
               <input
+                id="room-search"
+                name="rechercheSalle"
+                aria-label="Rechercher une salle ou un bâtiment"
                 type="text"
                 placeholder="Rechercher salle, bâtiment..."
                 value={searchTerm}
@@ -231,6 +234,8 @@ export const RoomManagementView: React.FC<RoomManagementViewProps> = ({
 
             <div>
               <select
+                id="room-filter-type"
+                name="typeSalle"
                 aria-label="Filtrer par type de salle"
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
@@ -246,6 +251,8 @@ export const RoomManagementView: React.FC<RoomManagementViewProps> = ({
 
             <div>
               <select
+                id="room-filter-status"
+                name="statutSalle"
                 aria-label="Filtrer par statut de salle"
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
@@ -378,12 +385,12 @@ export const RoomManagementView: React.FC<RoomManagementViewProps> = ({
             <div className="overflow-x-auto">
               {(currentUser.role === 'CHEF_SCOLARITE' || currentUser.role === 'ADMINISTRATEUR') && (
                 <form onSubmit={handleCreateTimeSlot} className="mb-4 grid grid-cols-2 gap-2 md:grid-cols-5">
-                  <select aria-label="Jour du créneau" value={slotDay} onChange={event => setSlotDay(event.target.value as DayOfWeek)} className="rounded-lg border border-slate-200 px-2 py-2 text-xs">
+                  <select id="slot-day" name="jourSemaine" aria-label="Jour du créneau" value={slotDay} onChange={event => setSlotDay(event.target.value as DayOfWeek)} className="rounded-lg border border-slate-200 px-2 py-2 text-xs">
                     {(['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'] as DayOfWeek[]).map(day => <option key={day}>{day}</option>)}
                   </select>
-                  <input aria-label="Heure de début" type="time" required value={slotStart} onChange={event => setSlotStart(event.target.value)} className="rounded-lg border border-slate-200 px-2 py-2 text-xs" />
-                  <input aria-label="Heure de fin" type="time" required value={slotEnd} onChange={event => setSlotEnd(event.target.value)} className="rounded-lg border border-slate-200 px-2 py-2 text-xs" />
-                  <select aria-label="Période" value={slotPeriod} onChange={event => setSlotPeriod(event.target.value as 'Matin' | 'Apres-midi')} className="rounded-lg border border-slate-200 px-2 py-2 text-xs">
+                  <input id="slot-start" name="heureDebut" aria-label="Heure de début" type="time" required value={slotStart} onChange={event => setSlotStart(event.target.value)} className="rounded-lg border border-slate-200 px-2 py-2 text-xs" />
+                  <input id="slot-end" name="heureFin" aria-label="Heure de fin" type="time" required value={slotEnd} onChange={event => setSlotEnd(event.target.value)} className="rounded-lg border border-slate-200 px-2 py-2 text-xs" />
+                  <select id="slot-period" name="periode" aria-label="Période" value={slotPeriod} onChange={event => setSlotPeriod(event.target.value as 'Matin' | 'Apres-midi')} className="rounded-lg border border-slate-200 px-2 py-2 text-xs">
                     <option>Matin</option><option>Apres-midi</option>
                   </select>
                   <button type="submit" className="rounded-lg bg-[#0077B6] px-3 py-2 text-xs font-bold text-white">Ajouter un créneau</button>
@@ -456,8 +463,10 @@ export const RoomManagementView: React.FC<RoomManagementViewProps> = ({
 
             <form onSubmit={handleSaveRoom} className="py-4 space-y-4 text-xs">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Nom du Local / Salle *</label>
+                <label htmlFor="room-name" className="block text-xs font-bold text-slate-700 mb-1">Nom du Local / Salle *</label>
                 <input
+                  id="room-name"
+                  name="nom"
                   type="text"
                   required
                   placeholder="Ex: Amphithéâtre C, Salle Machine 3..."
@@ -469,8 +478,10 @@ export const RoomManagementView: React.FC<RoomManagementViewProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Capacité (Places assises) *</label>
+                  <label htmlFor="room-capacity" className="block text-xs font-bold text-slate-700 mb-1">Capacité (Places assises) *</label>
                   <input
+                    id="room-capacity"
+                    name="capacite"
                     type="number"
                     min="10"
                     max="500"
@@ -482,8 +493,10 @@ export const RoomManagementView: React.FC<RoomManagementViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Type de Salle *</label>
+                  <label htmlFor="room-type" className="block text-xs font-bold text-slate-700 mb-1">Type de Salle *</label>
                   <select
+                    id="room-type"
+                    name="typeSalle"
                     value={roomType}
                     onChange={(e) => setRoomType(e.target.value as RoomType)}
                     className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0077B6]/30 font-medium"
@@ -498,8 +511,10 @@ export const RoomManagementView: React.FC<RoomManagementViewProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Bâtiment / Emplacement</label>
+                  <label htmlFor="room-building" className="block text-xs font-bold text-slate-700 mb-1">Bâtiment / Emplacement</label>
                   <input
+                    id="room-building"
+                    name="batiment"
                     type="text"
                     value={building}
                     onChange={(e) => setBuilding(e.target.value)}
@@ -508,8 +523,10 @@ export const RoomManagementView: React.FC<RoomManagementViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Statut Initial</label>
+                  <label htmlFor="room-status" className="block text-xs font-bold text-slate-700 mb-1">Statut Initial</label>
                   <select
+                    id="room-status"
+                    name="statut"
                     value={status}
                     onChange={(e) => setStatus(e.target.value as RoomStatus)}
                     className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0077B6]/30 font-medium"
@@ -527,6 +544,8 @@ export const RoomManagementView: React.FC<RoomManagementViewProps> = ({
                   {equipmentOptions.map(eq => (
                     <label key={eq} className="flex items-center space-x-2 text-[11px] text-slate-700 cursor-pointer">
                       <input
+                        id={`room-equipment-${eq.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
+                        name="equipements"
                         type="checkbox"
                         checked={selectedEquipments.includes(eq)}
                         onChange={(e) => {

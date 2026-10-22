@@ -83,7 +83,7 @@ function describeSession(session: UserSession): { name: string; sub: string } {
 }
 
 const WORKSPACE_LINKS: NavItem[] = [
-  { name: 'Emploi du temps', path: '/', icon: CalendarDays },
+  { name: 'Emploi du temps', path: '/planning', icon: CalendarDays },
   { name: 'Examens & notes', path: '/exams', icon: ClipboardList },
   { name: 'Compteurs & rôles', path: '/users', icon: Users },
   { name: 'Mon profil', path: '/profile', icon: UserCircle2 },

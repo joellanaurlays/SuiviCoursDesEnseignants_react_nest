@@ -180,6 +180,8 @@ export const ConstraintsManagementView: React.FC<ConstraintsManagementViewProps>
             <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
               <label className="flex items-center space-x-2 cursor-pointer">
                 <input
+                  id={`constraint-active-${constraint.id}`}
+                  name="active"
                   type="checkbox"
                   checked={constraint.active}
                   onChange={() => handleToggleActive(constraint.id)}
@@ -220,8 +222,10 @@ export const ConstraintsManagementView: React.FC<ConstraintsManagementViewProps>
 
             <form onSubmit={handleAddConstraint} className="py-4 space-y-4 text-xs">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Intitulé de la Contrainte *</label>
+                <label htmlFor="constraint-title" className="block text-xs font-bold text-slate-700 mb-1">Intitulé de la Contrainte *</label>
                 <input
+                  id="constraint-title"
+                  name="titre"
                   type="text"
                   required
                   placeholder="Ex: Indisponibilité du Mercredi après-midi..."
@@ -233,8 +237,10 @@ export const ConstraintsManagementView: React.FC<ConstraintsManagementViewProps>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Type de Cible *</label>
+                  <label htmlFor="constraint-type" className="block text-xs font-bold text-slate-700 mb-1">Type de Cible *</label>
                   <select
+                    id="constraint-type"
+                    name="typeCible"
                     value={type}
                     onChange={(e) => setType(e.target.value as ConstraintTargetType)}
                     className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0077B6]/30 font-medium"
@@ -247,8 +253,10 @@ export const ConstraintsManagementView: React.FC<ConstraintsManagementViewProps>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Niveau de Priorité *</label>
+                  <label htmlFor="constraint-priority" className="block text-xs font-bold text-slate-700 mb-1">Niveau de Priorité *</label>
                   <select
+                    id="constraint-priority"
+                    name="priorite"
                     value={priority}
                     onChange={(e) => setPriority(e.target.value as ConstraintPriority)}
                     className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0077B6]/30 font-medium"
@@ -260,8 +268,10 @@ export const ConstraintsManagementView: React.FC<ConstraintsManagementViewProps>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Entité Concernée (Nom) *</label>
+                <label htmlFor="constraint-target" className="block text-xs font-bold text-slate-700 mb-1">Entité Concernée (Nom) *</label>
                 <input
+                  id="constraint-target"
+                  name="cibleNom"
                   type="text"
                   required
                   placeholder="Ex: Dr. Randria, Amphi A, ou L1 Informatique..."
@@ -272,8 +282,10 @@ export const ConstraintsManagementView: React.FC<ConstraintsManagementViewProps>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Jour concerné par l'indisponibilité</label>
+                <label htmlFor="constraint-day" className="block text-xs font-bold text-slate-700 mb-1">Jour concerné par l'indisponibilité</label>
                 <select
+                  id="constraint-day"
+                  name="jourSemaine"
                   value={day}
                   onChange={(e) => setDay(e.target.value as DayOfWeek)}
                   className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0077B6]/30 font-medium"
@@ -288,8 +300,10 @@ export const ConstraintsManagementView: React.FC<ConstraintsManagementViewProps>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Description / Motif *</label>
+                <label htmlFor="constraint-description" className="block text-xs font-bold text-slate-700 mb-1">Description / Motif *</label>
                 <textarea
+                  id="constraint-description"
+                  name="description"
                   rows={2}
                   required
                   placeholder="Expliquer la contrainte..."

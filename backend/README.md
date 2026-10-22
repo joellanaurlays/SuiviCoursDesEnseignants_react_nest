@@ -169,7 +169,7 @@ yarn install
 npx prisma generate
 yarn start:dev
 ```
-En développement, `yarn start:dev` synchronise le schéma Prisma avec la base avant de lancer NestJS. Cela fonctionne aussi sur la base locale déjà existante, sans exiger un historique Prisma préalable. Pour créer les comptes de démonstration, lancez une fois `yarn db:seed`. Le seed réinitialise le mot de passe de ces comptes à `Admin123!`.
+`yarn start:dev` démarre NestJS sans modifier le schéma ni les données existantes. Si le schéma Prisma doit être synchronisé, exécutez explicitement `yarn db:sync` après avoir vérifié les changements proposés par Prisma : cette commande peut supprimer des tables ou des données incompatibles. Pour créer les comptes de démonstration, lancez une fois `yarn db:seed`. Le seed réinitialise le mot de passe de ces comptes à `Admin123!`.
 
 `yarn db:migrate` reste prévu pour les bases dont l'historique Prisma est déjà initialisé. Pour les déploiements et les bases partagées, utilisez les migrations versionnées et effectuez le baselining Prisma requis au préalable.
 

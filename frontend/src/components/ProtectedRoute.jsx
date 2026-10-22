@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
+import { getRoleHomePath } from '../routing/roleRoutes.js'
 
 /**
  * @param {{ children: import('react').ReactNode, allowedRoles?: string[] | null }} props
@@ -16,7 +17,7 @@ function ProtectedRoute({ children, allowedRoles = null }) {
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/" replace />
+    return <Navigate to={getRoleHomePath(user)} replace />
   }
 
   return children
