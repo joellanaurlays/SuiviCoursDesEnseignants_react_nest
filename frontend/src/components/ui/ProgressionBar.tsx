@@ -9,7 +9,7 @@ export function ProgressionBar({ progression, showLabel = false, labelRight = fa
   return (
     <div className="flex items-center gap-3">
       <div className="w-full min-w-16 bg-gray-200 rounded-full h-2 overflow-hidden">
-        <div className="bg-[#00e5ff] h-2 rounded-full" style={{ width: `${clamped}%` }}></div>
+        <div className="bg-[#00B4D8] h-2 rounded-full" style={{ width: `${clamped}%` }}></div>
       </div>
       {showLabel && (
         <span

@@ -20,7 +20,7 @@ import {
 } from '../../../types/enseignement';
 
 function tagClasses(cycle?: string) {
-  return cycle === 'MASTER' ? 'bg-[#0a0a32] text-white' : 'bg-gray-100 text-gray-700';
+  return cycle === 'MASTER' ? 'bg-[#03045E] text-white' : 'bg-gray-100 text-gray-700';
 }
 
 function distinct(options: string[]): { value: string; label: string }[] {
@@ -141,7 +141,7 @@ export default function EnseignantEnseignementsPage() {
     <Layout>
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-6 border-b pb-4">
-          <h1 className="text-3xl font-bold text-[#0a0a32]">Mes enseignements</h1>
+          <h1 className="text-3xl font-bold text-[#03045E]">Mes enseignements</h1>
           <span className="text-sm text-gray-500">
             {enseignements.length} affiché(s) sur {fullData.length}
           </span>
@@ -183,7 +183,7 @@ export default function EnseignantEnseignementsPage() {
                   >
                     <div className="flex justify-between items-start mb-4">
                       <div>
-                        <h2 className="text-xl font-bold text-[#0a0a32]">{ens.matiere}</h2>
+                        <h2 className="text-xl font-bold text-[#03045E]">{ens.matiere}</h2>
                         <p className="text-sm text-gray-500 mt-1">
                           {ens.mention} · {ens.parcours}
                         </p>
@@ -209,15 +209,15 @@ export default function EnseignantEnseignementsPage() {
                     <div className="grid grid-cols-3 gap-4 mb-6 text-center">
                       <div>
                         <p className="text-xs text-gray-500">Prévu</p>
-                        <p className="font-bold text-[#0a0a32]">{ens.volumePrevu}h</p>
+                        <p className="font-bold text-[#03045E]">{ens.volumePrevu}h</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500">Réalisé</p>
-                        <p className="font-bold text-[#0088aa]">{ens.heuresRealisees}h</p>
+                        <p className="font-bold text-[#0077B6]">{ens.heuresRealisees}h</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500">Reste</p>
-                        <p className="font-bold text-[#0a0a32]">{ens.heuresRestantes}h</p>
+                        <p className="font-bold text-[#03045E]">{ens.heuresRestantes}h</p>
                       </div>
                     </div>
 

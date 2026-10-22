@@ -82,7 +82,7 @@ export function JournalAuditPage({
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8 border-b pb-4">
           <div>
-            <h1 className="text-3xl font-bold text-[#0a0a32]">{title}</h1>
+            <h1 className="text-3xl font-bold text-[#03045E]">{title}</h1>
             {intro && <p className="text-sm text-gray-500 mt-1">{intro}</p>}
           </div>
           <span className="text-sm text-gray-500">{filtered.length} entrée(s)</span>
@@ -104,13 +104,13 @@ export function JournalAuditPage({
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Rechercher un utilisateur, une séance, un motif..."
-                  className="block w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-[#00e5ff] focus:ring-1 focus:ring-[#00e5ff]"
+                  className="block w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-[#00B4D8] focus:ring-1 focus:ring-[#00B4D8]"
                 />
               </div>
               <select
                 value={action}
                 onChange={(e) => setAction(e.target.value)}
-                className="block px-3 py-2 pr-10 text-base border border-gray-300 focus:outline-none focus:ring-[#00e5ff] focus:border-[#00e5ff] sm:text-sm rounded-md bg-white"
+                className="block px-3 py-2 pr-10 text-base border border-gray-300 focus:outline-none focus:ring-[#00B4D8] focus:border-[#00B4D8] sm:text-sm rounded-md bg-white"
               >
                 <option value="">Action : toutes</option>
                 {ACTIONS.map((a) => (
@@ -128,14 +128,14 @@ export function JournalAuditPage({
                 {filtered.map((e) => (
                   <li key={e.id} className="px-6 py-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="font-semibold text-[#0a0a32] text-sm">
+                      <span className="font-semibold text-[#03045E] text-sm">
                         {libelleAction(e.action)}
                       </span>
                       <span className="text-xs text-gray-500">{formatDateTime(e.createdAt)}</span>
                     </div>
                     <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-gray-600">
                       <span>
-                        Par <strong className="text-[#0a0a32]">{e.utilisateurId}</strong>
+                        Par <strong className="text-[#03045E]">{e.utilisateurId}</strong>
                       </span>
                       <span className="text-gray-400">Séance {e.seanceId.slice(0, 8)}</span>
                       <span className="text-gray-400">
@@ -160,7 +160,7 @@ export function JournalAuditPage({
                           <span className="text-gray-400">{ligne.label} :</span>{' '}
                           <span className="text-gray-500 line-through">{ligne.avant}</span>{' '}
                           <span className="text-gray-400">→</span>{' '}
-                          <span className="text-[#0a0a32]">{ligne.apres}</span>
+                          <span className="text-[#03045E]">{ligne.apres}</span>
                         </li>
                       ))}
                     </ul>

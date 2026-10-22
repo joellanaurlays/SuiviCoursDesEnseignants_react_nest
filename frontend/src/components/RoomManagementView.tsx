@@ -409,7 +409,7 @@ export const RoomManagementView: React.FC<RoomManagementViewProps> = ({
                       <td className="py-2.5 px-4 font-mono font-bold text-slate-500">#{slot.id}</td>
                       <td className="py-2.5 px-4 font-bold text-[#03045E]">{slot.jourSemaine}</td>
                       <td className="py-2.5 px-4">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${slot.plage === 'Matin' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}`}>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${slot.plage === 'Matin' ? 'bg-amber-100 text-amber-800' : 'bg-emit-ice text-emit-navy'}`}>
                           {slot.plage}
                         </span>
                       </td>

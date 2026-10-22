@@ -39,8 +39,8 @@ export function HistoriqueSeance({ seanceId, refreshKey = 0 }: HistoriqueSeanceP
   return (
     <div className="border-t border-gray-100 pt-4">
       <div className="flex items-center gap-2 mb-3">
-        <History size={16} className="text-[#0088aa]" />
-        <h3 className="font-semibold text-[#0a0a32] text-sm">Historique des actions</h3>
+        <History size={16} className="text-[#0077B6]" />
+        <h3 className="font-semibold text-[#03045E] text-sm">Historique des actions</h3>
       </div>
 
       {loading ? (
@@ -54,7 +54,7 @@ export function HistoriqueSeance({ seanceId, refreshKey = 0 }: HistoriqueSeanceP
           {entrees.map((entree) => (
             <li key={entree.id} className="border border-gray-100 rounded-lg p-3 bg-gray-50">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-medium text-[#0a0a32] text-sm">
+                <span className="font-medium text-[#03045E] text-sm">
                   {libelleAction(entree.action)}
                 </span>
                 <span className="text-xs text-gray-500">{formatDateTime(entree.createdAt)}</span>
@@ -62,7 +62,7 @@ export function HistoriqueSeance({ seanceId, refreshKey = 0 }: HistoriqueSeanceP
 
               <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-600">
                 <span>
-                  Par <strong className="text-[#0a0a32]">{entree.utilisateurId}</strong>
+                  Par <strong className="text-[#03045E]">{entree.utilisateurId}</strong>
                 </span>
                 {(entree.statutAvant || entree.statutApres) && (
                   <span className="inline-flex items-center gap-1">
@@ -86,7 +86,7 @@ export function HistoriqueSeance({ seanceId, refreshKey = 0 }: HistoriqueSeanceP
                       <span className="text-gray-400">{ligne.label} :</span>{' '}
                       <span className="text-gray-500 line-through">{ligne.avant}</span>{' '}
                       <span className="text-gray-400">→</span>{' '}
-                      <span className="text-[#0a0a32]">{ligne.apres}</span>
+                      <span className="text-[#03045E]">{ligne.apres}</span>
                     </li>
                   ))}
                 </ul>

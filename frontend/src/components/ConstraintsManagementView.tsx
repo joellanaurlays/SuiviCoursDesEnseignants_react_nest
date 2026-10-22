@@ -103,7 +103,7 @@ export const ConstraintsManagementView: React.FC<ConstraintsManagementViewProps>
       case 'SALLE':
         return <Building className="w-4 h-4 text-[#00B4D8]" />;
       case 'NIVEAU':
-        return <Calendar className="w-4 h-4 text-indigo-600" />;
+        return <Calendar className="w-4 h-4 text-emit-blue" />;
       case 'GLOBAL':
         return <Lock className="w-4 h-4 text-[#03045E]" />;
     }

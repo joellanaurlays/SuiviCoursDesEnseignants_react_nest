@@ -62,7 +62,7 @@ export function ClotureModal({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-[#0a0a32]/50" onClick={submitting ? undefined : onCancel} />
+            <div className="absolute inset-0 bg-[#03045E]/50" onClick={submitting ? undefined : onCancel} />
 
             <div
                 role="dialog"
@@ -71,7 +71,7 @@ export function ClotureModal({
                 className="relative w-full max-w-lg bg-white rounded-xl border border-gray-200 shadow-xl"
             >
                 <div className="flex items-start justify-between px-6 py-5 border-b border-gray-100">
-                    <h2 id="cloture-titre" className="text-xl font-bold text-[#0a0a32]">
+                    <h2 id="cloture-titre" className="text-xl font-bold text-[#03045E]">
                         Clôture anticipée de l'enseignement
                     </h2>
                     <button
@@ -85,8 +85,8 @@ export function ClotureModal({
                 </div>
 
                 <div className="px-6 py-5 space-y-4">
-                    <div className="bg-cyan-50 border border-cyan-200 rounded-lg px-4 py-3">
-                        <p className="font-medium text-[#0a0a32]">{matiere}</p>
+                    <div className="bg-emit-ice border border-emit-sky rounded-lg px-4 py-3">
+                        <p className="font-medium text-[#03045E]">{matiere}</p>
                         <p className="text-sm text-gray-600 mt-1">
                             {heuresRealisees}h réalisées sur {volumePrevu}h prévues — la progression reste à{' '}
                             <span className="font-semibold">{progression}%</span> et ne sera pas modifiée.
@@ -112,7 +112,7 @@ export function ClotureModal({
                             rows={4}
                             autoFocus
                             placeholder="Le contenu prévu dans le programme a été entièrement traité."
-                            className="block w-full px-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-[#00e5ff] focus:border-[#00e5ff] sm:text-sm rounded-md"
+                            className="block w-full px-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-[#00B4D8] focus:border-[#00B4D8] sm:text-sm rounded-md"
                         />
                         <p className="text-xs text-gray-500 mt-1">
                             {motifValide
@@ -135,7 +135,7 @@ export function ClotureModal({
                     <button
                         onClick={handleConfirm}
                         disabled={!motifValide || submitting}
-                        className="px-4 py-2 bg-[#0088aa] text-white rounded-md text-sm font-medium hover:bg-[#007799] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 py-2 bg-[#0077B6] text-white rounded-md text-sm font-medium hover:bg-[#03045E] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {submitting ? 'Clôture en cours...' : 'Confirmer la clôture'}
                     </button>

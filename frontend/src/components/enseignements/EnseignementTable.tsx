@@ -50,7 +50,7 @@ export function EnseignementTable({
               <td className="px-4 py-4 text-gray-600">{ens.semestre}</td>
               <td className="px-4 py-4 text-gray-600">{ens.anneeUniversitaire}</td>
               <td className="px-4 py-4 text-right text-gray-700">{ens.volumePrevu}h</td>
-              <td className="px-4 py-4 text-right font-medium text-[#0088aa]">{ens.heuresRealisees}h</td>
+              <td className="px-4 py-4 text-right font-medium text-[#0077B6]">{ens.heuresRealisees}h</td>
               <td className="px-4 py-4 text-right text-gray-600">{ens.heuresRestantes}h</td>
               <td className="px-4 py-4 w-40">
                 <ProgressionBar progression={ens.progression} showLabel />
@@ -65,7 +65,7 @@ export function EnseignementTable({
               <td className="px-4 py-4">
                 <Link
                   to={`${detailBasePath}/${ens.id}`}
-                  className="text-[#0088aa] hover:text-[#006688] hover:underline font-medium"
+                  className="text-[#0077B6] hover:text-[#0077B6] hover:underline font-medium"
                 >
                   Détail
                 </Link>

@@ -64,15 +64,15 @@ export default function EnseignantSeancesPage() {
   }, [seances, matiere, statut, search]);
 
   const selectClass =
-    'block px-3 py-2 pr-10 text-base border border-gray-300 focus:outline-none focus:ring-[#00e5ff] focus:border-[#00e5ff] sm:text-sm rounded-md bg-white';
+    'block px-3 py-2 pr-10 text-base border border-gray-300 focus:outline-none focus:ring-[#00B4D8] focus:border-[#00B4D8] sm:text-sm rounded-md bg-white';
 
   return (
     <Layout>
       <div className="flex justify-between items-center mb-8 border-b pb-4">
-        <h1 className="text-2xl font-bold text-[#0a0a32]">Mes séances</h1>
+        <h1 className="text-2xl font-bold text-[#03045E]">Mes séances</h1>
         <button
           onClick={() => navigate('/enseignant/seances/nouveau')}
-          className="bg-[#0088aa] text-white px-4 py-2 rounded-md flex items-center space-x-2 text-sm hover:bg-[#007799] transition-colors font-medium"
+          className="bg-[#0077B6] text-white px-4 py-2 rounded-md flex items-center space-x-2 text-sm hover:bg-[#03045E] transition-colors font-medium"
         >
           <Plus size={16} />
           <span>Déclarer une séance</span>
@@ -95,7 +95,7 @@ export default function EnseignantSeancesPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Rechercher une matière, un contenu..."
-                className="block w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-[#00e5ff] focus:ring-1 focus:ring-[#00e5ff]"
+                className="block w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-[#00B4D8] focus:ring-1 focus:ring-[#00B4D8]"
               />
             </div>
             <select value={matiere} onChange={(e) => setMatiere(e.target.value)} className={selectClass}>

@@ -21,18 +21,18 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex justify-between border-b border-gray-100 pb-2">
       <span className="text-gray-500">{label}</span>
-      <span className="font-bold text-[#0a0a32] text-right">{value}</span>
+      <span className="font-bold text-[#03045E] text-right">{value}</span>
     </div>
   );
 }
 
 function StatBlock({ label, value, accent }: { label: string; value: React.ReactNode; accent?: boolean }) {
   return (
-    <div className={`p-4 rounded-lg border ${accent ? 'bg-cyan-50 border-cyan-200' : 'bg-gray-50 border-gray-100'}`}>
-      <p className={`text-xs uppercase tracking-wider font-semibold ${accent ? 'text-cyan-700' : 'text-gray-500'}`}>
+    <div className={`p-4 rounded-lg border ${accent ? 'bg-emit-ice border-emit-sky' : 'bg-gray-50 border-gray-100'}`}>
+      <p className={`text-xs uppercase tracking-wider font-semibold ${accent ? 'text-emit-navy' : 'text-gray-500'}`}>
         {label}
       </p>
-      <p className="font-bold text-2xl mt-1 text-[#0a0a32]">{value}</p>
+      <p className="font-bold text-2xl mt-1 text-[#03045E]">{value}</p>
     </div>
   );
 }
@@ -43,12 +43,12 @@ export function SuiviDetailView({ enseignement, seances, backLabel, backLink, ac
       <div className="mb-6">
         <Link
           to={backLink}
-          className="inline-flex items-center text-sm font-medium text-[#0088aa] hover:text-[#006688] mb-4"
+          className="inline-flex items-center text-sm font-medium text-[#0077B6] hover:text-[#0077B6] mb-4"
         >
           <ArrowLeft size={16} className="mr-1" /> {backLabel}
         </Link>
         <div className="flex justify-between items-center border-b pb-4">
-          <h1 className="text-3xl font-bold text-[#0a0a32]">Détail de l'enseignement</h1>
+          <h1 className="text-3xl font-bold text-[#03045E]">Détail de l'enseignement</h1>
           <span className="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm font-medium">
             Année : {enseignement.anneeUniversitaire}
           </span>
@@ -60,7 +60,7 @@ export function SuiviDetailView({ enseignement, seances, backLabel, backLink, ac
           {/* Fiche d'enseignement */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-[#0a0a32]">Fiche d'enseignement</h2>
+              <h2 className="text-xl font-bold text-[#03045E]">Fiche d'enseignement</h2>
               <EtatBadge etat={enseignement.etat} />
             </div>
             <div className="space-y-4">
@@ -78,7 +78,7 @@ export function SuiviDetailView({ enseignement, seances, backLabel, backLink, ac
 
           {/* Historique des séances */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <h2 className="text-xl font-bold text-[#0a0a32] mb-6">Historique des séances</h2>
+            <h2 className="text-xl font-bold text-[#03045E] mb-6">Historique des séances</h2>
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
                 <thead className="text-gray-500 border-b border-gray-100">
@@ -118,7 +118,7 @@ export function SuiviDetailView({ enseignement, seances, backLabel, backLink, ac
         <div className="space-y-6">
           {/* Suivi des heures */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <h2 className="text-xl font-bold text-[#0a0a32] mb-4">Suivi des heures</h2>
+            <h2 className="text-xl font-bold text-[#03045E] mb-4">Suivi des heures</h2>
             <div className="grid grid-cols-2 gap-3">
               <StatBlock label="Volume prévu" value={`${enseignement.volumePrevu}h`} />
               <StatBlock label="Heures réalisées" value={`${enseignement.heuresRealisees}h`} accent />
@@ -139,7 +139,7 @@ export function SuiviDetailView({ enseignement, seances, backLabel, backLink, ac
           {enseignement.clotureAnticipee && (
             <div className="bg-white rounded-xl border border-purple-200 shadow-sm p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-bold text-[#0a0a32]">Clôture anticipée</h2>
+                <h2 className="text-lg font-bold text-[#03045E]">Clôture anticipée</h2>
                 <ClotureBadge typeCloture={enseignement.typeCloture} />
               </div>
               <div className="space-y-2">
@@ -162,7 +162,7 @@ export function SuiviDetailView({ enseignement, seances, backLabel, backLink, ac
 
           {/* Résumé */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <h2 className="text-lg font-bold text-[#0a0a32] mb-4">Séances réalisées</h2>
+            <h2 className="text-lg font-bold text-[#03045E] mb-4">Séances réalisées</h2>
             <p className="text-sm text-gray-600">
               {enseignement.nombreSeancesRealisees} séance(s) réalisée(s)
               {enseignement.derniereSeanceRealisee &&

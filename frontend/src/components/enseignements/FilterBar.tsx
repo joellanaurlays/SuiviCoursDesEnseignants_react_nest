@@ -21,7 +21,7 @@ interface FilterBarProps {
   onReset?: () => void;
 }
 
-const inputClass = "block w-full pl-3 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-[#00e5ff] focus:border-[#00e5ff] sm:text-sm rounded-md";
+const inputClass = "block w-full pl-3 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-[#00B4D8] focus:border-[#00B4D8] sm:text-sm rounded-md";
 
 export function FilterBar({
   fields,
@@ -90,7 +90,7 @@ export function FilterBar({
           {onSearch && (
             <button
               onClick={() => onSearch(searchTerm)}
-              className="px-4 py-2 bg-[#0088aa] text-white rounded-md text-sm hover:bg-[#007799] transition-colors font-medium"
+              className="px-4 py-2 bg-[#0077B6] text-white rounded-md text-sm hover:bg-[#03045E] transition-colors font-medium"
             >
               Rechercher
             </button>

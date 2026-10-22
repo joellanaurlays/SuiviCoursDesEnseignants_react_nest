@@ -1,10 +1,11 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
-import DashboardPlaceholder from './pages/DashboardPlaceholder.jsx';
+import LoginPage from './pages/LoginPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 import UsersListPage from './pages/UsersListPage.jsx';
 import UserFormPage from './pages/UserFormPage.jsx';
 import ExamsModuleFixed from './exams/ExamsModuleFixed.jsx';
+import PlanningWorkspace from './components/PlanningWorkspace';
 
 // Pont identité JWT -> en-têtes x-user-* pour le module suivi (Membres 2/4).
 import { AuthProvider as SuiviAuthProvider } from './auth/AuthContext';
@@ -42,11 +43,21 @@ export default function App() {
   return (
     <SuiviAuthProvider>
       <Routes>
-        {/* La route de connexion est désactivée temporairement pour l'aperçu local. */}
+        <Route path="/login" element={<LoginPage />} />
 
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        {/* L'espace du membre 5 est la page d'accueil après authentification. */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <PlanningWorkspace />
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="/dashboard" element={<DashboardPlaceholder />} />
+        {/* Ancienne page dashboard conservée en commentaire pendant l'aperçu M5 :
+            <Route path="/dashboard" element={<DashboardPlaceholder />} /> */}
+        <Route path="/dashboard" element={<Navigate to="/" replace />} />
 
         <Route
           path="/users"
@@ -329,7 +340,9 @@ export default function App() {
           }
         />
 
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        {/* Ancienne redirection des routes inconnues vers le dashboard :
+            <Route path="*" element={<Navigate to="/dashboard" replace />} /> */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </SuiviAuthProvider>
   );

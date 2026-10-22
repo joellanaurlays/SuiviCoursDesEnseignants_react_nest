@@ -46,7 +46,7 @@ export default function EnseignantHeuresPage() {
     <Layout>
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex justify-between items-center mb-8 border-b pb-4">
-          <h1 className="text-3xl font-bold text-[#0a0a32]">Heures réalisées & Progression</h1>
+          <h1 className="text-3xl font-bold text-[#03045E]">Heures réalisées & Progression</h1>
         </div>
 
         {loading ? (
@@ -66,7 +66,7 @@ export default function EnseignantHeuresPage() {
 
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
               <div className="px-6 py-5 border-b border-gray-200">
-                <h2 className="text-xl font-bold text-[#0a0a32]">Détail par enseignement</h2>
+                <h2 className="text-xl font-bold text-[#03045E]">Détail par enseignement</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
@@ -85,7 +85,7 @@ export default function EnseignantHeuresPage() {
                       <tr key={item.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 font-medium text-gray-900">{item.matiere}</td>
                         <td className="px-6 py-4 text-right text-gray-600">{item.volumePrevu}h</td>
-                        <td className="px-6 py-4 text-right font-medium text-[#0088aa]">{item.heuresRealisees}h</td>
+                        <td className="px-6 py-4 text-right font-medium text-[#0077B6]">{item.heuresRealisees}h</td>
                         <td className="px-6 py-4 text-right text-gray-600">{item.heuresRestantes}h</td>
                         <td className="px-6 py-4 w-44">
                           <ProgressionBar progression={item.progression} showLabel />

@@ -105,9 +105,9 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-gray-50 font-sans">
-      <aside className="w-64 bg-[#0a0a32] text-white flex flex-col shrink-0">
+      <aside className="w-64 bg-[#03045E] text-white flex flex-col shrink-0">
         <div className="p-6 flex items-center space-x-3">
-          <div className="w-10 h-10 bg-[#00e5ff] text-[#0a0a32] rounded-md flex items-center justify-center font-bold text-xl">
+          <div className="w-10 h-10 bg-[#00B4D8] text-[#03045E] rounded-md flex items-center justify-center font-bold text-xl">
             S
           </div>
           <div>
@@ -116,7 +116,7 @@ export function Layout({ children }: { children: ReactNode }) {
               <br />
               Enseignements
             </h1>
-            <p className="text-xs text-[#00e5ff] mt-1">UNIVERSITÉ ERP</p>
+            <p className="text-xs text-[#00B4D8] mt-1">UNIVERSITÉ ERP</p>
           </div>
         </div>
 
@@ -128,12 +128,12 @@ export function Layout({ children }: { children: ReactNode }) {
                 key={item.path}
                 to={item.path}
                 className={`flex items-center space-x-3 px-4 py-3 rounded-md transition-colors ${
-                  isActive ? 'bg-[#0088aa] text-white' : 'text-gray-300 hover:bg-[#1a1a4a]'
+                  isActive ? 'bg-[#0077B6] text-white' : 'text-gray-300 hover:bg-[#03045E]'
                 }`}
               >
                 <item.icon size={20} className={isActive ? 'text-white' : 'text-gray-400'} />
                 <span>{item.name}</span>
-                {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#00e5ff]" />}
+                {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#00B4D8]" />}
               </Link>
             );
           })}
@@ -147,7 +147,7 @@ export function Layout({ children }: { children: ReactNode }) {
             <Link
               key={item.path}
               to={item.path}
-              className="flex items-center space-x-3 px-4 py-2 rounded-md text-gray-300 hover:bg-[#1a1a4a] transition-colors"
+              className="flex items-center space-x-3 px-4 py-2 rounded-md text-gray-300 hover:bg-[#03045E] transition-colors"
             >
               <item.icon size={18} className="text-gray-400" />
               <span className="text-sm">{item.name}</span>
@@ -156,32 +156,32 @@ export function Layout({ children }: { children: ReactNode }) {
 
           <button
             onClick={onLogout}
-            className="mt-2 w-full flex items-center space-x-3 px-4 py-2 rounded-md text-gray-300 hover:bg-[#4a1030] transition-colors"
+            className="mt-2 w-full flex items-center space-x-3 px-4 py-2 rounded-md text-gray-300 hover:bg-[#03045E] transition-colors"
           >
             <LogOut size={18} className="text-gray-400" />
             <span className="text-sm">Déconnexion</span>
           </button>
         </nav>
 
-        <div className="p-4 border-t border-[#1a1a4a]">
+        <div className="p-4 border-t border-[#03045E]">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-[#0a0a32] border border-[#00e5ff] text-[#00e5ff] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-[#03045E] border border-[#00B4D8] text-[#00B4D8] flex items-center justify-center">
               <GraduationCap size={16} />
             </div>
             <div className="leading-tight min-w-0">
               <p className="text-sm font-bold text-white truncate">{current.name}</p>
-              <p className="text-xs text-[#00e5ff] truncate">{current.sub}</p>
+              <p className="text-xs text-[#00B4D8] truncate">{current.sub}</p>
             </div>
-            <Check size={14} className="ml-auto text-[#0088aa]" />
+            <Check size={14} className="ml-auto text-[#0077B6]" />
           </div>
-          <p className="text-xs text-gray-400 mt-2">Rôle actif : <span className="text-[#00e5ff] font-semibold">{role}</span></p>
+          <p className="text-xs text-gray-400 mt-2">Rôle actif : <span className="text-[#00B4D8] font-semibold">{role}</span></p>
         </div>
       </aside>
 
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         <header className="bg-white border-b border-gray-200 px-8 py-3 flex items-center justify-end gap-4 shrink-0">
           <p className="text-sm text-gray-600">
-            Bienvenue, <span className="font-semibold text-[#0a0a32]">{current.name}</span>
+            Bienvenue, <span className="font-semibold text-[#03045E]">{current.name}</span>
           </p>
         </header>
         <div className="flex-1 overflow-y-auto p-8">{children}</div>

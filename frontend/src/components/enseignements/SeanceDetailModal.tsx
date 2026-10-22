@@ -29,7 +29,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex justify-between gap-4 border-b border-gray-100 py-2">
       <span className="text-gray-500 text-sm">{label}</span>
-      <span className="font-medium text-[#0a0a32] text-right text-sm">
+      <span className="font-medium text-[#03045E] text-right text-sm">
         {value || <span className="italic text-gray-400">Non renseigné</span>}
       </span>
     </div>
@@ -183,12 +183,12 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
   };
 
   const inputClass =
-    'w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:border-[#00e5ff] focus:ring-1 focus:ring-[#00e5ff]';
+    'w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:border-[#00B4D8] focus:ring-1 focus:ring-[#00B4D8]';
   const labelClass = 'block text-sm font-medium text-gray-700 mb-1';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-[#0a0a32]/50" onClick={submitting ? undefined : onClose} />
+      <div className="absolute inset-0 bg-[#03045E]/50" onClick={submitting ? undefined : onClose} />
 
       <div
         role="dialog"
@@ -197,7 +197,7 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
         className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-xl border border-gray-200 shadow-xl"
       >
         <div className="flex items-start justify-between px-6 py-5 border-b border-gray-100">
-          <h2 id="seance-detail-titre" className="text-xl font-bold text-[#0a0a32]">
+          <h2 id="seance-detail-titre" className="text-xl font-bold text-[#03045E]">
             Détail de la séance
           </h2>
           <button
@@ -221,7 +221,7 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
             {/* Détails */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <p className="font-semibold text-[#0a0a32]">
+                <p className="font-semibold text-[#03045E]">
                   {seance.enseignement?.matiereId ?? '—'}
                 </p>
                 <SeanceStatutBadge statut={seance.statut} />
@@ -253,7 +253,7 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                       setActionError(null);
                       setMode('realiser');
                     }}
-                    className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-[#0088aa] text-white rounded-md text-sm font-medium hover:bg-[#007799] transition-colors"
+                    className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-[#0077B6] text-white rounded-md text-sm font-medium hover:bg-[#03045E] transition-colors"
                   >
                     <CheckCircle2 size={16} className="mr-2" />
                     Marquer comme réalisée
@@ -265,7 +265,7 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                       setActionError(null);
                       setMode('corriger');
                     }}
-                    className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-[#0088aa] text-[#006688] rounded-md text-sm font-medium hover:bg-cyan-50 transition-colors"
+                    className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-[#0077B6] text-[#0077B6] rounded-md text-sm font-medium hover:bg-emit-ice transition-colors"
                   >
                     <Pencil size={16} className="mr-2" />
                     Corriger la séance
@@ -289,8 +289,8 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
             {/* Formulaire de réalisation */}
             {mode === 'realiser' && (
               <div className="border-t border-gray-100 pt-4 space-y-4">
-                <div className="flex items-center gap-2 text-[#006688] bg-cyan-50 border border-cyan-100 rounded-md px-3 py-2 text-sm">
-                  <Clock size={16} className="text-[#0088aa]" />
+                <div className="flex items-center gap-2 text-[#0077B6] bg-emit-ice border border-emit-sky rounded-md px-3 py-2 text-sm">
+                  <Clock size={16} className="text-[#0077B6]" />
                   <span>Confirmez les informations réellement observées.</span>
                 </div>
 
@@ -352,7 +352,7 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                     type="button"
                     onClick={confirmerRealisation}
                     disabled={submitting}
-                    className="px-4 py-2 bg-[#0088aa] text-white rounded-md text-sm font-medium hover:bg-[#007799] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-[#0077B6] text-white rounded-md text-sm font-medium hover:bg-[#03045E] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {submitting ? 'Enregistrement...' : 'Confirmer la réalisation'}
                   </button>
@@ -483,7 +483,7 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                     type="button"
                     onClick={confirmerCorrection}
                     disabled={submitting}
-                    className="px-4 py-2 bg-[#0088aa] text-white rounded-md text-sm font-medium hover:bg-[#007799] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 bg-[#0077B6] text-white rounded-md text-sm font-medium hover:bg-[#03045E] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {submitting ? 'Enregistrement...' : 'Enregistrer la correction'}
                   </button>

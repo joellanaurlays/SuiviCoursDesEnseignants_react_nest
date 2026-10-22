@@ -166,7 +166,7 @@ export function SuiviListPage({
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-2 border-b pb-4">
           <div>
-            <h1 className="text-3xl font-bold text-[#0a0a32]">{title}</h1>
+            <h1 className="text-3xl font-bold text-[#03045E]">{title}</h1>
             {intro && <p className="text-sm text-gray-500 mt-1">{intro}</p>}
           </div>
           <span className="text-sm text-gray-500">{rows.length} affiché(s) sur {fullData.length}</span>

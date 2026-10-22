@@ -6,6 +6,9 @@
   --color-emit-cyan: #00B4D8;
   --color-emit-sky: #90E0EF;
   --color-emit-ice: #CAF0F8;
+  --color-primary: var(--color-emit-blue);
+  --color-primary-dark: var(--color-emit-navy);
+  --color-secondary: var(--color-emit-cyan);
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
@@ -24,14 +27,14 @@
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: var(--emit-ice);
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--emit-sky);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--emit-blue);
 }
 
 @media print {

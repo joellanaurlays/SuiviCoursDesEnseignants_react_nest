@@ -70,14 +70,14 @@ export function SeancesListPage({ title, intro }: SeancesListPageProps) {
   }, [seances, matiere, statut, search]);
 
   const inputClass =
-    'block pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-[#00e5ff] focus:border-[#00e5ff] sm:text-sm rounded-md bg-white';
+    'block pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-[#00B4D8] focus:border-[#00B4D8] sm:text-sm rounded-md bg-white';
 
   return (
     <Layout>
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8 border-b pb-4">
           <div>
-            <h1 className="text-3xl font-bold text-[#0a0a32]">{title}</h1>
+            <h1 className="text-3xl font-bold text-[#03045E]">{title}</h1>
             {intro && <p className="text-sm text-gray-500 mt-1">{intro}</p>}
           </div>
           <span className="text-sm text-gray-500">{filtered.length} séance(s)</span>
@@ -99,7 +99,7 @@ export function SeancesListPage({ title, intro }: SeancesListPageProps) {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Rechercher une matière, un enseignant, un contenu..."
-                  className="block w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-[#00e5ff] focus:ring-1 focus:ring-[#00e5ff]"
+                  className="block w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-[#00B4D8] focus:ring-1 focus:ring-[#00B4D8]"
                 />
               </div>
               <select value={matiere} onChange={(e) => setMatiere(e.target.value)} className={inputClass}>

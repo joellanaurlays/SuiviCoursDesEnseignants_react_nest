@@ -41,7 +41,7 @@ export default function EnseignantDashboard() {
     <Layout>
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8 border-b pb-4">
-          <h1 className="text-3xl font-bold text-[#0a0a32]">Tableau de bord</h1>
+          <h1 className="text-3xl font-bold text-[#03045E]">Tableau de bord</h1>
         </div>
 
         {loading ? (
@@ -81,14 +81,14 @@ export default function EnseignantDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-1 bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <CalendarClock size={20} className="text-[#0088aa]" />
-                  <h2 className="text-lg font-bold text-[#0a0a32]">Prochaines séances</h2>
+                  <CalendarClock size={20} className="text-[#0077B6]" />
+                  <h2 className="text-lg font-bold text-[#03045E]">Prochaines séances</h2>
                 </div>
                 {data.prochainesSeances.length > 0 ? (
                   <div className="space-y-4">
                     {data.prochainesSeances.map((seance) => (
-                      <div key={seance.id} className="border-l-4 border-[#00e5ff] bg-cyan-50/50 p-4 rounded-r-lg">
-                        <p className="font-medium text-[#0a0a32]">{seance.matiereId}</p>
+                      <div key={seance.id} className="border-l-4 border-[#00B4D8] bg-emit-ice/50 p-4 rounded-r-lg">
+                        <p className="font-medium text-[#03045E]">{seance.matiereId}</p>
                         <p className="text-sm text-gray-500 mt-1">
                           {formatDate(seance.dateSeance)} · {seance.heureDebut} - {seance.heureFin}
                         </p>
@@ -101,13 +101,13 @@ export default function EnseignantDashboard() {
               </div>
 
               <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                <h2 className="text-lg font-bold text-[#0a0a32] mb-4">Progression par matière</h2>
+                <h2 className="text-lg font-bold text-[#03045E] mb-4">Progression par matière</h2>
                 {data.progressionParMatiere.length > 0 ? (
                   <div className="space-y-6">
                     {data.progressionParMatiere.map((prog, index) => (
                       <div key={`${prog.matiereId}-${index}`}>
                         <div className="flex justify-between items-center mb-2">
-                          <span className="font-medium text-[#0a0a32]">{prog.matiereId}</span>
+                          <span className="font-medium text-[#03045E]">{prog.matiereId}</span>
                           <span className="text-sm font-medium text-gray-600">{prog.progression}%</span>
                         </div>
                         <ProgressionBar progression={prog.progression} />
