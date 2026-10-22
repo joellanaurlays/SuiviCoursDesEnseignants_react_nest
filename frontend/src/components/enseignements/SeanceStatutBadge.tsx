@@ -6,15 +6,33 @@ const LABELS: Record<StatutSeance, string> = {
   ANNULEE: 'Annulée',
 };
 
-const COLORS: Record<StatutSeance, string> = {
-  REALISEE: 'bg-green-100 text-green-700',
-  PLANIFIEE: 'bg-gray-100 text-gray-700',
-  ANNULEE: 'bg-red-100 text-red-700',
+const STYLES: Record<StatutSeance, { classes: string; dot: string }> = {
+  REALISEE: {
+    classes: 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200',
+    dot: 'bg-emerald-500',
+  },
+  PLANIFIEE: {
+    classes: 'bg-[#CAF0F8] text-[#03045E] ring-1 ring-inset ring-[#90E0EF]',
+    dot: 'bg-[#00B4D8]',
+  },
+  ANNULEE: {
+    classes: 'bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200',
+    dot: 'bg-rose-500',
+  },
 };
 
+/**
+ * Pastille de statut d'une séance (PLANIFIEE, REALISEE, ANNULEE).
+ *
+ * Le libellé provient du domaine : le composant n'invente aucun statut et
+ * retombe proprement sur la valeur brute si elle est inconnue.
+ */
 export function SeanceStatutBadge({ statut }: { statut: StatutSeance }) {
+  const style = STYLES[statut] ?? STYLES.PLANIFIEE;
+
   return (
-    <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${COLORS[statut] ?? COLORS.PLANIFIEE}`}>
+    <span className={`emit-chip ${style.classes}`}>
+      <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
       {LABELS[statut] ?? statut}
     </span>
   );

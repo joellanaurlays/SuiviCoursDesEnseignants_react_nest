@@ -3,7 +3,7 @@ import { Layout } from '../../components/Layout';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { EmptyState } from '../../components/ui/EmptyState';
-import { Search } from 'lucide-react';
+import { ChevronDown, ScrollText, Search } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
 import { auditService } from '../../services/audit.service';
 import { ActionAuditSeance, JournalAuditEntry } from '../../types/enseignement';
@@ -79,13 +79,17 @@ export function JournalAuditPage({
 
   return (
     <Layout>
-      <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8 border-b pb-4">
-          <div>
-            <h1 className="text-3xl font-bold text-[#0a0a32]">{title}</h1>
-            {intro && <p className="text-sm text-gray-500 mt-1">{intro}</p>}
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <p className="emit-eyebrow">Traçabilité</p>
+            <h1 className="emit-title mt-1">{title}</h1>
+            {intro && <p className="emit-subtitle mt-1">{intro}</p>}
           </div>
-          <span className="text-sm text-gray-500">{filtered.length} entrée(s)</span>
+          <span className="inline-flex w-fit items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 shadow-sm">
+            <ScrollText size={15} aria-hidden="true" className="text-[#0077B6]" />
+            {filtered.length} entrée(s)
+          </span>
         </div>
 
         {loading ? (
@@ -93,77 +97,120 @@ export function JournalAuditPage({
         ) : error ? (
           <ErrorState message={error} />
         ) : (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-gray-100 flex flex-wrap gap-3 items-center">
-              <div className="relative flex-1 min-w-56">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-4 w-4 text-gray-400" />
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex flex-wrap items-end gap-3 border-b border-slate-100 bg-slate-50/60 p-4">
+              <div className="relative min-w-56 flex-1 basis-56">
+                <label htmlFor="audit-recherche" className="emit-label">
+                  Recherche
+                </label>
+                <div className="relative">
+                  <Search
+                    size={16}
+                    aria-hidden="true"
+                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+                  <input
+                    id="audit-recherche"
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Utilisateur, séance, motif..."
+                    className="emit-input pl-9"
+                  />
                 </div>
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Rechercher un utilisateur, une séance, un motif..."
-                  className="block w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-[#00e5ff] focus:ring-1 focus:ring-[#00e5ff]"
-                />
               </div>
-              <select
-                value={action}
-                onChange={(e) => setAction(e.target.value)}
-                className="block px-3 py-2 pr-10 text-base border border-gray-300 focus:outline-none focus:ring-[#00e5ff] focus:border-[#00e5ff] sm:text-sm rounded-md bg-white"
-              >
-                <option value="">Action : toutes</option>
-                {ACTIONS.map((a) => (
-                  <option key={a} value={a}>
-                    {libelleAction(a)}
-                  </option>
-                ))}
-              </select>
+
+              <div className="min-w-48 flex-1 basis-48">
+                <label htmlFor="audit-action" className="emit-label">
+                  Action
+                </label>
+                <div className="relative">
+                  <select
+                    id="audit-action"
+                    value={action}
+                    onChange={(e) => setAction(e.target.value)}
+                    className="emit-input appearance-none pr-9"
+                  >
+                    <option value="">Toutes</option>
+                    {ACTIONS.map((a) => (
+                      <option key={a} value={a}>
+                        {libelleAction(a)}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    size={16}
+                    aria-hidden="true"
+                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+                </div>
+              </div>
+
+              {(search.trim() || action) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearch('');
+                    setAction('');
+                  }}
+                  className="emit-btn-ghost"
+                >
+                  Réinitialiser
+                </button>
+              )}
             </div>
 
             {filtered.length === 0 ? (
-              <EmptyState message="Aucune action trouvée." />
+              <EmptyState
+                message="Aucune action trouvée."
+                hint="Ajustez la recherche ou le filtre d'action."
+              />
             ) : (
-              <ul className="divide-y divide-gray-100">
+              <ul className="divide-y divide-slate-100">
                 {filtered.map((e) => (
-                  <li key={e.id} className="px-6 py-4">
+                  <li key={e.id} className="px-5 py-4 transition-colors hover:bg-[#CAF0F8]/25 sm:px-6">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="font-semibold text-[#0a0a32] text-sm">
-                        {libelleAction(e.action)}
-                      </span>
-                      <span className="text-xs text-gray-500">{formatDateTime(e.createdAt)}</span>
+                      <span className="text-sm font-bold text-[#03045E]">{libelleAction(e.action)}</span>
+                      <span className="text-xs text-slate-500">{formatDateTime(e.createdAt)}</span>
                     </div>
-                    <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-gray-600">
+
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-slate-600">
                       <span>
-                        Par <strong className="text-[#0a0a32]">{e.utilisateurId}</strong>
+                        Par <strong className="text-[#03045E]">{e.utilisateurId}</strong>
                       </span>
-                      <span className="text-gray-400">Séance {e.seanceId.slice(0, 8)}</span>
-                      <span className="text-gray-400">
+                      <span className="rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] text-slate-500">
+                        Séance {e.seanceId.slice(0, 8)}
+                      </span>
+                      <span className="text-slate-400">
                         {e.parcours} · {e.cycle}
                       </span>
                       {(e.statutAvant || e.statutApres) && (
                         <span className="inline-flex items-center gap-1">
-                          {e.statutAvant ? <SeanceStatutBadge statut={e.statutAvant} /> : '—'}
-                          <span className="text-gray-400">→</span>
-                          {e.statutApres ? <SeanceStatutBadge statut={e.statutApres} /> : '—'}
+                          {e.statutAvant ? <SeanceStatutBadge statut={e.statutAvant} /> : <span className="text-slate-400">—</span>}
+                          <span className="text-slate-400" aria-hidden="true">→</span>
+                          {e.statutApres ? <SeanceStatutBadge statut={e.statutApres} /> : <span className="text-slate-400">—</span>}
                         </span>
                       )}
                     </div>
+
                     {e.motif && (
-                      <p className="mt-1 text-xs text-gray-600">
-                        <span className="text-gray-400">Motif :</span> {e.motif}
+                      <p className="mt-1 text-xs text-slate-600">
+                        <span className="text-slate-400">Motif :</span> {e.motif}
                       </p>
                     )}
-                    <ul className="mt-1 space-y-0.5">
-                      {lignesChangements(e.valeursAvant, e.valeursApres).map((ligne) => (
-                        <li key={ligne.label} className="text-xs text-gray-600">
-                          <span className="text-gray-400">{ligne.label} :</span>{' '}
-                          <span className="text-gray-500 line-through">{ligne.avant}</span>{' '}
-                          <span className="text-gray-400">→</span>{' '}
-                          <span className="text-[#0a0a32]">{ligne.apres}</span>
-                        </li>
-                      ))}
-                    </ul>
+
+                    {lignesChangements(e.valeursAvant, e.valeursApres).length > 0 && (
+                      <ul className="mt-1.5 space-y-0.5 rounded-lg bg-slate-50 px-3 py-2">
+                        {lignesChangements(e.valeursAvant, e.valeursApres).map((ligne) => (
+                          <li key={ligne.label} className="text-xs text-slate-600">
+                            <span className="text-slate-400">{ligne.label} :</span>{' '}
+                            <span className="text-slate-500 line-through">{ligne.avant}</span>{' '}
+                            <span className="text-slate-400" aria-hidden="true">→</span>{' '}
+                            <span className="font-medium text-[#03045E]">{ligne.apres}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </li>
                 ))}
               </ul>

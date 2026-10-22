@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../../../components/Layout';
-import { Plus, Search } from 'lucide-react';
+import { CalendarDays, ChevronDown, ListChecks, Plus, Search } from 'lucide-react';
 import { useAuth } from '../../../auth/AuthContext';
 import { seanceService } from '../../../services/seance.service';
 import { LoadingState } from '../../../components/ui/LoadingState';
@@ -63,19 +63,22 @@ export default function EnseignantSeancesPage() {
     });
   }, [seances, matiere, statut, search]);
 
-  const selectClass =
-    'block px-3 py-2 pr-10 text-base border border-gray-300 focus:outline-none focus:ring-[#00e5ff] focus:border-[#00e5ff] sm:text-sm rounded-md bg-white';
+  const nbFiltres = [search.trim(), matiere, statut].filter(Boolean).length;
 
   return (
     <Layout>
-      <div className="flex justify-between items-center mb-8 border-b pb-4">
-        <h1 className="text-2xl font-bold text-[#0a0a32]">Mes séances</h1>
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="emit-eyebrow">Espace enseignant</p>
+          <h1 className="emit-title mt-1">Mes séances</h1>
+          <p className="emit-subtitle mt-1">Déclarez, consultez et suivez vos séances de cours.</p>
+        </div>
         <button
           onClick={() => navigate('/enseignant/seances/nouveau')}
-          className="bg-[#0088aa] text-white px-4 py-2 rounded-md flex items-center space-x-2 text-sm hover:bg-[#007799] transition-colors font-medium"
+          className="emit-btn-primary w-fit"
         >
-          <Plus size={16} />
-          <span>Déclarer une séance</span>
+          <Plus size={16} aria-hidden="true" />
+          Déclarer une séance
         </button>
       </div>
 
@@ -84,79 +87,171 @@ export default function EnseignantSeancesPage() {
       ) : error ? (
         <ErrorState message={error} />
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-gray-100 flex flex-wrap gap-3 items-center">
-            <div className="relative flex-1 min-w-56">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-4 w-4 text-gray-400" />
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-wrap items-end gap-3 border-b border-slate-100 bg-slate-50/60 p-4">
+            <div className="relative min-w-56 flex-1 basis-56">
+              <label htmlFor="ens-recherche" className="emit-label">
+                Recherche
+              </label>
+              <div className="relative">
+                <Search
+                  size={16}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                />
+                <input
+                  id="ens-recherche"
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Matière, contenu..."
+                  className="emit-input pl-9"
+                />
               </div>
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Rechercher une matière, un contenu..."
-                className="block w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-[#00e5ff] focus:ring-1 focus:ring-[#00e5ff]"
-              />
             </div>
-            <select value={matiere} onChange={(e) => setMatiere(e.target.value)} className={selectClass}>
-              <option value="">Matière : Toutes</option>
-              {matieres.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
-            <select value={statut} onChange={(e) => setStatut(e.target.value)} className={selectClass}>
-              <option value="">Statut : Tous</option>
-              <option value="REALISEE">Réalisée</option>
-              <option value="PLANIFIEE">Planifiée</option>
-              <option value="ANNULEE">Annulée</option>
-            </select>
+
+            <div className="min-w-40 flex-1 basis-40">
+              <label htmlFor="ens-matiere" className="emit-label">
+                Matière
+              </label>
+              <div className="relative">
+                <select
+                  id="ens-matiere"
+                  value={matiere}
+                  onChange={(e) => setMatiere(e.target.value)}
+                  className="emit-input appearance-none pr-9"
+                >
+                  <option value="">Toutes</option>
+                  {matieres.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  size={16}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+                />
+              </div>
+            </div>
+
+            <div className="min-w-40 flex-1 basis-40">
+              <label htmlFor="ens-statut" className="emit-label">
+                Statut
+              </label>
+              <div className="relative">
+                <select
+                  id="ens-statut"
+                  value={statut}
+                  onChange={(e) => setStatut(e.target.value)}
+                  className="emit-input appearance-none pr-9"
+                >
+                  <option value="">Tous</option>
+                  <option value="REALISEE">Réalisée</option>
+                  <option value="PLANIFIEE">Planifiée</option>
+                  <option value="ANNULEE">Annulée</option>
+                </select>
+                <ChevronDown
+                  size={16}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+                />
+              </div>
+            </div>
+
+            {nbFiltres > 0 ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch('');
+                  setMatiere('');
+                  setStatut('');
+                }}
+                className="emit-btn-ghost"
+              >
+                Réinitialiser
+              </button>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 pb-2 text-sm font-semibold text-slate-500">
+                <ListChecks size={15} aria-hidden="true" className="text-[#0077B6]" />
+                {filtered.length} séance(s)
+              </span>
+            )}
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="text-gray-500 text-sm border-b border-gray-100">
-                  <th className="px-6 py-4 font-medium">Date</th>
-                  <th className="px-6 py-4 font-medium">Matière</th>
-                  <th className="px-6 py-4 font-medium">Type</th>
-                  <th className="px-6 py-4 font-medium">Horaire</th>
-                  <th className="px-6 py-4 font-medium">Salle</th>
-                  <th className="px-6 py-4 font-medium">Durée</th>
-                  <th className="px-6 py-4 font-medium">Statut</th>
-                  <th className="px-6 py-4 font-medium">Contenu enseigné</th>
+            <table className="w-full border-collapse text-left">
+              <thead className="emit-table-head">
+                <tr>
+                  <th scope="col" className="emit-table-th">Date</th>
+                  <th scope="col" className="emit-table-th">Matière</th>
+                  <th scope="col" className="emit-table-th">Type</th>
+                  <th scope="col" className="emit-table-th">Horaire</th>
+                  <th scope="col" className="emit-table-th">Salle</th>
+                  <th scope="col" className="emit-table-th">Durée</th>
+                  <th scope="col" className="emit-table-th">Statut</th>
+                  <th scope="col" className="emit-table-th">Contenu enseigné</th>
                 </tr>
               </thead>
-              <tbody className="text-sm">
+              <tbody className="divide-y divide-slate-100 text-sm">
                 {filtered.map((seance) => (
                   <tr
                     key={seance.id}
                     onClick={() => setSelectedId(seance.id)}
-                    className="border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setSelectedId(seance.id);
+                      }
+                    }}
+                    tabIndex={0}
+                    aria-label={`Voir le détail de la séance du ${formatDate(seance.dateSeance)}`}
+                    className="cursor-pointer transition-colors hover:bg-[#CAF0F8]/40 focus:bg-[#CAF0F8]/60 focus:outline-none"
                   >
-                    <td className="px-6 py-4 text-gray-600 whitespace-nowrap">{formatDate(seance.dateSeance)}</td>
-                    <td className="px-6 py-4 font-medium text-gray-800">
+                    <td className="emit-table-td whitespace-nowrap font-medium text-slate-700">
+                      <span className="inline-flex items-center gap-1.5">
+                        <CalendarDays size={14} className="text-slate-400" aria-hidden="true" />
+                        {formatDate(seance.dateSeance)}
+                      </span>
+                    </td>
+                    <td className="emit-table-td whitespace-nowrap font-bold text-[#03045E]">
                       {seance.enseignement?.matiereId ?? '—'}
                     </td>
-                    <td className="px-6 py-4 text-gray-600">{seance.typeSeance || '—'}</td>
-                    <td className="px-6 py-4 text-gray-600 whitespace-nowrap">
+                    <td className="emit-table-td whitespace-nowrap text-slate-500">
+                      {seance.typeSeance || <span className="italic text-slate-400">—</span>}
+                    </td>
+                    <td className="emit-table-td whitespace-nowrap text-slate-500">
                       {formatHoraire(seance.heureDebut, seance.heureFin)}
                     </td>
-                    <td className="px-6 py-4 text-gray-600">{seance.salle || '—'}</td>
-                    <td className="px-6 py-4 text-gray-600 whitespace-nowrap">{formatDuree(seance.duree)}</td>
-                    <td className="px-6 py-4">
+                    <td className="emit-table-td whitespace-nowrap text-slate-500">
+                      {seance.salle || <span className="italic text-slate-400">—</span>}
+                    </td>
+                    <td className="emit-table-td whitespace-nowrap text-slate-500">{formatDuree(seance.duree)}</td>
+                    <td className="emit-table-td">
                       <SeanceStatutBadge statut={seance.statut} />
                     </td>
-                    <td className="px-6 py-4 text-gray-600">
-                      {seance.contenuEnseigne || <span className="italic text-gray-400">Non renseigné</span>}
+                    <td className="emit-table-td max-w-sm text-slate-500">
+                      {seance.contenuEnseigne || <span className="italic text-slate-400">Non renseigné</span>}
                     </td>
                   </tr>
                 ))}
                 {filtered.length === 0 && (
                   <tr>
                     <td colSpan={8}>
-                      <EmptyState message="Aucune séance trouvée." />
+                      <EmptyState
+                        message="Aucune séance trouvée."
+                        hint="Déclarez votre première séance ou ajustez les filtres."
+                        action={
+                          <button
+                            onClick={() => navigate('/enseignant/seances/nouveau')}
+                            className="emit-btn-primary"
+                          >
+                            <Plus size={15} aria-hidden="true" />
+                            Déclarer une séance
+                          </button>
+                        }
+                      />
                     </td>
                   </tr>
                 )}

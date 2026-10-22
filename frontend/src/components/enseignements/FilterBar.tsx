@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, RotateCcw } from 'lucide-react';
+import { ChevronDown, RotateCcw, Search, SlidersHorizontal } from 'lucide-react';
 
 export interface FilterOption {
   value: string;
@@ -20,8 +20,6 @@ interface FilterBarProps {
   searchValue?: string;
   onReset?: () => void;
 }
-
-const inputClass = "block w-full pl-3 pr-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-[#00e5ff] focus:border-[#00e5ff] sm:text-sm rounded-md";
 
 export function FilterBar({
   fields,
@@ -44,35 +42,73 @@ export function FilterBar({
     onReset?.();
   };
 
+  const activeCount =
+    Object.values(filters).filter((value) => value && value.trim() !== '').length +
+    (searchTerm.trim() ? 1 : 0);
+
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-6">
+    <section className="emit-card mb-6 p-4 sm:p-5" aria-label="Filtres de recherche">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#CAF0F8] text-[#0077B6]" aria-hidden="true">
+            <SlidersHorizontal size={16} />
+          </span>
+          <div>
+            <h2 className="text-sm font-bold text-[#03045E]">Filtres</h2>
+            <p className="text-xs text-slate-500">
+              {activeCount > 0 ? `${activeCount} critère(s) actif(s)` : 'Aucun filtre appliqué'}
+            </p>
+          </div>
+        </div>
+
+        <button type="button" onClick={handleReset} className="emit-btn-ghost self-start sm:self-auto">
+          <RotateCcw size={14} aria-hidden="true" />
+          Réinitialiser
+        </button>
+      </div>
+
       <div className="flex flex-wrap items-end gap-3">
         {fields.map((field) => (
-          <div key={field.key} className="min-w-40">
-            <label className="block text-xs font-medium text-gray-500 mb-1">{field.label}</label>
-            <select
-              value={filters[field.key] ?? ''}
-              onChange={(e) => handleFieldChange(field.key, e.target.value)}
-              className={inputClass}
-            >
-              <option value="">Tous</option>
-              {field.options.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+          <div key={field.key} className="min-w-40 flex-1 basis-40">
+            <label htmlFor={`filtre-${field.key}`} className="emit-label">
+              {field.label}
+            </label>
+            <div className="relative">
+              <select
+                id={`filtre-${field.key}`}
+                value={filters[field.key] ?? ''}
+                onChange={(e) => handleFieldChange(field.key, e.target.value)}
+                className="emit-input appearance-none pr-9"
+              >
+                <option value="">Tous</option>
+                {field.options.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                size={16}
+                aria-hidden="true"
+                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+              />
+            </div>
           </div>
         ))}
 
         {onSearch && (
-          <div className="min-w-48 flex-1">
-            <label className="block text-xs font-medium text-gray-500 mb-1">Recherche</label>
+          <div className="min-w-56 flex-1 basis-56">
+            <label htmlFor="filtre-recherche" className="emit-label">
+              Recherche
+            </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-4 w-4 text-gray-400" />
-              </div>
+              <Search
+                size={16}
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              />
               <input
+                id="filtre-recherche"
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -80,30 +116,19 @@ export function FilterBar({
                   if (e.key === 'Enter') onSearch(searchTerm);
                 }}
                 placeholder="Matière, enseignant, mention..."
-                className={`${inputClass} pl-9`}
+                className="emit-input pl-9"
               />
             </div>
           </div>
         )}
 
-        <div className="flex gap-2">
-          {onSearch && (
-            <button
-              onClick={() => onSearch(searchTerm)}
-              className="px-4 py-2 bg-[#0088aa] text-white rounded-md text-sm hover:bg-[#007799] transition-colors font-medium"
-            >
-              Rechercher
-            </button>
-          )}
-          <button
-            onClick={handleReset}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-600 bg-white hover:bg-gray-50"
-          >
-            <RotateCcw size={14} className="mr-1.5" />
-            Réinitialiser
+        {onSearch && (
+          <button type="button" onClick={() => onSearch(searchTerm)} className="emit-btn-primary">
+            <Search size={14} aria-hidden="true" />
+            Rechercher
           </button>
-        </div>
+        )}
       </div>
-    </div>
+    </section>
   );
 }

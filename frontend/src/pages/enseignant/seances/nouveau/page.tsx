@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../../../../components/Layout';
-import { Info } from 'lucide-react';
+import { ArrowLeft, CalendarClock, CheckCircle2, Info, Save, Timer } from 'lucide-react';
 import { useAuth } from '../../../../auth/AuthContext';
 import { enseignementService } from '../../../../services/enseignement.service';
 import { seanceService } from '../../../../services/seance.service';
@@ -93,147 +93,250 @@ export default function DeclarerSeance() {
       navigate('/enseignant/seances');
     } catch (err) {
       const message = (err as { message?: string }).message;
-      setError(message ?? "Erreur de connexion au serveur.");
+      setError(message ?? 'Erreur de connexion au serveur.');
     } finally {
       setLoading(false);
     }
   };
 
-  const inputClass = 'w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:border-[#00e5ff] focus:ring-1 focus:ring-[#00e5ff]';
-  const labelClass = 'block text-sm font-medium text-gray-700 mb-1';
+  const inputClass = 'emit-input';
+  const labelClass = 'emit-label';
+
+  const enseignementSelectionne = enseignements.find((e) => e.id === enseignementId);
 
   return (
     <Layout>
-      <div className="flex justify-between items-center mb-8 border-b pb-4">
-        <h1 className="text-2xl font-bold text-[#0a0a32]">
-          <span className="text-gray-500 cursor-pointer hover:text-gray-700" onClick={() => navigate('/enseignant/seances')}>
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-6">
+          <button
+            onClick={() => navigate('/enseignant/seances')}
+            className="inline-flex items-center gap-1.5 rounded-lg px-1 py-1 text-sm font-semibold text-[#0077B6] transition hover:text-[#03045E]"
+          >
+            <ArrowLeft size={16} aria-hidden="true" />
             Mes séances
-          </span>{' '}
-          › Déclarer une séance
-        </h1>
-      </div>
+          </button>
+          <div className="mt-3">
+            <p className="emit-eyebrow">Espace enseignant</p>
+            <h1 className="emit-title mt-1">Déclarer une séance</h1>
+            <p className="emit-subtitle mt-1">
+              Heures réalisées, progression et état sont recalculés automatiquement par le backend.
+            </p>
+          </div>
+        </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 max-w-4xl">
-        <h2 className="text-xl font-bold text-[#0a0a32] mb-2">Déclarer une nouvelle séance</h2>
-        <p className="text-sm text-gray-500 mb-6">
-          Heures réalisées, progression et état sont recalculés automatiquement par le backend.
-        </p>
-
-        {error && <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-md">{error}</div>}
+        {error && (
+          <div className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700" role="alert">
+            {error}
+          </div>
+        )}
 
         {chargementEnseignements ? (
-          <p className="text-gray-500 py-8 text-center">Chargement de vos enseignements...</p>
+          <div className="emit-card p-10 text-center text-sm text-slate-500">
+            Chargement de vos enseignements...
+          </div>
         ) : enseignements.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            Aucun enseignement ne vous est affecté. Vous ne pouvez pas déclarer de séance.
+          <div className="emit-card p-10 text-center">
+            <p className="text-sm font-semibold text-[#03045E]">Aucun enseignement ne vous est affecté.</p>
+            <p className="mt-1 text-sm text-slate-500">Vous ne pouvez pas déclarer de séance.</p>
           </div>
         ) : (
-          <form onSubmit={handleEnregistrer} className="space-y-6">
-            <div>
-              <label className={labelClass}>Matière d'enseignement *</label>
-              <select
-                value={enseignementId}
-                onChange={(e) => setEnseignementId(e.target.value)}
-                className={inputClass}
-                required
-              >
-                <option value="" disabled>
-                  Sélectionner une matière
-                </option>
-                {enseignements.map((ens) => (
-                  <option key={ens.id} value={ens.id}>
-                    {ens.matiere} ({ens.niveau} - {ens.parcours})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className={labelClass}>Date de la séance *</label>
-              <input type="date" className={inputClass} value={date} onChange={(e) => setDate(e.target.value)} required />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <form onSubmit={handleEnregistrer} className="emit-card space-y-5 p-6 lg:col-span-2">
               <div>
-                <label className={labelClass}>Heure début *</label>
-                <input type="time" className={inputClass} value={heureDebut} onChange={(e) => setHeureDebut(e.target.value)} required />
-              </div>
-              <div>
-                <label className={labelClass}>Heure fin *</label>
-                <input type="time" className={inputClass} value={heureFin} onChange={(e) => setHeureFin(e.target.value)} required />
-              </div>
-            </div>
-
-            <div className="bg-cyan-50 text-[#006688] p-3 rounded-md flex items-center space-x-2 text-sm border border-cyan-100">
-              <Info size={16} className="text-[#0088aa]" />
-              <span>
-                Durée calculée automatiquement : <span className="font-bold">{calculateDuration()}</span>
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className={labelClass}>Salle</label>
-                <input
-                  type="text"
+                <label className={labelClass} htmlFor="decl-matiere">Matière d&apos;enseignement *</label>
+                <select
+                  id="decl-matiere"
+                  value={enseignementId}
+                  onChange={(e) => setEnseignementId(e.target.value)}
                   className={inputClass}
-                  placeholder={PLACEHOLDER_SALLE}
-                  value={salle}
-                  onChange={(e) => setSalle(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className={labelClass}>Type de séance</label>
-                <select value={typeSeance} onChange={(e) => setTypeSeance(e.target.value)} className={inputClass}>
-                  <option value="">-- Sélectionner --</option>
-                  {OPTIONS_TYPE_SEANCE.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
+                  required
+                >
+                  <option value="" disabled>
+                    Sélectionner une matière
+                  </option>
+                  {enseignements.map((ens) => (
+                    <option key={ens.id} value={ens.id}>
+                      {ens.matiere} ({ens.niveau} - {ens.parcours})
                     </option>
                   ))}
                 </select>
               </div>
-            </div>
 
-            <div>
-              <label className={labelClass}>Statut de la séance</label>
-              <select value={statut} onChange={(e) => setStatut(e.target.value as StatutSeance)} className={inputClass}>
-                <option value="REALISEE">Réalisée (comptabilisée dans les heures)</option>
-                <option value="PLANIFIEE">Planifiée (programmée, non comptabilisée)</option>
-              </select>
-            </div>
+              <div>
+                <label className={labelClass} htmlFor="decl-date">Date de la séance *</label>
+                <input
+                  id="decl-date"
+                  type="date"
+                  className={inputClass}
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  required
+                />
+              </div>
 
-            <div>
-              <label className={labelClass}>
-                Contenu enseigné {statut === 'REALISEE' ? '*' : '(facultatif pour une séance planifiée)'}
-              </label>
-              <textarea
-                className={`${inputClass} min-h-[120px]`}
-                placeholder="Décrivez le contenu abordé durant cette séance..."
-                value={contenu}
-                onChange={(e) => setContenu(e.target.value)}
-                required={statut === 'REALISEE'}
-              />
-            </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className={labelClass} htmlFor="decl-debut">Heure début *</label>
+                  <input
+                    id="decl-debut"
+                    type="time"
+                    className={inputClass}
+                    value={heureDebut}
+                    onChange={(e) => setHeureDebut(e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className={labelClass} htmlFor="decl-fin">Heure fin *</label>
+                  <input
+                    id="decl-fin"
+                    type="time"
+                    className={inputClass}
+                    value={heureFin}
+                    onChange={(e) => setHeureFin(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
 
-            <div className="flex justify-end space-x-4 pt-4">
-              <button
-                type="button"
-                onClick={() => navigate('/enseignant/seances')}
-                disabled={loading}
-                className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium"
-              >
-                Annuler
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-6 py-2 bg-[#0088aa] text-white rounded-md hover:bg-[#007799] font-medium disabled:opacity-50"
-              >
-                {loading ? 'Enregistrement...' : 'Enregistrer la séance'}
-              </button>
-            </div>
-          </form>
+              <div className="flex items-center gap-2 rounded-xl border border-[#90E0EF] bg-[#CAF0F8] px-3 py-2.5 text-sm text-[#03045E]">
+                <Info size={16} className="shrink-0 text-[#0077B6]" aria-hidden="true" />
+                <span>
+                  Durée calculée automatiquement :{' '}
+                  <span className="font-bold">{calculateDuration()}</span>
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className={labelClass} htmlFor="decl-salle">Salle</label>
+                  <input
+                    id="decl-salle"
+                    type="text"
+                    className={inputClass}
+                    placeholder={PLACEHOLDER_SALLE}
+                    value={salle}
+                    onChange={(e) => setSalle(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass} htmlFor="decl-type">Type de séance</label>
+                  <select
+                    id="decl-type"
+                    value={typeSeance}
+                    onChange={(e) => setTypeSeance(e.target.value)}
+                    className={inputClass}
+                  >
+                    <option value="">-- Sélectionner --</option>
+                    {OPTIONS_TYPE_SEANCE.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className={labelClass} htmlFor="decl-statut">Statut de la séance</label>
+                <select
+                  id="decl-statut"
+                  value={statut}
+                  onChange={(e) => setStatut(e.target.value as StatutSeance)}
+                  className={inputClass}
+                >
+                  <option value="REALISEE">Réalisée (comptabilisée dans les heures)</option>
+                  <option value="PLANIFIEE">Planifiée (programmée, non comptabilisée)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className={labelClass} htmlFor="decl-contenu">
+                  Contenu enseigné {statut === 'REALISEE' ? '*' : '(facultatif pour une séance planifiée)'}
+                </label>
+                <textarea
+                  id="decl-contenu"
+                  className={`${inputClass} min-h-[130px]`}
+                  placeholder="Décrivez le contenu abordé durant cette séance..."
+                  value={contenu}
+                  onChange={(e) => setContenu(e.target.value)}
+                  required={statut === 'REALISEE'}
+                />
+              </div>
+
+              <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => navigate('/enseignant/seances')}
+                  disabled={loading}
+                  className="emit-btn-ghost"
+                >
+                  Annuler
+                </button>
+                <button type="submit" disabled={loading} className="emit-btn-primary">
+                  <Save size={15} aria-hidden="true" />
+                  {loading ? 'Enregistrement...' : 'Enregistrer la séance'}
+                </button>
+              </div>
+            </form>
+
+            <aside className="space-y-5 lg:sticky lg:top-6 lg:self-start">
+              <div className="emit-card p-5">
+                <div className="mb-3 flex items-center gap-2">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#CAF0F8] text-[#03045E]" aria-hidden="true">
+                    <CalendarClock size={17} />
+                  </span>
+                  <h2 className="text-sm font-bold text-[#03045E]">Aperçu de la séance</h2>
+                </div>
+                <dl className="space-y-2 text-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <dt className="text-slate-500">Matière</dt>
+                    <dd className="text-right font-semibold text-[#03045E]">
+                      {enseignementSelectionne?.matiere ?? '—'}
+                    </dd>
+                  </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <dt className="text-slate-500">Date</dt>
+                    <dd className="text-right font-semibold text-[#03045E]">
+                      {date ? new Date(date).toLocaleDateString('fr-FR') : '—'}
+                    </dd>
+                  </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <dt className="text-slate-500">Horaire</dt>
+                    <dd className="inline-flex items-center gap-1 text-right font-semibold text-[#03045E]">
+                      <Timer size={13} aria-hidden="true" />
+                      {heureDebut} - {heureFin}
+                    </dd>
+                  </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <dt className="text-slate-500">Durée</dt>
+                    <dd className="text-right font-semibold text-[#03045E]">{calculateDuration()}</dd>
+                  </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <dt className="text-slate-500">Statut</dt>
+                    <dd
+                      className={`inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-bold ${
+                        statut === 'REALISEE'
+                          ? 'bg-emerald-50 text-emerald-700'
+                          : 'bg-amber-50 text-amber-700'
+                      }`}
+                    >
+                      <CheckCircle2 size={12} aria-hidden="true" />
+                      {statut === 'REALISEE' ? 'Réalisée' : 'Planifiée'}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+
+              <div className="rounded-2xl border border-[#90E0EF] bg-[#CAF0F8]/60 p-5">
+                <p className="text-xs font-bold uppercase tracking-wide text-[#03045E]">Rappel</p>
+                <p className="mt-1 text-sm text-slate-700">
+                  Une séance <strong>réalisée</strong> est comptabilisée dans les heures et la
+                  progression. Une séance <strong>planifiée</strong> reste programmée.
+                </p>
+              </div>
+            </aside>
+          </div>
         )}
       </div>
     </Layout>

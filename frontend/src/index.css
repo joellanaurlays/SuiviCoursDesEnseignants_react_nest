@@ -4,6 +4,7 @@
   --color-emit-navy: #03045E;
   --color-emit-blue: #0077B6;
   --color-emit-cyan: #00B4D8;
+  --color-emit-bright: #00E0EF;
   --color-emit-sky: #90E0EF;
   --color-emit-ice: #CAF0F8;
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
@@ -14,8 +15,127 @@
   --emit-navy: #03045E;
   --emit-blue: #0077B6;
   --emit-cyan: #00B4D8;
+  --emit-bright: #00E0EF;
   --emit-sky: #90E0EF;
   --emit-ice: #CAF0F8;
+}
+
+/* =========================================================================
+   Système de design du module « Suivi des enseignements ».
+
+   Les couleurs de marque sont celles de l'EMIT (#03045E, #0077B6, #00B4D8,
+   #00E0EF) ; les neutres sont alignés sur la palette slate déjà employée
+   par les autres modules de l'application (planning, examens, utilisateurs)
+   afin de garantir un rendu homogène sur l'ensemble du produit.
+   ========================================================================= */
+@layer components {
+  /* --- Surfaces ------------------------------------------------------- */
+  .emit-card {
+    @apply bg-white rounded-2xl shadow-sm border border-slate-200;
+  }
+
+  .emit-card-muted {
+    @apply bg-slate-50 rounded-2xl border border-slate-200;
+  }
+
+  .emit-card-accent {
+    @apply bg-gradient-to-br from-[#CAF0F8] via-white to-white rounded-2xl shadow-sm border border-[#90E0EF];
+  }
+
+  /* --- Titres ---------------------------------------------------------- */
+  .emit-eyebrow {
+    @apply text-xs font-bold uppercase tracking-wider text-[#0077B6];
+  }
+
+  .emit-title {
+    @apply text-2xl font-extrabold text-[#03045E] tracking-tight;
+  }
+
+  .emit-subtitle {
+    @apply text-sm text-slate-500;
+  }
+
+  /* --- Boutons --------------------------------------------------------- */
+  .emit-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-bold shadow-sm transition
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00B4D8] focus-visible:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none;
+  }
+
+  .emit-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-bold shadow-md transition
+           bg-gradient-to-r from-[#0077B6] to-[#00B4D8] text-white hover:opacity-95
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00B4D8] focus-visible:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none;
+  }
+
+  .emit-btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-bold shadow-md transition
+           bg-[#03045E] text-white hover:bg-[#0077B6]
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00B4D8] focus-visible:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none;
+  }
+
+  .emit-btn-outline {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-bold shadow-sm transition
+           bg-white text-[#0077B6] border border-[#90E0EF] hover:bg-[#CAF0F8]
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00B4D8] focus-visible:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none;
+  }
+
+  .emit-btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition
+           bg-slate-100 text-slate-700 hover:bg-slate-200
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00B4D8] focus-visible:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .emit-btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-bold shadow-md transition
+           bg-rose-600 text-white hover:bg-rose-700
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none;
+  }
+
+  .emit-btn-danger-outline {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-bold shadow-sm transition
+           bg-white text-rose-700 border border-rose-300 hover:bg-rose-50
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none;
+  }
+
+  /* --- Formulaires ----------------------------------------------------- */
+  .emit-label {
+    @apply block text-xs font-bold uppercase tracking-wide text-slate-500 mb-1.5;
+  }
+
+  .emit-input {
+    @apply block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800
+           placeholder:text-slate-400 transition
+           focus:border-[#0077B6] focus:outline-none focus:ring-2 focus:ring-[#00B4D8]/30;
+  }
+
+  .emit-input-invalid {
+    @apply border-rose-400 focus:border-rose-500 focus:ring-rose-200;
+  }
+
+  /* --- Pastilles ------------------------------------------------------- */
+  .emit-chip {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold;
+  }
+
+  /* --- Tableaux -------------------------------------------------------- */
+  .emit-table-head {
+    @apply text-left text-xs font-bold uppercase tracking-wide text-slate-500 bg-slate-50;
+  }
+
+  .emit-table-th {
+    @apply px-4 py-3 font-bold whitespace-nowrap;
+  }
+
+  .emit-table-td {
+    @apply px-4 py-3.5 align-middle text-sm text-slate-700;
+  }
 }
 
 /* Custom scrollbar for schedule tables */

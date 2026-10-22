@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AlertTriangle, CheckCircle2, Clock, Pencil, X, XCircle } from 'lucide-react';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  MapPin,
+  Pencil,
+  Save,
+  X,
+  XCircle,
+} from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
 import { seanceService } from '../../services/seance.service';
 import { Seance } from '../../types/enseignement';
@@ -32,10 +41,10 @@ function toDateInput(iso: string): string {
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex justify-between gap-4 border-b border-gray-100 py-2">
-      <span className="text-gray-500 text-sm">{label}</span>
-      <span className="font-medium text-[#0a0a32] text-right text-sm">
-        {value || <span className="italic text-gray-400">Non renseigné</span>}
+    <div className="flex items-start justify-between gap-4 border-b border-slate-100 py-2.5 last:border-0">
+      <span className="shrink-0 text-sm text-slate-500">{label}</span>
+      <span className="text-right text-sm font-semibold text-[#03045E]">
+        {value || <span className="italic font-normal text-slate-400">Non renseigné</span>}
       </span>
     </div>
   );
@@ -45,7 +54,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
 function ChampErreur({ message }: { message?: string }) {
   if (!message) return null;
   return (
-    <p className="mt-1 text-xs text-red-600" role="alert">
+    <p className="mt-1 text-xs font-semibold text-rose-600" role="alert">
       {message}
     </p>
   );
@@ -110,6 +119,15 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
     setMotifCorrection('');
     charger();
   }, [charger]);
+
+  /** Fermeture au clavier (Échap) sauf pendant un enregistrement. */
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !submitting) onClose();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [onClose, submitting]);
 
   /** Efface l'erreur d'un champ dès que l'enseignant le modifie. */
   const effacerErreur = (champ: keyof ErreursRealisation) => {
@@ -234,103 +252,157 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
     }
   };
 
-  const inputClass =
-    'w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:border-[#00e5ff] focus:ring-1 focus:ring-[#00e5ff]';
-  const labelClass = 'block text-sm font-medium text-gray-700 mb-1';
+  const inputClass = 'emit-input';
+  const labelClass = 'emit-label';
+
+  const optionType = (
+    <>
+      <option value="">-- Sélectionner --</option>
+      {OPTIONS_TYPE_SEANCE.map((opt) => (
+        <option key={opt.value} value={opt.value}>
+          {opt.label}
+        </option>
+      ))}
+    </>
+  );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-[#0a0a32]/50" onClick={submitting ? undefined : onClose} />
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
+      <div
+        className="absolute inset-0 bg-[#03045E]/40 backdrop-blur-sm"
+        onClick={submitting ? undefined : onClose}
+        aria-hidden="true"
+      />
 
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="seance-detail-titre"
-        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-xl border border-gray-200 shadow-xl"
+        className="relative flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-t-2xl border border-slate-200 bg-white shadow-2xl sm:rounded-2xl"
       >
-        <div className="flex items-start justify-between px-6 py-5 border-b border-gray-100">
-          <h2 id="seance-detail-titre" className="text-xl font-bold text-[#0a0a32]">
-            Détail de la séance
-          </h2>
-          <button
-            onClick={onClose}
-            disabled={submitting}
-            aria-label="Fermer"
-            className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
-          >
-            <X size={20} />
-          </button>
+        {/* En-tête */}
+        <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-6">
+          <div className="min-w-0">
+            <p className="emit-eyebrow">Séance</p>
+            <h2 id="seance-detail-titre" className="mt-0.5 truncate text-xl font-extrabold text-[#03045E]">
+              Détail de la séance
+            </h2>
+          </div>
+          <div className="flex items-center gap-2">
+            {seance && <SeanceStatutBadge statut={seance.statut} />}
+            <button
+              onClick={onClose}
+              disabled={submitting}
+              aria-label="Fermer"
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {loading ? (
-          <div className="px-6 py-10 text-center text-gray-500">Chargement du détail...</div>
+          <div className="px-6 py-14 text-center text-sm text-slate-500">Chargement du détail...</div>
         ) : loadError || !seance ? (
-          <div className="px-6 py-8">
-            <p className="text-sm text-red-600 font-semibold">{loadError ?? 'Séance introuvable.'}</p>
+          <div className="px-6 py-10">
+            <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700" role="alert">
+              {loadError ?? 'Séance introuvable.'}
+            </p>
           </div>
         ) : (
-          <div className="px-6 py-5 space-y-5">
-            {/* Détails */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <p className="font-semibold text-[#0a0a32]">
-                  {seance.enseignement?.matiereId ?? '—'}
-                </p>
-                <SeanceStatutBadge statut={seance.statut} />
+          <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5 sm:px-6">
+            {/* Récapitulatif */}
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-base font-extrabold text-[#03045E]">
+                    {seance.enseignement?.matiereId ?? '—'}
+                  </p>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    {formatDate(seance.dateSeance)} · {formatHoraire(seance.heureDebut, seance.heureFin)} ·{' '}
+                    {formatDuree(seance.duree)}
+                  </p>
+                </div>
+                <span className="flex shrink-0 items-center gap-1 rounded-xl bg-white px-2.5 py-1 text-xs font-bold text-slate-600 ring-1 ring-inset ring-slate-200">
+                  <Clock size={13} aria-hidden="true" />
+                  {formatDuree(seance.duree)}
+                </span>
               </div>
-              <InfoRow label="Enseignant responsable" value={seance.enseignement?.enseignantId} />
-              <InfoRow label="Date" value={formatDate(seance.dateSeance)} />
-              <InfoRow label="Horaires prévus" value={formatHoraire(seance.heureDebut, seance.heureFin)} />
-              <InfoRow label="Durée prévue" value={formatDuree(seance.duree)} />
-              {seance.statut === 'REALISEE' && (
-                <InfoRow label="Durée réalisée" value={formatDuree(seance.duree)} />
-              )}
-              <InfoRow label="Contenu enseigné" value={seance.contenuEnseigne} />
-              <InfoRow label="Salle" value={seance.salle} />
-              <InfoRow label="Type de séance" value={seance.typeSeance} />
-              <InfoRow label="Créée le" value={formatDate(seance.createdAt)} />
-              <InfoRow label="Dernière modification" value={formatDate(seance.updatedAt)} />
+
+              <div className="grid grid-cols-1 gap-x-8 sm:grid-cols-2">
+                <InfoRow label="Enseignant responsable" value={seance.enseignement?.enseignantId} />
+                <InfoRow label="Date" value={formatDate(seance.dateSeance)} />
+                <InfoRow label="Horaires prévus" value={formatHoraire(seance.heureDebut, seance.heureFin)} />
+                <InfoRow label="Durée prévue" value={formatDuree(seance.duree)} />
+                {seance.statut === 'REALISEE' && (
+                  <InfoRow label="Durée réalisée" value={formatDuree(seance.duree)} />
+                )}
+                <InfoRow
+                  label="Salle"
+                  value={
+                    seance.salle && (
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin size={13} aria-hidden="true" />
+                        {seance.salle}
+                      </span>
+                    )
+                  }
+                />
+                <InfoRow label="Type de séance" value={seance.typeSeance} />
+                <InfoRow label="Créée le" value={formatDate(seance.createdAt)} />
+                <InfoRow label="Dernière modification" value={formatDate(seance.updatedAt)} />
+              </div>
+
+              <div className="mt-3 rounded-xl bg-white px-3 py-2.5 ring-1 ring-inset ring-slate-200">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                  Contenu enseigné
+                </p>
+                <p className="mt-0.5 text-sm text-slate-700">
+                  {seance.contenuEnseigne || <span className="italic text-slate-400">Non renseigné</span>}
+                </p>
+              </div>
             </div>
 
             {actionError && (
-              <p className="text-sm text-red-600 font-semibold" role="alert">
+              <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700" role="alert">
                 {actionError}
               </p>
             )}
 
             {actionSuccess && mode === 'detail' && (
-              <p className="text-sm text-green-700 font-semibold" role="status">
+              <p className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700" role="status">
+                <CheckCircle2 size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
                 {actionSuccess}
               </p>
             )}
 
             {/* Mode détail : actions éventuelles */}
             {mode === 'detail' && (seance.peutRealiser || seance.peutAnnuler || seance.peutCorriger) && (
-              <div className="flex flex-col sm:flex-row gap-3 border-t border-gray-100 pt-4">
+              <div className="flex flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row">
                 {seance.peutRealiser && (
                   <button
                     onClick={() => ouvrirMode('realiser')}
-                    className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-[#0088aa] text-white rounded-md text-sm font-medium hover:bg-[#007799] transition-colors"
+                    className="emit-btn-primary flex-1"
                   >
-                    <CheckCircle2 size={16} className="mr-2" />
+                    <CheckCircle2 size={15} aria-hidden="true" />
                     Marquer comme réalisée
                   </button>
                 )}
                 {seance.peutCorriger && (
                   <button
                     onClick={() => ouvrirMode('corriger')}
-                    className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-[#0088aa] text-[#006688] rounded-md text-sm font-medium hover:bg-cyan-50 transition-colors"
+                    className="emit-btn-outline flex-1"
                   >
-                    <Pencil size={16} className="mr-2" />
+                    <Pencil size={15} aria-hidden="true" />
                     Corriger la séance
                   </button>
                 )}
                 {seance.peutAnnuler && (
                   <button
                     onClick={() => ouvrirMode('annuler')}
-                    className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-red-300 text-red-700 rounded-md text-sm font-medium hover:bg-red-50 transition-colors"
+                    className="emit-btn-danger-outline flex-1"
                   >
-                    <XCircle size={16} className="mr-2" />
+                    <XCircle size={15} aria-hidden="true" />
                     Annuler la séance
                   </button>
                 )}
@@ -339,27 +411,16 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
 
             {/* Formulaire de réalisation */}
             {mode === 'realiser' && (
-              <div className="border-t border-gray-100 pt-4 space-y-4">
-                <div className="flex items-center gap-2 text-[#006688] bg-cyan-50 border border-cyan-100 rounded-md px-3 py-2 text-sm">
-                  <Clock size={16} className="text-[#0088aa]" />
+              <div className="space-y-4 border-t border-slate-100 pt-4">
+                <div className="flex items-center gap-2 rounded-xl border border-[#90E0EF] bg-[#CAF0F8] px-3 py-2 text-sm text-[#03045E]">
+                  <Clock size={16} className="shrink-0 text-[#0077B6]" aria-hidden="true" />
                   <span>Confirmez les informations réellement observées.</span>
                 </div>
 
-                {/* Récapitulatif de la séance concernée */}
-                <div className="rounded-md border border-gray-200 bg-gray-50 px-4 py-3 text-sm">
-                  <p className="font-semibold text-[#0a0a32]">
-                    {seance.enseignement?.matiereId ?? '—'}
-                  </p>
-                  <p className="text-gray-600">
-                    Prévu le {formatDate(seance.dateSeance)} ·{' '}
-                    {formatHoraire(seance.heureDebut, seance.heureFin)} · Durée prévue{' '}
-                    {formatDuree(seance.duree)}
-                  </p>
-                </div>
-
                 <div>
-                  <label className={labelClass}>Date effective *</label>
+                  <label className={labelClass} htmlFor="realiser-date">Date effective *</label>
                   <input
+                    id="realiser-date"
                     type="date"
                     className={inputClass}
                     value={dateSeance}
@@ -368,14 +429,16 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                       effacerErreur('dateSeance');
                     }}
                     disabled={submitting}
+                    aria-invalid={Boolean(fieldErrors.dateSeance)}
                   />
                   <ChampErreur message={fieldErrors.dateSeance} />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className={labelClass}>Heure début *</label>
+                    <label className={labelClass} htmlFor="realiser-debut">Heure début *</label>
                     <input
+                      id="realiser-debut"
                       type="time"
                       className={inputClass}
                       value={heureDebut}
@@ -384,12 +447,14 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                         effacerErreur('heureDebut');
                       }}
                       disabled={submitting}
+                      aria-invalid={Boolean(fieldErrors.heureDebut)}
                     />
                     <ChampErreur message={fieldErrors.heureDebut} />
                   </div>
                   <div>
-                    <label className={labelClass}>Heure fin *</label>
+                    <label className={labelClass} htmlFor="realiser-fin">Heure fin *</label>
                     <input
+                      id="realiser-fin"
                       type="time"
                       className={inputClass}
                       value={heureFin}
@@ -398,14 +463,16 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                         effacerErreur('heureFin');
                       }}
                       disabled={submitting}
+                      aria-invalid={Boolean(fieldErrors.heureFin)}
                     />
                     <ChampErreur message={fieldErrors.heureFin} />
                   </div>
                 </div>
 
                 <div>
-                  <label className={labelClass}>Salle *</label>
+                  <label className={labelClass} htmlFor="realiser-salle">Salle *</label>
                   <input
+                    id="realiser-salle"
                     type="text"
                     className={inputClass}
                     value={salle}
@@ -421,8 +488,9 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                 </div>
 
                 <div>
-                  <label className={labelClass}>Type de séance *</label>
+                  <label className={labelClass} htmlFor="realiser-type">Type de séance *</label>
                   <select
+                    id="realiser-type"
                     className={inputClass}
                     value={typeSeance}
                     onChange={(e) => {
@@ -432,19 +500,15 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                     disabled={submitting}
                     aria-invalid={Boolean(fieldErrors.typeSeance)}
                   >
-                    <option value="">-- Sélectionner --</option>
-                    {OPTIONS_TYPE_SEANCE.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
+                    {optionType}
                   </select>
                   <ChampErreur message={fieldErrors.typeSeance} />
                 </div>
 
                 <div>
-                  <label className={labelClass}>Contenu enseigné *</label>
+                  <label className={labelClass} htmlFor="realiser-contenu">Contenu enseigné *</label>
                   <textarea
+                    id="realiser-contenu"
                     className={`${inputClass} min-h-[100px]`}
                     value={contenuEnseigne}
                     onChange={(e) => {
@@ -458,12 +522,12 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                   <ChampErreur message={fieldErrors.contenuEnseigne} />
                 </div>
 
-                <div className="flex justify-end gap-3 pt-2">
+                <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
                   <button
                     type="button"
                     onClick={() => ouvrirMode('detail')}
                     disabled={submitting}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                    className="emit-btn-ghost"
                   >
                     Annuler
                   </button>
@@ -471,8 +535,9 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                     type="button"
                     onClick={confirmerRealisation}
                     disabled={submitting}
-                    className="px-4 py-2 bg-[#0088aa] text-white rounded-md text-sm font-medium hover:bg-[#007799] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="emit-btn-primary"
                   >
+                    <CheckCircle2 size={15} aria-hidden="true" />
                     {submitting ? 'Enregistrement...' : 'Confirmer la réalisation'}
                   </button>
                 </div>
@@ -481,18 +546,19 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
 
             {/* Confirmation d'annulation */}
             {mode === 'annuler' && (
-              <div className="border-t border-gray-100 pt-4 space-y-4">
-                <div className="flex items-start gap-2 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
-                  <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+              <div className="space-y-4 border-t border-slate-100 pt-4">
+                <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  <AlertTriangle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
                   <p>
                     La séance sera marquée <strong>Annulée</strong>, ne comptera aucune heure
-                    réalisée et restera visible dans l'historique.
+                    réalisée et restera visible dans l&apos;historique.
                   </p>
                 </div>
 
                 <div>
-                  <label className={labelClass}>Justification (facultative)</label>
+                  <label className={labelClass} htmlFor="annuler-motif">Justification (facultative)</label>
                   <textarea
+                    id="annuler-motif"
                     className={`${inputClass} min-h-[80px]`}
                     value={motifAnnulation}
                     onChange={(e) => setMotifAnnulation(e.target.value)}
@@ -501,12 +567,12 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                   />
                 </div>
 
-                <div className="flex justify-end gap-3 pt-2">
+                <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
                   <button
                     type="button"
                     onClick={() => setMode('detail')}
                     disabled={submitting}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                    className="emit-btn-ghost"
                   >
                     Retour
                   </button>
@@ -514,8 +580,9 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                     type="button"
                     onClick={confirmerAnnulation}
                     disabled={submitting}
-                    className="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="emit-btn-danger"
                   >
+                    <XCircle size={15} aria-hidden="true" />
                     {submitting ? 'Annulation...' : "Confirmer l'annulation"}
                   </button>
                 </div>
@@ -524,19 +591,20 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
 
             {/* Formulaire de correction exceptionnelle */}
             {mode === 'corriger' && (
-              <div className="border-t border-gray-100 pt-4 space-y-4">
-                <div className="flex items-start gap-2 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
-                  <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+              <div className="space-y-4 border-t border-slate-100 pt-4">
+                <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  <AlertTriangle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
                   <p>
                     Cette séance est déjà <strong>réalisée</strong>. Toute correction est une
                     opération exceptionnelle : les valeurs avant/après et le motif sont conservés
-                    dans l'historique.
+                    dans l&apos;historique.
                   </p>
                 </div>
 
                 <div>
-                  <label className={labelClass}>Date effective</label>
+                  <label className={labelClass} htmlFor="corriger-date">Date effective</label>
                   <input
+                    id="corriger-date"
                     type="date"
                     className={inputClass}
                     value={dateSeance}
@@ -545,10 +613,11 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className={labelClass}>Heure début</label>
+                    <label className={labelClass} htmlFor="corriger-debut">Heure début</label>
                     <input
+                      id="corriger-debut"
                       type="time"
                       className={inputClass}
                       value={heureDebut}
@@ -557,8 +626,9 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                     />
                   </div>
                   <div>
-                    <label className={labelClass}>Heure fin</label>
+                    <label className={labelClass} htmlFor="corriger-fin">Heure fin</label>
                     <input
+                      id="corriger-fin"
                       type="time"
                       className={inputClass}
                       value={heureFin}
@@ -569,8 +639,9 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                 </div>
 
                 <div>
-                  <label className={labelClass}>Salle</label>
+                  <label className={labelClass} htmlFor="corriger-salle">Salle</label>
                   <input
+                    id="corriger-salle"
                     type="text"
                     className={inputClass}
                     value={salle}
@@ -581,25 +652,22 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                 </div>
 
                 <div>
-                  <label className={labelClass}>Type de séance</label>
+                  <label className={labelClass} htmlFor="corriger-type">Type de séance</label>
                   <select
+                    id="corriger-type"
                     className={inputClass}
                     value={typeSeance}
                     onChange={(e) => setTypeSeance(e.target.value)}
                     disabled={submitting}
                   >
-                    <option value="">-- Sélectionner --</option>
-                    {OPTIONS_TYPE_SEANCE.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
+                    {optionType}
                   </select>
                 </div>
 
                 <div>
-                  <label className={labelClass}>Contenu enseigné</label>
+                  <label className={labelClass} htmlFor="corriger-contenu">Contenu enseigné</label>
                   <textarea
+                    id="corriger-contenu"
                     className={`${inputClass} min-h-[80px]`}
                     value={contenuEnseigne}
                     onChange={(e) => setContenuEnseigne(e.target.value)}
@@ -608,8 +676,9 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                 </div>
 
                 <div>
-                  <label className={labelClass}>Motif de la correction</label>
+                  <label className={labelClass} htmlFor="corriger-motif">Motif de la correction</label>
                   <textarea
+                    id="corriger-motif"
                     className={`${inputClass} min-h-[60px]`}
                     value={motifCorrection}
                     onChange={(e) => setMotifCorrection(e.target.value)}
@@ -618,12 +687,12 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                   />
                 </div>
 
-                <div className="flex justify-end gap-3 pt-2">
+                <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
                   <button
                     type="button"
                     onClick={() => setMode('detail')}
                     disabled={submitting}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                    className="emit-btn-ghost"
                   >
                     Retour
                   </button>
@@ -631,8 +700,9 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                     type="button"
                     onClick={confirmerCorrection}
                     disabled={submitting}
-                    className="px-4 py-2 bg-[#0088aa] text-white rounded-md text-sm font-medium hover:bg-[#007799] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="emit-btn-primary"
                   >
+                    <Save size={15} aria-hidden="true" />
                     {submitting ? 'Enregistrement...' : 'Enregistrer la correction'}
                   </button>
                 </div>

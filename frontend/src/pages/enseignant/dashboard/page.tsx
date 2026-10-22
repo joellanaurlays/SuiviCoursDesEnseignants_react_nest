@@ -39,9 +39,11 @@ export default function EnseignantDashboard() {
 
   return (
     <Layout>
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8 border-b pb-4">
-          <h1 className="text-3xl font-bold text-[#0a0a32]">Tableau de bord</h1>
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-6">
+          <p className="emit-eyebrow">Espace enseignant</p>
+          <h1 className="emit-title mt-1">Tableau de bord</h1>
+          <p className="emit-subtitle mt-1">Vue d&apos;ensemble de vos enseignements et de votre progression.</p>
         </div>
 
         {loading ? (
@@ -52,44 +54,48 @@ export default function EnseignantDashboard() {
           <EmptyState message="Aucune donnée disponible." />
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <StatCard label="Enseignements" value={data.stats.totalEnseignements} />
-              <StatCard label="Séances réalisées" value={data.stats.totalSeancesRealisees} />
-              <StatCard label="Heures réalisées" value={`${data.stats.totalHeuresRealisees}h`} accent />
-              <StatCard label="Progression moyenne" value={`${Math.round(data.stats.averageProgression)}%`} />
+            <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <StatCard label="Enseignements" value={data.stats.totalEnseignements} tone="primary" icon={<CalendarClock size={18} />} />
+              <StatCard label="Séances réalisées" value={data.stats.totalSeancesRealisees} tone="info" />
+              <StatCard label="Heures réalisées" value={`${data.stats.totalHeuresRealisees}h`} tone="success" accent />
+              <StatCard label="Progression moyenne" value={`${Math.round(data.stats.averageProgression)}%`} tone="primary" />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
               <StatCard
                 label="Terminés (volume atteint)"
                 value={data.stats.terminesParVolumeAtteint}
+                tone="success"
               />
               <StatCard
                 label="Clôtures anticipées"
                 value={data.stats.terminesParClotureAnticipee}
+                tone="warning"
                 accent
               />
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-start gap-3">
-                <Info size={18} className="text-gray-400 mt-0.5 shrink-0" />
-                <p className="text-xs text-gray-500">
-                  Une clôture anticipée termine l'enseignement sans atteindre le volume : la
+              <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <Info size={18} className="mt-0.5 shrink-0 text-[#0077B6]" aria-hidden="true" />
+                <p className="text-xs text-slate-500">
+                  Une clôture anticipée termine l&apos;enseignement sans atteindre le volume : la
                   progression affichée reste celle des heures réellement réalisées.
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-1 bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <CalendarClock size={20} className="text-[#0088aa]" />
-                  <h2 className="text-lg font-bold text-[#0a0a32]">Prochaines séances</h2>
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-1">
+                <div className="mb-4 flex items-center gap-2">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#CAF0F8] text-[#03045E]" aria-hidden="true">
+                    <CalendarClock size={17} />
+                  </span>
+                  <h2 className="text-lg font-bold text-[#03045E]">Prochaines séances</h2>
                 </div>
                 {data.prochainesSeances.length > 0 ? (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {data.prochainesSeances.map((seance) => (
-                      <div key={seance.id} className="border-l-4 border-[#00e5ff] bg-cyan-50/50 p-4 rounded-r-lg">
-                        <p className="font-medium text-[#0a0a32]">{seance.matiereId}</p>
-                        <p className="text-sm text-gray-500 mt-1">
+                      <div key={seance.id} className="rounded-xl border-l-4 border-[#00B4D8] bg-[#CAF0F8]/50 px-4 py-3">
+                        <p className="font-bold text-[#03045E]">{seance.matiereId}</p>
+                        <p className="mt-0.5 text-sm text-slate-500">
                           {formatDate(seance.dateSeance)} · {seance.heureDebut} - {seance.heureFin}
                         </p>
                       </div>
@@ -100,15 +106,15 @@ export default function EnseignantDashboard() {
                 )}
               </div>
 
-              <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                <h2 className="text-lg font-bold text-[#0a0a32] mb-4">Progression par matière</h2>
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
+                <h2 className="mb-4 text-lg font-bold text-[#03045E]">Progression par matière</h2>
                 {data.progressionParMatiere.length > 0 ? (
-                  <div className="space-y-6">
+                  <div className="space-y-5">
                     {data.progressionParMatiere.map((prog, index) => (
                       <div key={`${prog.matiereId}-${index}`}>
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="font-medium text-[#0a0a32]">{prog.matiereId}</span>
-                          <span className="text-sm font-medium text-gray-600">{prog.progression}%</span>
+                        <div className="mb-2 flex items-center justify-between">
+                          <span className="font-semibold text-[#03045E]">{prog.matiereId}</span>
+                          <span className="text-sm font-bold text-slate-600">{prog.progression}%</span>
                         </div>
                         <ProgressionBar progression={prog.progression} />
                       </div>

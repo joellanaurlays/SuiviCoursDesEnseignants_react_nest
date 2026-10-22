@@ -163,13 +163,16 @@ export function SuiviListPage({
 
   return (
     <Layout>
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-2 border-b pb-4">
-          <div>
-            <h1 className="text-3xl font-bold text-[#0a0a32]">{title}</h1>
-            {intro && <p className="text-sm text-gray-500 mt-1">{intro}</p>}
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <p className="emit-eyebrow">Pilotage pédagogique</p>
+            <h1 className="emit-title mt-1">{title}</h1>
+            {intro && <p className="emit-subtitle mt-1">{intro}</p>}
           </div>
-          <span className="text-sm text-gray-500">{rows.length} affiché(s) sur {fullData.length}</span>
+          <span className="inline-flex w-fit items-center rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 shadow-sm">
+            {rows.length} affiché(s) sur {fullData.length}
+          </span>
         </div>
 
         {error ? (
@@ -198,7 +201,7 @@ export function SuiviListPage({
               onReset={() => applyFilters({})}
             />
 
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
               {loading ? (
                 <LoadingState label="Application des filtres..." />
               ) : (

@@ -1,5 +1,17 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import {
+  ArrowLeft,
+  AlertTriangle,
+  CalendarDays,
+  CalendarRange,
+  Clock3,
+  GraduationCap,
+  Hourglass,
+  Layers,
+  Timer,
+  TrendingUp,
+  UserRound,
+} from 'lucide-react';
 import { Seance, SuiviEnseignement } from '../../types/enseignement';
 import { formatDuree } from '../../utils/format';
 import { EtatBadge } from './EtatBadge';
@@ -19,53 +31,90 @@ interface SuiviDetailViewProps {
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex justify-between border-b border-gray-100 pb-2">
-      <span className="text-gray-500">{label}</span>
-      <span className="font-bold text-[#0a0a32] text-right">{value}</span>
+    <div className="flex items-start justify-between gap-4 border-b border-slate-100 py-2.5 last:border-0">
+      <span className="text-sm text-slate-500">{label}</span>
+      <span className="text-right text-sm font-semibold text-[#03045E]">{value}</span>
     </div>
   );
 }
 
-function StatBlock({ label, value, accent }: { label: string; value: React.ReactNode; accent?: boolean }) {
+function StatBlock({
+  label,
+  value,
+  icon,
+  accent = false,
+}: {
+  label: string;
+  value: React.ReactNode;
+  icon: React.ReactNode;
+  accent?: boolean;
+}) {
   return (
-    <div className={`p-4 rounded-lg border ${accent ? 'bg-cyan-50 border-cyan-200' : 'bg-gray-50 border-gray-100'}`}>
-      <p className={`text-xs uppercase tracking-wider font-semibold ${accent ? 'text-cyan-700' : 'text-gray-500'}`}>
-        {label}
-      </p>
-      <p className="font-bold text-2xl mt-1 text-[#0a0a32]">{value}</p>
+    <div
+      className={`rounded-xl border p-3.5 ${
+        accent ? 'border-[#90E0EF] bg-[#CAF0F8]' : 'border-slate-200 bg-slate-50'
+      }`}
+    >
+      <div className="flex items-center gap-1.5">
+        <span className={accent ? 'text-[#03045E]' : 'text-slate-400'} aria-hidden="true">
+          {icon}
+        </span>
+        <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">{label}</p>
+      </div>
+      <p className="mt-1 text-2xl font-extrabold text-[#03045E]">{value}</p>
     </div>
   );
 }
 
 export function SuiviDetailView({ enseignement, seances, backLabel, backLink, actionCloture }: SuiviDetailViewProps) {
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="mx-auto max-w-6xl">
       <div className="mb-6">
         <Link
           to={backLink}
-          className="inline-flex items-center text-sm font-medium text-[#0088aa] hover:text-[#006688] mb-4"
+          className="inline-flex items-center gap-1.5 rounded-lg px-1 py-1 text-sm font-semibold text-[#0077B6] transition hover:text-[#03045E]"
         >
-          <ArrowLeft size={16} className="mr-1" /> {backLabel}
+          <ArrowLeft size={16} aria-hidden="true" /> {backLabel}
         </Link>
-        <div className="flex justify-between items-center border-b pb-4">
-          <h1 className="text-3xl font-bold text-[#0a0a32]">Détail de l'enseignement</h1>
-          <span className="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm font-medium">
-            Année : {enseignement.anneeUniversitaire}
-          </span>
+
+        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <p className="emit-eyebrow">Fiche de suivi</p>
+            <h1 className="emit-title mt-1 truncate">Détail de l&apos;enseignement</h1>
+            <p className="emit-subtitle mt-1">{enseignement.matiere}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <EtatBadge etat={enseignement.etat} />
+            <span className="emit-chip bg-white text-slate-600 ring-1 ring-inset ring-slate-200">
+              <CalendarRange size={13} aria-hidden="true" />
+              Année {enseignement.anneeUniversitaire}
+            </span>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
           {/* Fiche d'enseignement */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-[#0a0a32]">Fiche d'enseignement</h2>
+          <section className="emit-card p-6">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#CAF0F8] text-[#03045E]" aria-hidden="true">
+                  <GraduationCap size={18} />
+                </span>
+                <h2 className="text-lg font-bold text-[#03045E]">Fiche d&apos;enseignement</h2>
+              </div>
               <EtatBadge etat={enseignement.etat} />
             </div>
-            <div className="space-y-4">
-              <InfoRow label="Matière" value={enseignement.matiere} />
-              <InfoRow label="Enseignant" value={enseignement.enseignant} />
+            <div className="grid grid-cols-1 gap-x-8 sm:grid-cols-2">
+              <InfoRow
+                label="Matière"
+                value={<span className="inline-flex items-center gap-1.5"><Layers size={13} aria-hidden="true" />{enseignement.matiere}</span>}
+              />
+              <InfoRow
+                label="Enseignant"
+                value={<span className="inline-flex items-center gap-1.5"><UserRound size={13} aria-hidden="true" />{enseignement.enseignant}</span>}
+              />
               <InfoRow label="Mention" value={enseignement.mention} />
               <InfoRow label="Parcours" value={enseignement.parcours} />
               <InfoRow label="Cycle" value={enseignement.cycle} />
@@ -74,83 +123,133 @@ export function SuiviDetailView({ enseignement, seances, backLabel, backLink, ac
               <InfoRow label="Année universitaire" value={enseignement.anneeUniversitaire} />
               <InfoRow label="Volume prévu" value={`${enseignement.volumePrevu}h`} />
             </div>
-          </div>
+          </section>
 
           {/* Historique des séances */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <h2 className="text-xl font-bold text-[#0a0a32] mb-6">Historique des séances</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="text-gray-500 border-b border-gray-100">
-                  <tr>
-                    <th className="px-4 py-3 font-medium">Date</th>
-                    <th className="px-4 py-3 font-medium">Horaire</th>
-                    <th className="px-4 py-3 font-medium">Salle</th>
-                    <th className="px-4 py-3 font-medium">Type</th>
-                    <th className="px-4 py-3 font-medium">Durée</th>
-                    <th className="px-4 py-3 font-medium">Statut</th>
-                    <th className="px-4 py-3 font-medium">Contenu enseigné</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {seances.map((seance) => (
-                    <tr key={seance.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">
-                        {new Date(seance.dateSeance).toLocaleDateString('fr-FR')}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
-                        {seance.heureDebut} - {seance.heureFin}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
-                        {seance.salle || <span className="italic text-gray-400">—</span>}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
-                        {seance.typeSeance || <span className="italic text-gray-400">—</span>}
-                      </td>
-                      <td className="px-4 py-3 font-medium whitespace-nowrap">{formatDuree(seance.duree)}</td>
-                      <td className="px-4 py-3">
-                        <SeanceStatutBadge statut={seance.statut} />
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {seance.contenuEnseigne || <span className="italic text-gray-400">Non renseigné</span>}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {seances.length === 0 && <EmptyState message="Aucune séance enregistrée pour cet enseignement." />}
+          <section className="emit-card overflow-hidden">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
+              <div className="flex items-center gap-2">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#CAF0F8] text-[#03045E]" aria-hidden="true">
+                  <CalendarDays size={18} />
+                </span>
+                <h2 className="text-lg font-bold text-[#03045E]">Historique des séances</h2>
+              </div>
+              <span className="text-xs font-semibold text-slate-500">
+                {seances.length} séance(s)
+              </span>
             </div>
-          </div>
+
+            {seances.length === 0 ? (
+              <EmptyState
+                message="Aucune séance enregistrée pour cet enseignement."
+                hint="Les séances déclarées par l'enseignant apparaîtront ici."
+              />
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-left">
+                  <thead className="emit-table-head">
+                    <tr>
+                      <th scope="col" className="emit-table-th">Date</th>
+                      <th scope="col" className="emit-table-th">Horaire</th>
+                      <th scope="col" className="emit-table-th">Salle</th>
+                      <th scope="col" className="emit-table-th">Type</th>
+                      <th scope="col" className="emit-table-th">Durée</th>
+                      <th scope="col" className="emit-table-th">Statut</th>
+                      <th scope="col" className="emit-table-th">Contenu enseigné</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {seances.map((seance) => (
+                      <tr key={seance.id} className="transition-colors hover:bg-[#CAF0F8]/40">
+                        <td className="emit-table-td whitespace-nowrap font-medium text-slate-700">
+                          {new Date(seance.dateSeance).toLocaleDateString('fr-FR')}
+                        </td>
+                        <td className="emit-table-td whitespace-nowrap text-slate-500">
+                          {seance.heureDebut} - {seance.heureFin}
+                        </td>
+                        <td className="emit-table-td whitespace-nowrap text-slate-500">
+                          {seance.salle || <span className="italic text-slate-400">—</span>}
+                        </td>
+                        <td className="emit-table-td whitespace-nowrap text-slate-500">
+                          {seance.typeSeance || <span className="italic text-slate-400">—</span>}
+                        </td>
+                        <td className="emit-table-td whitespace-nowrap font-medium text-slate-700">
+                          {formatDuree(seance.duree)}
+                        </td>
+                        <td className="emit-table-td">
+                          <SeanceStatutBadge statut={seance.statut} />
+                        </td>
+                        <td className="emit-table-td max-w-xs text-slate-500">
+                          {seance.contenuEnseigne || <span className="italic text-slate-400">Non renseigné</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
         </div>
 
         <div className="space-y-6">
           {/* Suivi des heures */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <h2 className="text-xl font-bold text-[#0a0a32] mb-4">Suivi des heures</h2>
+          <section className="emit-card p-6">
+            <div className="mb-4 flex items-center gap-2">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#CAF0F8] text-[#03045E]" aria-hidden="true">
+                <Timer size={18} />
+              </span>
+              <h2 className="text-lg font-bold text-[#03045E]">Suivi des heures</h2>
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
-              <StatBlock label="Volume prévu" value={`${enseignement.volumePrevu}h`} />
-              <StatBlock label="Heures réalisées" value={`${enseignement.heuresRealisees}h`} accent />
-              <StatBlock label="Heures restantes" value={`${enseignement.heuresRestantes}h`} />
-              <StatBlock label="Progression" value={`${enseignement.progression}%`} />
+              <StatBlock
+                label="Volume prévu"
+                value={`${enseignement.volumePrevu}h`}
+                icon={<CalendarRange size={13} />}
+              />
+              <StatBlock
+                label="Heures réalisées"
+                value={`${enseignement.heuresRealisees}h`}
+                icon={<Clock3 size={13} />}
+                accent
+              />
+              <StatBlock
+                label="Heures restantes"
+                value={`${enseignement.heuresRestantes}h`}
+                icon={<Hourglass size={13} />}
+              />
+              <StatBlock
+                label="Progression"
+                value={`${enseignement.progression}%`}
+                icon={<TrendingUp size={13} />}
+              />
             </div>
+
             <div className="mt-4">
-              <ProgressionBar progression={enseignement.progression} showLabel />
+              <ProgressionBar progression={enseignement.progression} showLabel size="lg" />
             </div>
-            <div className="mt-5 flex items-center justify-between border-t border-gray-100 pt-4">
-              <span className="text-gray-500 text-sm">État</span>
+
+            <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
+              <span className="text-sm font-semibold text-slate-500">État</span>
               <EtatBadge etat={enseignement.etat} />
             </div>
-            {actionCloture && <div className="mt-5 border-t border-gray-100 pt-4">{actionCloture}</div>}
-          </div>
+
+            {actionCloture && <div className="mt-5 border-t border-slate-100 pt-4">{actionCloture}</div>}
+          </section>
 
           {/* Clôture anticipée */}
           {enseignement.clotureAnticipee && (
-            <div className="bg-white rounded-xl border border-purple-200 shadow-sm p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-bold text-[#0a0a32]">Clôture anticipée</h2>
+            <section className="rounded-2xl border border-violet-200 bg-violet-50/60 p-6 shadow-sm">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-violet-600" aria-hidden="true">
+                    <AlertTriangle size={18} />
+                  </span>
+                  <h2 className="text-lg font-bold text-[#03045E]">Clôture anticipée</h2>
+                </div>
                 <ClotureBadge typeCloture={enseignement.typeCloture} />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <InfoRow label="Motif" value={enseignement.motifCloture || 'Non renseigné'} />
                 <InfoRow
                   label="Date de clôture"
@@ -161,27 +260,36 @@ export function SuiviDetailView({ enseignement, seances, backLabel, backLink, ac
                   }
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-3">
+              <p className="mt-3 text-xs text-slate-500">
                 La progression ci-dessus reste celle des heures réellement réalisées : la clôture
-                anticipée ne l'a pas modifiée.
+                anticipée ne l&apos;a pas modifiée.
               </p>
-            </div>
+            </section>
           )}
 
           {/* Résumé */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <h2 className="text-lg font-bold text-[#0a0a32] mb-4">Séances réalisées</h2>
-            <p className="text-sm text-gray-600">
-              {enseignement.nombreSeancesRealisees} séance(s) réalisée(s)
-              {enseignement.derniereSeanceRealisee &&
-                ` · dernier cours le ${new Date(enseignement.derniereSeanceRealisee).toLocaleDateString('fr-FR')}`}
+          <section className="emit-card p-6">
+            <h2 className="mb-3 text-lg font-bold text-[#03045E]">Séances réalisées</h2>
+            <p className="text-sm text-slate-600">
+              <span className="text-2xl font-extrabold text-[#03045E]">
+                {enseignement.nombreSeancesRealisees}
+              </span>{' '}
+              séance(s) réalisée(s)
+              {enseignement.derniereSeanceRealisee && (
+                <>
+                  {' '}
+                  · dernier cours le{' '}
+                  {new Date(enseignement.derniereSeanceRealisee).toLocaleDateString('fr-FR')}
+                </>
+              )}
             </p>
             {enseignement.enRetard && (
-              <p className="text-sm text-red-600 font-semibold mt-2">
-                ⚠ Aucune séance réalisée depuis plus de 14 jours
+              <p className="mt-3 flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">
+                <AlertTriangle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+                Aucune séance réalisée depuis plus de 14 jours
               </p>
             )}
-          </div>
+          </section>
         </div>
       </div>
     </div>

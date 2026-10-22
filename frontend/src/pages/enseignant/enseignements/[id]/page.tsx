@@ -83,10 +83,10 @@ export default function EnseignementDetailPage() {
             peutCloturer ? (
               <button
                 onClick={() => setModalOuverte(true)}
-                className="w-full inline-flex items-center justify-center px-4 py-2 bg-[#0088aa] text-white rounded-md text-sm font-medium hover:bg-[#007799] transition-colors"
+                className="emit-btn-primary w-full"
               >
-                <CheckCircle2 size={16} className="mr-2" />
-                Clôturer l'enseignement
+                <CheckCircle2 size={16} aria-hidden="true" />
+                Clôturer l&apos;enseignement
               </button>
             ) : undefined
           }
