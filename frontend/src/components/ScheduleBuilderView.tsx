@@ -447,10 +447,12 @@ export const ScheduleBuilderView: React.FC<ScheduleBuilderViewProps> = ({
           <div className="space-y-4 text-xs">
             {/* 1. Choix de l'Enseignement */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              <label htmlFor="builder-teaching" className="block text-xs font-bold text-slate-700 mb-1.5">
                 1. Sélectionner l'Enseignement & Matière *
               </label>
               <select
+                id="builder-teaching"
+                name="enseignement"
                 aria-label="Sélectionner l'enseignement et matière"
                 value={selectedTeachingId}
                 onChange={(e) => setSelectedTeachingId(Number(e.target.value))}
@@ -488,10 +490,12 @@ export const ScheduleBuilderView: React.FC<ScheduleBuilderViewProps> = ({
             {/* 2. Choix de la Date & Créneau Horaire */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                <label htmlFor="builder-time-slot" className="block text-xs font-bold text-slate-700 mb-1.5">
                   2. Créneau Horaire EMIT *
                 </label>
                 <select
+                  id="builder-time-slot"
+                  name="creneau"
                   aria-label="Sélectionner le créneau horaire"
                   value={selectedSlotId}
                   onChange={(e) => setSelectedSlotId(Number(e.target.value))}
@@ -506,10 +510,12 @@ export const ScheduleBuilderView: React.FC<ScheduleBuilderViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                <label htmlFor="builder-date" className="block text-xs font-bold text-slate-700 mb-1.5">
                   Date de la Séance (Optionnel)
                 </label>
                 <input
+                  id="builder-date"
+                  name="dateSeance"
                   type="date"
                   value={sessionDate}
                   onChange={(e) => setSessionDate(e.target.value)}
@@ -521,7 +527,7 @@ export const ScheduleBuilderView: React.FC<ScheduleBuilderViewProps> = ({
             {/* 3. Choix de la Salle */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-bold text-slate-700">
+                <label htmlFor="builder-room" className="text-xs font-bold text-slate-700">
                   3. Salle de Cours *
                 </label>
                 {selectedRoom && selectedTeaching && selectedRoom.capacite < selectedTeaching.effectifEtudiants && (
@@ -531,6 +537,8 @@ export const ScheduleBuilderView: React.FC<ScheduleBuilderViewProps> = ({
                 )}
               </div>
               <select
+                id="builder-room"
+                name="salle"
                 aria-label="Sélectionner la salle de cours"
                 value={selectedRoomId}
                 onChange={(e) => setSelectedRoomId(Number(e.target.value))}
@@ -547,8 +555,10 @@ export const ScheduleBuilderView: React.FC<ScheduleBuilderViewProps> = ({
             {/* 4. Type de séance & Notes */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">Type de Séance</label>
+                <label htmlFor="builder-session-type" className="block text-xs font-bold text-slate-700 mb-1.5">Type de Séance</label>
                 <select
+                  id="builder-session-type"
+                  name="typeSeance"
                   aria-label="Sélectionner le type de séance"
                   value={sessionType}
                   onChange={(e) => setSessionType(e.target.value as 'CM' | 'TD' | 'TP')}
@@ -561,8 +571,10 @@ export const ScheduleBuilderView: React.FC<ScheduleBuilderViewProps> = ({
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">Consignes / Notes (Optionnel)</label>
+                <label htmlFor="builder-notes" className="block text-xs font-bold text-slate-700 mb-1.5">Consignes / Notes (Optionnel)</label>
                 <input
+                  id="builder-notes"
+                  name="notes"
                   type="text"
                   placeholder="Ex: Chapitre 4, matériel requis..."
                   value={sessionNotes}

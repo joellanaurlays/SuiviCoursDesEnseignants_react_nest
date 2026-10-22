@@ -1,10 +1,12 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
-import DashboardPlaceholder from './pages/DashboardPlaceholder.jsx';
+import LoginPage from './pages/LoginPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 import UsersListPage from './pages/UsersListPage.jsx';
 import UserFormPage from './pages/UserFormPage.jsx';
 import ExamsModuleFixed from './exams/ExamsModuleFixed.jsx';
+import PlanningWorkspace from './components/PlanningWorkspace';
+import RoleHomeRedirect from './routing/RoleHomeRedirect.jsx';
 
 // Pont identité JWT -> en-têtes x-user-* pour le module suivi (Membres 2/4).
 import { AuthProvider as SuiviAuthProvider } from './auth/AuthContext';
@@ -42,11 +44,21 @@ export default function App() {
   return (
     <SuiviAuthProvider>
       <Routes>
-        {/* La route de connexion est désactivée temporairement pour l'aperçu local. */}
+        <Route path="/login" element={<LoginPage />} />
 
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        {/* Une seule règle choisit le tableau de bord selon le rôle connecté. */}
+        <Route path="/" element={<RoleHomeRedirect />} />
+        <Route path="/dashboard" element={<RoleHomeRedirect />} />
 
-        <Route path="/dashboard" element={<DashboardPlaceholder />} />
+        {/* Espace membre 5, disponible à cette URL pour tous les comptes connectés. */}
+        <Route
+          path="/planning"
+          element={
+            <ProtectedRoute>
+              <PlanningWorkspace />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/users"
@@ -329,7 +341,7 @@ export default function App() {
           }
         />
 
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<RoleHomeRedirect />} />
       </Routes>
     </SuiviAuthProvider>
   );

@@ -27,6 +27,12 @@ async function bootstrap() {
   const PLANNING_PATHS = /^\/(rooms|planning|conflicts|constraints|teachings|health)(\/|$)/;
   const identity = createIdentityMiddleware(app.get(JwtService));
   app.use('/api', (req: Request, res: Response, next: NextFunction) => {
+    // Health-check public : le lanceur frontend l'utilise pour réutiliser le
+    // backend déjà démarré au lieu de lancer une seconde instance.
+    if (req.path === '/health') {
+      apiRouter(req, res, next);
+      return;
+    }
     if (!PLANNING_PATHS.test(req.path)) {
       next();
       return;

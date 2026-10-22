@@ -231,8 +231,8 @@ export const Member5DocumentationView: React.FC = () => {
               2.2 Diagramme de Classes (NestJS / TypeORM)
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs font-mono">
-              <div className="p-3 rounded-xl border border-blue-200 bg-blue-50/50">
-                <div className="font-bold text-[#03045E] pb-1 border-b border-blue-200">SalleEntity</div>
+              <div className="p-3 rounded-xl border border-emit-sky bg-emit-ice/50">
+                <div className="font-bold text-[#03045E] pb-1 border-b border-emit-sky">SalleEntity</div>
                 <div className="text-[11px] text-slate-600 mt-1 space-y-0.5">
                   <div>+ id: number</div>
                   <div>+ nom: string</div>
@@ -244,8 +244,8 @@ export const Member5DocumentationView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-3 rounded-xl border border-blue-200 bg-blue-50/50">
-                <div className="font-bold text-[#03045E] pb-1 border-b border-blue-200">CreneauHoraireEntity</div>
+              <div className="p-3 rounded-xl border border-emit-sky bg-emit-ice/50">
+                <div className="font-bold text-[#03045E] pb-1 border-b border-emit-sky">CreneauHoraireEntity</div>
                 <div className="text-[11px] text-slate-600 mt-1 space-y-0.5">
                   <div>+ id: number</div>
                   <div>+ jourSemaine: string</div>
@@ -255,8 +255,8 @@ export const Member5DocumentationView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-3 rounded-xl border border-blue-200 bg-blue-50/50">
-                <div className="font-bold text-[#03045E] pb-1 border-b border-blue-200">SeancePlanifieeEntity</div>
+              <div className="p-3 rounded-xl border border-emit-sky bg-emit-ice/50">
+                <div className="font-bold text-[#03045E] pb-1 border-b border-emit-sky">SeancePlanifieeEntity</div>
                 <div className="text-[11px] text-slate-600 mt-1 space-y-0.5">
                   <div>+ id: number</div>
                   <div>+ dateSeance: Date</div>
@@ -268,8 +268,8 @@ export const Member5DocumentationView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-3 rounded-xl border border-blue-200 bg-blue-50/50">
-                <div className="font-bold text-[#03045E] pb-1 border-b border-blue-200">EmploiDuTempsEntity</div>
+              <div className="p-3 rounded-xl border border-emit-sky bg-emit-ice/50">
+                <div className="font-bold text-[#03045E] pb-1 border-b border-emit-sky">EmploiDuTempsEntity</div>
                 <div className="text-[11px] text-slate-600 mt-1 space-y-0.5">
                   <div>+ id: number</div>
                   <div>+ semestreId: number</div>
@@ -355,14 +355,14 @@ export const Member5DocumentationView: React.FC = () => {
                   <td className="py-2.5 px-3 text-slate-700 font-bold">200 OK</td>
                 </tr>
                 <tr className="hover:bg-slate-50">
-                  <td className="py-2.5 px-3 font-bold text-blue-600">POST</td>
+                  <td className="py-2.5 px-3 font-bold text-emit-blue">POST</td>
                   <td className="py-2.5 px-3">/api/planning/generate</td>
                   <td className="py-2.5 px-3 text-slate-600">Chef Scolarité / Admin</td>
                   <td className="py-2.5 px-3 text-slate-800">Génère automatiquement les cours sans conflit</td>
                   <td className="py-2.5 px-3 text-slate-700 font-bold">201 Created / 409 Conflict</td>
                 </tr>
                 <tr className="hover:bg-slate-50">
-                  <td className="py-2.5 px-3 font-bold text-blue-600">POST</td>
+                  <td className="py-2.5 px-3 font-bold text-emit-blue">POST</td>
                   <td className="py-2.5 px-3">/api/planning/session</td>
                   <td className="py-2.5 px-3 text-slate-600">Chef Scolarité / Admin</td>
                   <td className="py-2.5 px-3 text-slate-800">Planifie une séance avec vérification conflit</td>
@@ -383,7 +383,7 @@ export const Member5DocumentationView: React.FC = () => {
                   <td className="py-2.5 px-3 text-slate-700 font-bold">200 OK</td>
                 </tr>
                 <tr className="hover:bg-slate-50">
-                  <td className="py-2.5 px-3 font-bold text-blue-600">POST</td>
+                  <td className="py-2.5 px-3 font-bold text-emit-blue">POST</td>
                   <td className="py-2.5 px-3">/api/rooms</td>
                   <td className="py-2.5 px-3 text-slate-600">Chef Scolarité / Admin</td>
                   <td className="py-2.5 px-3 text-slate-800">Ajoute une nouvelle salle</td>
