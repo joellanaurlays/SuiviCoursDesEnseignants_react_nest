@@ -12,7 +12,7 @@ function LoginPage() {
 
   useEffect(() => {
     if (user) {
-      navigate('/', { replace: true })
+      navigate('/dashboard', { replace: true })
     }
   }, [user, navigate])
 
@@ -28,7 +28,7 @@ function LoginPage() {
 
     try {
       await login(email, password)
-      navigate('/', { replace: true })
+      navigate('/dashboard', { replace: true })
     } catch (err) {
       setError(err.message || 'Email ou mot de passe incorrect.')
     } finally {
