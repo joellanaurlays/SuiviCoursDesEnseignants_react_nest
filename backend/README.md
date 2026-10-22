@@ -167,10 +167,14 @@ Les fichiers `.env` réels ne sont **jamais commités** (voir `.gitignore`) ; se
 cd backend
 yarn install
 npx prisma generate
-npx prisma migrate dev
-npx prisma db seed
 yarn start:dev
 ```
+En développement, `yarn start:dev` synchronise le schéma Prisma avec la base avant de lancer NestJS. Cela fonctionne aussi sur la base locale déjà existante, sans exiger un historique Prisma préalable. Pour créer les comptes de démonstration, lancez une fois `yarn db:seed`. Le seed réinitialise le mot de passe de ces comptes à `Admin123!`.
+
+`yarn db:migrate` reste prévu pour les bases dont l'historique Prisma est déjà initialisé. Pour les déploiements et les bases partagées, utilisez les migrations versionnées et effectuez le baselining Prisma requis au préalable.
+
+Pour lancer en mode production localement, générez d'abord les fichiers avec `yarn build`, puis exécutez `yarn start:prod`.
+
 Le serveur écoute sur `http://localhost:3000`.
 
 ### Frontend

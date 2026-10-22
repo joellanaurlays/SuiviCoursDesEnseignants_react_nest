@@ -1,7 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
-import PlanningWorkspace from './components/PlanningWorkspace';
-import LoginPage from './pages/LoginPage.jsx';
 import DashboardPlaceholder from './pages/DashboardPlaceholder.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 import UsersListPage from './pages/UsersListPage.jsx';
@@ -44,25 +42,11 @@ export default function App() {
   return (
     <SuiviAuthProvider>
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
+        {/* La route de connexion est désactivée temporairement pour l'aperçu local. */}
 
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <PlanningWorkspace />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <DashboardPlaceholder />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/dashboard" element={<DashboardPlaceholder />} />
 
         <Route
           path="/users"
