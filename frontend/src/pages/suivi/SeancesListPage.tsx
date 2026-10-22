@@ -53,6 +53,24 @@ export function SeancesListPage({ title, intro }: SeancesListPageProps) {
     [seances],
   );
 
+  const statusSummary = useMemo<{ planifiee: number; realisee: number; annulee: number }>(() => {
+    const summary = { planifiee: 0, realisee: 0, annulee: 0 };
+    seances.forEach((s) => {
+      switch (s.statut) {
+        case 'PLANIFIEE':
+          summary.planifiee++;
+          break;
+        case 'REALISEE':
+          summary.realisee++;
+          break;
+        case 'ANNULEE':
+          summary.annulee++;
+          break;
+      }
+    });
+    return summary;
+  }, [seances]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return seances.filter((seance) => {
@@ -80,7 +98,28 @@ export function SeancesListPage({ title, intro }: SeancesListPageProps) {
             <h1 className="text-3xl font-bold text-[#0a0a32]">{title}</h1>
             {intro && <p className="text-sm text-gray-500 mt-1">{intro}</p>}
           </div>
-          <span className="text-sm text-gray-500">{filtered.length} séance(s)</span>
+          <span className="text-sm text-gray-500 filtered-badge">{filtered.length} séance(s) affichée(s)</span>
+
+        {/* Résumé des statuts */}
+        {(statusSummary.planifiee > 0 || statusSummary.realisee > 0 || statusSummary.annulee > 0) && (
+          <div className="flex flex-col sm:flex-row gap-3 mb-4 text-sm">
+            <div
+              className={`px-3 py-1.5 rounded-md ${statusSummary.planifiee > 0 ? 'bg-blue-100 text-blue-800' : 'text-gray-400'}`}
+            >
+              {statusSummary.planifiee} planifiée{statusSummary.planifiee !== 1 && '·'}
+            </div>
+            <div
+              className={`px-3 py-1.5 rounded-md ${statusSummary.realisee > 0 ? 'bg-green-100 text-green-800' : 'text-gray-400'}`}
+            >
+              {statusSummary.realisee} réalisée{statusSummary.realisee !== 1 && '·'}
+            </div>
+            <div
+              className={`px-3 py-1.5 rounded-md ${statusSummary.annulee > 0 ? 'bg-red-100 text-red-800' : 'text-gray-400'}`}
+            >
+              {statusSummary.annulee} annulée{statusSummary.annulee !== 1 && '·'}
+            </div>
+          </div>
+        )}
         </div>
 
         {loading ? (

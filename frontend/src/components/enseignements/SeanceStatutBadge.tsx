@@ -14,7 +14,10 @@ const COLORS: Record<StatutSeance, string> = {
 
 export function SeanceStatutBadge({ statut }: { statut: StatutSeance }) {
   return (
-    <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${COLORS[statut] ?? COLORS.PLANIFIEE}`}>
+    <span
+      className={`px-2.5 py-1 rounded-md text-xs font-medium ${COLORS[statut] ?? COLORS.PLANIFIEE}`}
+      title={LABELS[statut]}
+    >
       {LABELS[statut] ?? statut}
     </span>
   );

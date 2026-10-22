@@ -1,4 +1,14 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+} from 'typeorm';
+
+import type { Relation } from 'typeorm';
 import { Examen } from './examen.entity.js';
 
 @Entity('sessions_examen')
@@ -24,8 +34,8 @@ export class SessionExamen {
   @Column({ name: 'est_cloturee', default: false })
   estCloturee: boolean;
 
-  @OneToMany(() => Examen, (e) => e.session)
-  examens: Examen[];
+  @OneToMany(() => Examen, (examen) => examen.session)
+  examens: Relation<Examen[]>;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

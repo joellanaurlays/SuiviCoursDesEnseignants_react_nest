@@ -50,6 +50,24 @@ export default function EnseignantSeancesPage() {
     [seances],
   );
 
+  const statusSummary = useMemo<{ planifiee: number; realisee: number; annulee: number }>(() => {
+    const summary = { planifiee: 0, realisee: 0, annulee: 0 };
+    seances.forEach((s) => {
+      switch (s.statut) {
+        case 'PLANIFIEE':
+          summary.planifiee++;
+          break;
+        case 'REALISEE':
+          summary.realisee++;
+          break;
+        case 'ANNULEE':
+          summary.annulee++;
+          break;
+      }
+    });
+    return summary;
+  }, [seances]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return seances.filter((seance) => {
@@ -70,6 +88,28 @@ export default function EnseignantSeancesPage() {
     <Layout>
       <div className="flex justify-between items-center mb-8 border-b pb-4">
         <h1 className="text-2xl font-bold text-[#0a0a32]">Mes séances</h1>
+
+        {/* Résumé des statuts */}
+        {(statusSummary.planifiee > 0 || statusSummary.realisee > 0 || statusSummary.annulee > 0) && (
+          <div className="flex flex-col sm:flex-row gap-2 text-xs font-medium">
+            <div
+              className={`px-2 py-1 rounded ${statusSummary.planifiee > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-200 text-gray-500'}`}
+            >
+              {statusSummary.planifiee} planifiée
+            </div>
+            <div
+              className={`px-2 py-1 rounded ${statusSummary.realisee > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-500'}`}
+            >
+              {statusSummary.realisee} réalisée
+            </div>
+            <div
+              className={`px-2 py-1 rounded ${statusSummary.annulee > 0 ? 'bg-red-100 text-red-800' : 'bg-gray-200 text-gray-500'}`}
+            >
+              {statusSummary.annulee} annulée
+            </div>
+          </div>
+        )}
+
         <button
           onClick={() => navigate('/enseignant/seances/nouveau')}
           className="bg-[#0088aa] text-white px-4 py-2 rounded-md flex items-center space-x-2 text-sm hover:bg-[#007799] transition-colors font-medium"

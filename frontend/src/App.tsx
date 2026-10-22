@@ -20,6 +20,7 @@ import EnseignantSeancesPage from './pages/enseignant/seances/page';
 import DeclarerSeance from './pages/enseignant/seances/nouveau/page';
 import EnseignantHeuresPage from './pages/enseignant/heures/page';
 import { JournalAuditPage } from './pages/suivi/JournalAuditPage';
+import EnseignantAlertesPage from './pages/alerte/AlertesListPage';
 
 // Espaces scolarité / administrateur (Membre 4).
 import ScolariteSuiviEnseignementsPage from './pages/scolarite/suivi-enseignements/page';
@@ -174,6 +175,16 @@ export default function App() {
             <ProtectedRoute>
               <RequireRole role="ENSEIGNANT">
                 <JournalAuditPage title="Mon journal d'audit" />
+              </RequireRole>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/enseignant/alertes"
+          element={
+            <ProtectedRoute>
+              <RequireRole role="ENSEIGNANT">
+                <EnseignantAlertesPage title="Mes alertes" />
               </RequireRole>
             </ProtectedRoute>
           }
