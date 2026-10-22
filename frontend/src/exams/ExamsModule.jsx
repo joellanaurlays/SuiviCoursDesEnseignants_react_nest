@@ -1,26 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Bell, BookOpenCheck, CalendarDays, Check, ClipboardList, Plus, RefreshCw, Search, X } from 'lucide-react';
 import { Layout } from '../components/Layout';
+import { useAuth } from '../auth/AuthContext';
+import { apiFetch } from '../services/sessionApi';
 
-// Le backend Nest expose les routes du module sous le préfixe global /api.
-const API = `${import.meta.env.VITE_API_URL || ''}/api`;
-
-async function api(path, options = {}) {
-  const token = localStorage.getItem('emit_access_token');
-  const response = await fetch(`${API}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
-  });
-  if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(detail || `Erreur HTTP ${response.status}`);
-  }
-  return response.json();
-}
+const api = (path, method = 'GET', body) => apiFetch(path, { method, body });
 
 const today = new Date().toISOString().slice(0, 10);
 const inputClass = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100';
@@ -30,6 +14,20 @@ function dateLabel(value) {
   if (!value) return '—';
   const date = new Date(`${String(value).slice(0, 10)}T00:00:00`);
   return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' }).format(date);
+}
+
+function temporalState(value) {
+  const date = String(value || '').slice(0, 10);
+  if (!date || Number.isNaN(new Date(`${date}T00:00:00`).getTime())) return 'Date non renseignée';
+  if (date < today) return 'Date passée';
+  if (date === today) return 'Aujourd’hui';
+  return 'Date à venir';
+}
+
+function sessionSignature(session) {
+  return [session.libelle, session.anneeUniversitaire, session.semestre,
+    String(session.dateDebut || '').slice(0, 10), String(session.dateFin || '').slice(0, 10)]
+    .map((value) => String(value || '').trim().toLocaleLowerCase('fr')).join('|');
 }
 
 function StatusBadge({ children, tone = 'slate' }) {
@@ -43,7 +41,27 @@ function StatusBadge({ children, tone = 'slate' }) {
   return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${tones[tone]}`}>{children}</span>;
 }
 
+function overlapsInRoom(candidate, existing) {
+  if (!candidate.dateExamen || !candidate.salle || !candidate.heureDebut || !candidate.heureFin) return false;
+  const room = candidate.salle.trim().toLocaleLowerCase('fr');
+  const minutes = (value) => {
+    const [hours, mins] = String(value || '').split(':').map(Number);
+    return Number.isFinite(hours) && Number.isFinite(mins) ? hours * 60 + mins : null;
+  };
+  const start = minutes(candidate.heureDebut);
+  const end = minutes(candidate.heureFin);
+  if (start === null || end === null || end <= start) return false;
+  return existing.some((exam) => {
+    if (exam.dateExamen !== candidate.dateExamen || String(exam.salle || '').trim().toLocaleLowerCase('fr') !== room) return false;
+    const otherStart = minutes(exam.heureDebut);
+    const otherEnd = minutes(exam.heureFin);
+    return otherStart !== null && otherEnd !== null && start < otherEnd && otherStart < end;
+  });
+}
+
 export default function ExamsModule() {
+  const { session } = useAuth();
+  const canManage = session.role === 'SCOLARITE';
   const [tab, setTab] = useState('sessions');
   const [sessions, setSessions] = useState([]);
   const [examens, setExamens] = useState([]);
@@ -54,6 +72,7 @@ export default function ExamsModule() {
   const [notice, setNotice] = useState('');
   const [query, setQuery] = useState('');
   const [sessionFilter, setSessionFilter] = useState('');
+  const [statusDrafts, setStatusDrafts] = useState({});
   const [sessionForm, setSessionForm] = useState({
     libelle: 'Session Normale S1', anneeUniversitaire: '2025-2026', semestre: 'S1',
     dateDebut: today, dateFin: today,
@@ -71,7 +90,12 @@ export default function ExamsModule() {
       setSessions(sessionData);
       setExamens(examData);
       setAlertes(alertData);
-      setExamForm((current) => ({ ...current, sessionId: current.sessionId || sessionData[0]?.id || '' }));
+      setExamForm((current) => ({
+        ...current,
+        sessionId: sessionData.some((item) => item.id === current.sessionId && !item.estCloturee)
+          ? current.sessionId
+          : sessionData.find((item) => !item.estCloturee)?.id || '',
+      }));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Impossible de charger les données du module.');
     } finally {
@@ -83,6 +107,24 @@ export default function ExamsModule() {
 
   const unreadCount = alertes.filter((item) => !item.estLue).length;
   const notesPending = examens.filter((item) => !item.notesRemises).length;
+  const upcomingCount = examens.filter((item) => item.statut === 'A_VENIR' && String(item.dateExamen).slice(0, 10) >= today).length;
+  const completedCount = examens.filter((item) => item.statut === 'TERMINE').length;
+  const openSessions = sessions.filter((item) => !item.estCloturee);
+  const sessionSignatures = useMemo(() => {
+    const counts = new Map();
+    sessions.forEach((item) => counts.set(sessionSignature(item), (counts.get(sessionSignature(item)) || 0) + 1));
+    return counts;
+  }, [sessions]);
+  const conflictedExamIds = useMemo(() => {
+    const ids = new Set();
+    examens.forEach((exam, index) => examens.slice(index + 1).forEach((other) => {
+      if (overlapsInRoom(exam, [other])) {
+        ids.add(exam.id);
+        ids.add(other.id);
+      }
+    }));
+    return ids;
+  }, [examens]);
   const filteredExams = useMemo(() => examens.filter((item) => {
     const matchesSession = !sessionFilter || item.sessionId === sessionFilter;
     const search = query.trim().toLocaleLowerCase('fr');
@@ -93,6 +135,10 @@ export default function ExamsModule() {
   }), [examens, query, sessionFilter, sessions]);
 
   const runAction = async (action, successMessage) => {
+    if (!canManage) {
+      setError('Seul le chef de scolarité peut effectuer cette action.');
+      return;
+    }
     setBusy(true);
     setError('');
     setNotice('');
@@ -109,32 +155,52 @@ export default function ExamsModule() {
 
   const createSession = (event) => {
     event.preventDefault();
-    return runAction(() => api('/exams/sessions', { method: 'POST', body: JSON.stringify(sessionForm) }), 'La session a été créée.');
+    if (sessionForm.dateFin < sessionForm.dateDebut) {
+      setError('La date de fin doit être postérieure ou égale à la date de début.');
+      return;
+    }
+    return runAction(() => api('/exams/sessions', 'POST', sessionForm), 'La session a été créée.');
   };
   const createExam = (event) => {
     event.preventDefault();
-    return runAction(() => api('/exams', { method: 'POST', body: JSON.stringify(examForm) }), "L’examen a été créé.");
+    if (!openSessions.some((item) => item.id === examForm.sessionId)) {
+      setError('Choisissez une session ouverte avant de planifier un examen.');
+      return;
+    }
+    if (examForm.heureDebut && examForm.heureFin && examForm.heureFin <= examForm.heureDebut) {
+      setError('L’heure de fin doit être postérieure à l’heure de début.');
+      return;
+    }
+    if (overlapsInRoom(examForm, examens)) {
+      setError('Conflit détecté : un examen est déjà prévu dans cette salle sur ce créneau.');
+      return;
+    }
+    return runAction(() => api('/exams', 'POST', examForm), "L’examen a été créé.");
   };
   const createAlert = (event) => {
     event.preventDefault();
     const payload = { ...alertForm };
     if (!payload.examenId) delete payload.examenId;
-    return runAction(() => api('/exams/alertes', { method: 'POST', body: JSON.stringify(payload) }), 'L’alerte a été créée.');
+    return runAction(() => api('/exams/alertes', 'POST', payload), 'L’alerte a été créée.');
   };
   const changeStatus = (id, statut) => runAction(
-    () => api(`/exams/${id}/statut`, { method: 'PATCH', body: JSON.stringify({ statut }) }),
+    () => api(`/exams/${id}/statut`, 'PATCH', { statut }),
     'Le statut de l’examen a été mis à jour.',
   );
   const markNotesSubmitted = (id) => runAction(
-    () => api(`/exams/${id}/notes-remises`, { method: 'PATCH' }),
+    () => api(`/exams/${id}/notes-remises`, 'PATCH'),
     'La remise des notes a été enregistrée.',
   );
   const markAlertRead = (id) => runAction(
-    () => api(`/exams/alertes/${id}/lue`, { method: 'PATCH' }),
+    () => api(`/exams/alertes/${id}/lue`, 'PATCH'),
     'L’alerte a été marquée comme lue.',
   );
+  const markAlertTreated = (id) => runAction(
+    () => api(`/exams/alertes/${id}/traitee`, 'PATCH'),
+    'L’alerte a été marquée comme traitée.',
+  );
   const closeSession = (id) => runAction(
-    () => api(`/exams/sessions/${id}/cloturer`, { method: 'PATCH' }),
+    () => api(`/exams/sessions/${id}/cloturer`, 'PATCH'),
     'La session a été clôturée.',
   );
 
@@ -161,10 +227,13 @@ export default function ExamsModule() {
         {error && <div role="alert" className="flex items-start justify-between gap-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800"><span>{error}</span><button type="button" aria-label="Fermer le message" onClick={() => setError('')}><X size={18} /></button></div>}
         {notice && <div role="status" className="flex items-center justify-between gap-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800"><span>{notice}</span><button type="button" aria-label="Fermer le message" onClick={() => setNotice('')}><X size={18} /></button></div>}
 
-        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Indicateurs du module">
+        {!canManage && <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">Mode consultation : la gestion et la validation des examens sont réservées au chef de scolarité. La demande de date par un enseignant n’est pas encore prise en charge par l’API.</div>}
+
+        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5" aria-label="Indicateurs du module">
           {[
             { label: 'Sessions', value: sessions.length, note: 'Sessions enregistrées', icon: CalendarDays, color: 'text-blue-700 bg-blue-50' },
-            { label: 'Examens planifiés', value: examens.length, note: 'Toutes les sessions', icon: ClipboardList, color: 'text-violet-700 bg-violet-50' },
+            { label: 'Examens à venir', value: upcomingCount, note: 'Statut à venir, date du jour ou future', icon: ClipboardList, color: 'text-violet-700 bg-violet-50' },
+            { label: 'Examens terminés', value: completedCount, note: 'Statut terminé', icon: Check, color: 'text-emerald-700 bg-emerald-50' },
             { label: 'Notes à remettre', value: notesPending, note: 'Examens sans notes remises', icon: BookOpenCheck, color: 'text-amber-700 bg-amber-50' },
             { label: 'Alertes non lues', value: unreadCount, note: 'À consulter', icon: Bell, color: 'text-rose-700 bg-rose-50' },
           ].map(({ label, value, note, icon: Icon, color }) => (
@@ -191,25 +260,25 @@ export default function ExamsModule() {
               <>
                 {tab === 'sessions' && <div className="space-y-6">
                   <div><h2 className="text-xl font-bold text-[#0a0a32]">Sessions d’examen</h2><p className="mt-1 text-sm text-slate-500">Créez et consultez les périodes d’examen.</p></div>
-                  <form onSubmit={createSession} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
+                  {canManage && <form onSubmit={createSession} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
                     <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-800"><Plus size={17} className="text-cyan-700" /> Nouvelle session</div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
                       <label className="text-xs font-medium text-slate-600">Libellé<input className={`${inputClass} mt-1.5`} value={sessionForm.libelle} onChange={(e) => setSessionForm({ ...sessionForm, libelle: e.target.value })} required /></label>
                       <label className="text-xs font-medium text-slate-600">Année universitaire<input className={`${inputClass} mt-1.5`} value={sessionForm.anneeUniversitaire} onChange={(e) => setSessionForm({ ...sessionForm, anneeUniversitaire: e.target.value })} required /></label>
                       <label className="text-xs font-medium text-slate-600">Semestre<input className={`${inputClass} mt-1.5`} value={sessionForm.semestre} onChange={(e) => setSessionForm({ ...sessionForm, semestre: e.target.value })} required /></label>
                       <label className="text-xs font-medium text-slate-600">Date de début<input type="date" className={`${inputClass} mt-1.5`} value={sessionForm.dateDebut} onChange={(e) => setSessionForm({ ...sessionForm, dateDebut: e.target.value })} required /></label>
-                      <label className="text-xs font-medium text-slate-600">Date de fin<input type="date" className={`${inputClass} mt-1.5`} value={sessionForm.dateFin} onChange={(e) => setSessionForm({ ...sessionForm, dateFin: e.target.value })} required /></label>
+                      <label className="text-xs font-medium text-slate-600">Date de fin<input type="date" min={sessionForm.dateDebut} className={`${inputClass} mt-1.5`} value={sessionForm.dateFin} onChange={(e) => setSessionForm({ ...sessionForm, dateFin: e.target.value })} required /></label>
                     </div>
                     <div className="mt-4 flex justify-end"><button className={buttonClass} type="submit" disabled={busy}><Plus size={16} /> Créer la session</button></div>
-                  </form>
+                  </form>}
                   <div className="overflow-x-auto rounded-xl border border-slate-200">
                     <table className="w-full min-w-[760px] text-left text-sm">
                       <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">Session</th><th className="px-4 py-3">Année</th><th className="px-4 py-3">Semestre</th><th className="px-4 py-3">Période</th><th className="px-4 py-3">État</th><th className="px-4 py-3 text-right">Action</th></tr></thead>
                       <tbody className="divide-y divide-slate-100">
                         {sessions.map((session) => <tr key={session.id} className="transition hover:bg-cyan-50/30">
-                          <td className="px-4 py-4 font-semibold text-slate-800">{session.libelle}</td><td className="px-4 py-4 text-slate-600">{session.anneeUniversitaire}</td><td className="px-4 py-4 text-slate-600">{session.semestre}</td><td className="px-4 py-4 text-slate-600">{dateLabel(session.dateDebut)} – {dateLabel(session.dateFin)}</td>
+                          <td className="px-4 py-4 font-semibold text-slate-800">{session.libelle}{sessionSignatures.get(sessionSignature(session)) > 1 && <span className="mt-1 block"><StatusBadge tone="amber">Enregistrement semblable à une autre session</StatusBadge></span>}</td><td className="px-4 py-4 text-slate-600">{session.anneeUniversitaire}</td><td className="px-4 py-4 text-slate-600">{session.semestre}</td><td className="px-4 py-4 text-slate-600">{dateLabel(session.dateDebut)} – {dateLabel(session.dateFin)}</td>
                           <td className="px-4 py-4"><StatusBadge tone={session.estCloturee ? 'slate' : 'green'}>{session.estCloturee ? 'Clôturée' : 'Ouverte'}</StatusBadge></td>
-                          <td className="px-4 py-4 text-right">{!session.estCloturee && <button type="button" className="rounded-lg px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 hover:text-[#0a0a32] disabled:opacity-50" disabled={busy} onClick={() => closeSession(session.id)}>Clôturer</button>}</td>
+                          <td className="px-4 py-4 text-right">{canManage && !session.estCloturee && <button type="button" className="rounded-lg px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 hover:text-[#0a0a32] disabled:opacity-50" disabled={busy} onClick={() => closeSession(session.id)}>Clôturer</button>}</td>
                         </tr>)}
                         {!sessions.length && <tr><td colSpan={6} className="px-4 py-12 text-center text-slate-500">Aucune session enregistrée. Créez votre première session ci-dessus.</td></tr>}
                       </tbody>
@@ -219,18 +288,18 @@ export default function ExamsModule() {
 
                 {tab === 'examens' && <div className="space-y-6">
                   <div><h2 className="text-xl font-bold text-[#0a0a32]">Examens & remise des notes</h2><p className="mt-1 text-sm text-slate-500">Planifiez les examens et suivez leur avancement.</p></div>
-                  <form onSubmit={createExam} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
+                  {canManage && <form onSubmit={createExam} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
                     <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-800"><Plus size={17} className="text-cyan-700" /> Planifier un examen</div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                      <label className="text-xs font-medium text-slate-600">Session<select className={`${inputClass} mt-1.5`} value={examForm.sessionId} onChange={(e) => setExamForm({ ...examForm, sessionId: e.target.value })} required><option value="">Choisir une session</option>{sessions.map((item) => <option key={item.id} value={item.id}>{item.libelle} · {item.semestre}</option>)}</select></label>
+                      <label className="text-xs font-medium text-slate-600">Session<select className={`${inputClass} mt-1.5`} value={examForm.sessionId} onChange={(e) => setExamForm({ ...examForm, sessionId: e.target.value })} required><option value="">Choisir une session</option>{openSessions.map((item) => <option key={item.id} value={item.id}>{item.libelle} · {item.semestre}</option>)}</select></label>
                       <label className="text-xs font-medium text-slate-600">Date<input type="date" className={`${inputClass} mt-1.5`} value={examForm.dateExamen} onChange={(e) => setExamForm({ ...examForm, dateExamen: e.target.value })} required /></label>
                       <label className="text-xs font-medium text-slate-600">Heure de début<input type="time" className={`${inputClass} mt-1.5`} value={examForm.heureDebut} onChange={(e) => setExamForm({ ...examForm, heureDebut: e.target.value })} /></label>
                       <label className="text-xs font-medium text-slate-600">Heure de fin<input type="time" className={`${inputClass} mt-1.5`} value={examForm.heureFin} onChange={(e) => setExamForm({ ...examForm, heureFin: e.target.value })} /></label>
                       <label className="text-xs font-medium text-slate-600">Salle<input className={`${inputClass} mt-1.5`} value={examForm.salle} onChange={(e) => setExamForm({ ...examForm, salle: e.target.value })} placeholder="Ex. Salle A1" /></label>
                     </div>
-                    <div className="mt-4 flex justify-end"><button className={buttonClass} type="submit" disabled={busy || sessions.length === 0}><Plus size={16} /> Créer l’examen</button></div>
-                    {!sessions.length && <p className="mt-2 text-right text-xs text-amber-700">Créez d’abord une session pour planifier un examen.</p>}
-                  </form>
+                    <div className="mt-4 flex justify-end"><button className={buttonClass} type="submit" disabled={busy || openSessions.length === 0}><Plus size={16} /> Créer l’examen</button></div>
+                    {!openSessions.length && <p className="mt-2 text-right text-xs text-amber-700">Aucune session ouverte : impossible de planifier un examen.</p>}
+                  </form>}
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-sm text-slate-500">{filteredExams.length} examen(s)</p>
                     <div className="flex flex-col gap-2 sm:flex-row">
@@ -239,45 +308,45 @@ export default function ExamsModule() {
                     </div>
                   </div>
                   <div className="overflow-x-auto rounded-xl border border-slate-200">
+                    {conflictedExamIds.size > 0 && <p className="border-b border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-800">Conflit de salle détecté parmi les examens chargés. Le contrôle utilise les dates, salles et horaires renvoyés par l’API; il ne remplace pas une validation serveur.</p>}
                     <table className="w-full min-w-[850px] text-left text-sm">
-                      <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">Date & heure</th><th className="px-4 py-3">Session</th><th className="px-4 py-3">Salle</th><th className="px-4 py-3">Statut</th><th className="px-4 py-3">Notes</th><th className="px-4 py-3 text-right">Actions</th></tr></thead>
+                      <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">Date & heure</th><th className="px-4 py-3">Matière / identifiant</th><th className="px-4 py-3">Session</th><th className="px-4 py-3">Salle</th><th className="px-4 py-3">Statut enregistré / date</th><th className="px-4 py-3">Notes</th><th className="px-4 py-3 text-right">Actions</th></tr></thead>
                       <tbody className="divide-y divide-slate-100">
                         {filteredExams.map((exam) => <tr key={exam.id} className="transition hover:bg-cyan-50/30">
                           <td className="px-4 py-4 font-medium text-slate-800">{dateLabel(exam.dateExamen)}<span className="mt-1 block text-xs font-normal text-slate-500">{[exam.heureDebut, exam.heureFin].filter(Boolean).join(' – ') || 'Horaire à définir'}</span></td>
-                          <td className="px-4 py-4 text-slate-600">{sessions.find((item) => item.id === exam.sessionId)?.libelle || '—'}</td><td className="px-4 py-4 text-slate-600">{exam.salle || '—'}</td>
-                          <td className="px-4 py-4"><StatusBadge tone={exam.statut === 'TERMINE' ? 'green' : exam.statut === 'EN_COURS' ? 'blue' : 'amber'}>{exam.statut === 'TERMINE' ? 'Terminé' : exam.statut === 'EN_COURS' ? 'En cours' : 'À venir'}</StatusBadge></td>
+                          <td className="px-4 py-4 text-xs text-slate-600">{exam.matiereId ? <span className="font-mono">{exam.matiereId}</span> : 'Matière non renseignée'}</td><td className="px-4 py-4 text-slate-600">{sessions.find((item) => item.id === exam.sessionId)?.libelle || '—'}</td><td className="px-4 py-4 text-slate-600">{exam.salle || '—'}</td>
+                          <td className="px-4 py-4"><div className="flex flex-col items-start gap-1"><StatusBadge tone={exam.statut === 'TERMINE' ? 'green' : exam.statut === 'EN_COURS' ? 'blue' : 'amber'}>{exam.statut === 'TERMINE' ? 'Terminé' : exam.statut === 'EN_COURS' ? 'En cours' : 'À venir'}</StatusBadge><StatusBadge tone={temporalState(exam.dateExamen) === 'Date passée' ? 'red' : temporalState(exam.dateExamen) === 'Date à venir' ? 'blue' : 'slate'}>{temporalState(exam.dateExamen)}</StatusBadge>{exam.statut === 'A_VENIR' && temporalState(exam.dateExamen) === 'Date passée' && <StatusBadge tone="red">Date passée — statut à vérifier</StatusBadge>}{conflictedExamIds.has(exam.id) && <StatusBadge tone="red">Conflit de salle</StatusBadge>}{(!exam.salle || !exam.heureDebut || !exam.heureFin) && <StatusBadge>Contrôle incomplet</StatusBadge>}</div></td>
                           <td className="px-4 py-4"><StatusBadge tone={exam.notesRemises ? 'green' : 'red'}>{exam.notesRemises ? 'Remises' : 'En attente'}</StatusBadge></td>
                           <td className="px-4 py-4"><div className="flex justify-end gap-2">
-                            {exam.statut !== 'TERMINE' && <button type="button" className="rounded-lg px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-50" disabled={busy} onClick={() => changeStatus(exam.id, exam.statut === 'EN_COURS' ? 'A_VENIR' : 'EN_COURS')}>{exam.statut === 'EN_COURS' ? 'À venir' : 'Démarrer'}</button>}
-                            {exam.statut !== 'TERMINE' && <button type="button" className="rounded-lg px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50" disabled={busy} onClick={() => changeStatus(exam.id, 'TERMINE')}>Terminer</button>}
-                            {!exam.notesRemises && <button type="button" className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold text-[#0a0a32] hover:bg-slate-100 disabled:opacity-50" disabled={busy} onClick={() => markNotesSubmitted(exam.id)}><Check size={14} /> Notes remises</button>}
+                            {canManage && <><select aria-label={`Statut de l’examen du ${dateLabel(exam.dateExamen)}`} className="rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs" value={statusDrafts[exam.id] || exam.statut} disabled={busy} onChange={(event) => setStatusDrafts({ ...statusDrafts, [exam.id]: event.target.value })}><option value="A_VENIR">À venir</option><option value="EN_COURS">En cours</option><option value="TERMINE">Terminé</option></select>{(statusDrafts[exam.id] || exam.statut) !== exam.statut && <button type="button" className="rounded-lg px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-50" disabled={busy} onClick={() => changeStatus(exam.id, statusDrafts[exam.id])}>Enregistrer</button>}</>}
+                            {canManage && !exam.notesRemises && <button type="button" className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold text-[#0a0a32] hover:bg-slate-100 disabled:opacity-50" disabled={busy} onClick={() => markNotesSubmitted(exam.id)}><Check size={14} /> Notes remises</button>}
                           </div></td>
                         </tr>)}
-                        {!filteredExams.length && <tr><td colSpan={6} className="px-4 py-12 text-center text-slate-500">Aucun examen ne correspond aux filtres sélectionnés.</td></tr>}
+                        {!filteredExams.length && <tr><td colSpan={7} className="px-4 py-12 text-center text-slate-500">Aucun examen ne correspond aux filtres sélectionnés.</td></tr>}
                       </tbody>
                     </table>
                   </div>
                 </div>}
 
                 {tab === 'alertes' && <div className="space-y-6">
-                  <div><h2 className="text-xl font-bold text-[#0a0a32]">Centre des alertes</h2><p className="mt-1 text-sm text-slate-500">Consultez les alertes et marquez celles que vous avez traitées.</p></div>
-                  <form onSubmit={createAlert} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
+                  <div><h2 className="text-xl font-bold text-[#0a0a32]">Centre des alertes</h2><p className="mt-1 text-sm text-slate-500">Alertes enregistrées renvoyées par l’API. Leur affichage ne précise pas leur mode de création.</p></div>
+                  {canManage && <form onSubmit={createAlert} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
                     <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-800"><Plus size={17} className="text-cyan-700" /> Nouvelle alerte</div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_2fr_1fr]">
-                      <label className="text-xs font-medium text-slate-600">Type<select className={`${inputClass} mt-1.5`} value={alertForm.typeAlerte} onChange={(e) => setAlertForm({ ...alertForm, typeAlerte: e.target.value })}><option value="NOTES_NON_REMISES">Notes non remises</option><option value="EXAMEN_APPROCHANT">Examen proche</option><option value="SESSION_OUVERTE">Session ouverte</option><option value="AUTRE">Autre</option></select></label>
+                      <label className="text-xs font-medium text-slate-600">Type<select className={`${inputClass} mt-1.5`} value={alertForm.typeAlerte} onChange={(e) => setAlertForm({ ...alertForm, typeAlerte: e.target.value })}><option value="NOTES_NON_REMISES">Notes non remises</option><option value="MISSING_DOCUMENTS">Documents manquants</option><option value="EN_COURS">Examen en cours</option><option value="A_VENIR">Examen à venir</option></select></label>
                       <label className="text-xs font-medium text-slate-600">Message<input className={`${inputClass} mt-1.5`} value={alertForm.message} onChange={(e) => setAlertForm({ ...alertForm, message: e.target.value })} placeholder="Décrivez l’alerte" required /></label>
                       <label className="text-xs font-medium text-slate-600">Examen associé<select className={`${inputClass} mt-1.5`} value={alertForm.examenId} onChange={(e) => setAlertForm({ ...alertForm, examenId: e.target.value })}><option value="">Aucun</option>{examens.map((exam) => <option key={exam.id} value={exam.id}>{dateLabel(exam.dateExamen)} · {exam.salle || 'Sans salle'}</option>)}</select></label>
                     </div>
                     <div className="mt-4 flex justify-end"><button className={buttonClass} type="submit" disabled={busy}><Plus size={16} /> Créer l’alerte</button></div>
-                  </form>
+                  </form>}
                   <div className="overflow-x-auto rounded-xl border border-slate-200">
                     <table className="w-full min-w-[760px] text-left text-sm">
                       <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">Type</th><th className="px-4 py-3">Message</th><th className="px-4 py-3">Examen</th><th className="px-4 py-3">Créée le</th><th className="px-4 py-3">État</th><th className="px-4 py-3 text-right">Action</th></tr></thead>
                       <tbody className="divide-y divide-slate-100">
                         {alertes.map((alert) => <tr key={alert.id} className="transition hover:bg-cyan-50/30">
-                          <td className="px-4 py-4 font-semibold text-slate-800">{alert.typeAlerte}</td><td className="max-w-sm px-4 py-4 text-slate-600">{alert.message}</td><td className="px-4 py-4 text-slate-600">{alert.examenId ? examens.find((exam) => exam.id === alert.examenId)?.salle || 'Examen associé' : '—'}</td><td className="px-4 py-4 whitespace-nowrap text-slate-600">{dateLabel(alert.createdAt)}</td>
+                          <td className="px-4 py-4 font-semibold text-slate-800">{alert.typeAlerte}</td><td className="max-w-sm px-4 py-4 text-slate-600">{alert.message}</td><td className="px-4 py-4 text-slate-600">{alert.examen?.salle || (alert.examenId ? `${dateLabel(alert.examen?.dateExamen || examens.find((exam) => exam.id === alert.examenId)?.dateExamen)} · ${alert.examenId.slice(0, 8)}` : '—')}</td><td className="px-4 py-4 whitespace-nowrap text-slate-600">{dateLabel(alert.createdAt)}</td>
                           <td className="px-4 py-4"><StatusBadge tone={alert.estLue ? 'slate' : 'red'}>{alert.estLue ? 'Lue' : 'Non lue'}</StatusBadge>{alert.estTraitee && <span className="ml-1"><StatusBadge tone="green">Traitée</StatusBadge></span>}</td>
-                          <td className="px-4 py-4 text-right">{!alert.estLue && <button type="button" className="rounded-lg px-3 py-2 text-xs font-semibold text-[#0a0a32] hover:bg-slate-100 disabled:opacity-50" disabled={busy} onClick={() => markAlertRead(alert.id)}>Marquer comme lue</button>}</td>
+                          <td className="px-4 py-4 text-right"><div className="flex justify-end gap-2">{canManage && !alert.estLue && <button type="button" className="rounded-lg px-3 py-2 text-xs font-semibold text-[#0a0a32] hover:bg-slate-100 disabled:opacity-50" disabled={busy} onClick={() => markAlertRead(alert.id)}>Marquer comme lue</button>}{canManage && !alert.estTraitee && <button type="button" className="rounded-lg px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50" disabled={busy} onClick={() => markAlertTreated(alert.id)}>Traiter</button>}</div></td>
                         </tr>)}
                         {!alertes.length && <tr><td colSpan={6} className="px-4 py-12 text-center text-slate-500">Aucune alerte enregistrée.</td></tr>}
                       </tbody>
