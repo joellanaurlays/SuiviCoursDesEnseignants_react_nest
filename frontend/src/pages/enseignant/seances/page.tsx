@@ -50,6 +50,24 @@ export default function EnseignantSeancesPage() {
     [seances],
   );
 
+  const statusSummary = useMemo<{ planifiee: number; realisee: number; annulee: number }>(() => {
+    const summary = { planifiee: 0, realisee: 0, annulee: 0 };
+    seances.forEach((s) => {
+      switch (s.statut) {
+        case 'PLANIFIEE':
+          summary.planifiee++;
+          break;
+        case 'REALISEE':
+          summary.realisee++;
+          break;
+        case 'ANNULEE':
+          summary.annulee++;
+          break;
+      }
+    });
+    return summary;
+  }, [seances]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return seances.filter((seance) => {
@@ -81,6 +99,21 @@ export default function EnseignantSeancesPage() {
           Déclarer une séance
         </button>
       </div>
+
+      {/* Résumé des statuts (apport de l'équipe, restitué dans le design EMIT). */}
+      {(statusSummary.planifiee > 0 || statusSummary.realisee > 0 || statusSummary.annulee > 0) && (
+        <div className="mb-4 flex flex-col gap-2 text-xs font-medium sm:flex-row">
+          <span className="emit-chip bg-[#CAF0F8] text-[#03045E] ring-1 ring-inset ring-[#90E0EF]">
+            {statusSummary.planifiee} planifiée
+          </span>
+          <span className="emit-chip bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200">
+            {statusSummary.realisee} réalisée
+          </span>
+          <span className="emit-chip bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200">
+            {statusSummary.annulee} annulée
+          </span>
+        </div>
+      )}
 
       {loading ? (
         <LoadingState label="Chargement des séances..." />

@@ -31,7 +31,7 @@ export function SeanceStatutBadge({ statut }: { statut: StatutSeance }) {
   const style = STYLES[statut] ?? STYLES.PLANIFIEE;
 
   return (
-    <span className={`emit-chip ${style.classes}`}>
+    <span className={`emit-chip ${style.classes}`} title={LABELS[statut]}>
       <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
       {LABELS[statut] ?? statut}
     </span>

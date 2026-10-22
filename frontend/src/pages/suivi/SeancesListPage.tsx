@@ -53,6 +53,24 @@ export function SeancesListPage({ title, intro }: SeancesListPageProps) {
     [seances],
   );
 
+  const statusSummary = useMemo<{ planifiee: number; realisee: number; annulee: number }>(() => {
+    const summary = { planifiee: 0, realisee: 0, annulee: 0 };
+    seances.forEach((s) => {
+      switch (s.statut) {
+        case 'PLANIFIEE':
+          summary.planifiee++;
+          break;
+        case 'REALISEE':
+          summary.realisee++;
+          break;
+        case 'ANNULEE':
+          summary.annulee++;
+          break;
+      }
+    });
+    return summary;
+  }, [seances]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return seances.filter((seance) => {
@@ -85,6 +103,21 @@ export function SeancesListPage({ title, intro }: SeancesListPageProps) {
             {filtered.length} séance(s)
           </span>
         </div>
+
+        {/* Résumé des statuts (apport de l'équipe, restitué dans le design EMIT). */}
+        {(statusSummary.planifiee > 0 || statusSummary.realisee > 0 || statusSummary.annulee > 0) && (
+          <div className="mb-4 flex flex-col gap-2 text-sm sm:flex-row">
+            <span className="emit-chip bg-[#CAF0F8] text-[#03045E] ring-1 ring-inset ring-[#90E0EF]">
+              {statusSummary.planifiee} planifiée{statusSummary.planifiee !== 1 && '·'}
+            </span>
+            <span className="emit-chip bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200">
+              {statusSummary.realisee} réalisée{statusSummary.realisee !== 1 && '·'}
+            </span>
+            <span className="emit-chip bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200">
+              {statusSummary.annulee} annulée{statusSummary.annulee !== 1 && '·'}
+            </span>
+          </div>
+        )}
 
         {loading ? (
           <LoadingState label="Chargement des séances..." />

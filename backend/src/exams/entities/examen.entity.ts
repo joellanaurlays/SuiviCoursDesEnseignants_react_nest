@@ -1,4 +1,16 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
+
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+} from 'typeorm';
+
+import type { Relation } from 'typeorm';
 import { SessionExamen } from './session-examen.entity.js';
 import { Alerte } from './alerte.entity.js';
 
@@ -9,11 +21,13 @@ export class Examen {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => SessionExamen, (s) => s.examens, { onDelete: 'CASCADE' })
+  @ManyToOne(() => SessionExamen, (session) => session.examens, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'session_id' })
   // Union explicite : emitDecoratorMetadata évalue design:type au chargement
   // du module ; un type simple créerait une référence circulaire TDZ.
-  session: SessionExamen | undefined;
+  session: Relation<SessionExamen>;
 
   @Column({ name: 'session_id' })
   sessionId: string;
@@ -48,8 +62,8 @@ export class Examen {
   @Column({ name: 'date_remise_notes', type: 'timestamptz', nullable: true })
   dateRemiseNotes: Date | null;
 
-  @OneToMany(() => Alerte, (a) => a.examen)
-  alertes: Alerte[];
+  @OneToMany(() => Alerte, (alerte) => alerte.examen)
+  alertes: Relation<Alerte[]>;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
