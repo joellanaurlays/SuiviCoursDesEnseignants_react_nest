@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/dev.mjs",
-    "dev:vite": "vite --host=0.0.0.0",
-    "build": "vite build",
+    "dev:vite": "vite --configLoader runner --host=0.0.0.0",
+    "build": "vite build --configLoader runner",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
