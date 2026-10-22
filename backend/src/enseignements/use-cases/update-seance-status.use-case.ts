@@ -5,13 +5,13 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { calculerDureeSeance, plagesHorairesSeChevauchent, StatutSeance } from '../domain/calcul-suivi';
-import { SuiviRecalculService } from '../services/suivi-recalcul.service';
-import { AuthContext } from '../../auth/auth-context';
-import { PermissionsService } from '../permissions/permissions.service';
-import { AuditSeanceService } from '../services/audit-seance.service';
-import { ActionAuditSeance, instantaneSeance } from '../domain/audit-seance';
+import { PrismaService } from '../../prisma/prisma.service.js';
+import { calculerDureeSeance, plagesHorairesSeChevauchent, StatutSeance } from '../domain/calcul-suivi.js';
+import { SuiviRecalculService } from '../services/suivi-recalcul.service.js';
+import { AuthContext } from '../../auth/auth-context.js';
+import { PermissionsService } from '../permissions/permissions.service.js';
+import { AuditSeanceService } from '../services/audit-seance.service.js';
+import { ActionAuditSeance, instantaneSeance } from '../domain/audit-seance.js';
 
 /** Informations réellement observées lors de la réalisation d'une séance. */
 export interface RealisationSeanceOptions {

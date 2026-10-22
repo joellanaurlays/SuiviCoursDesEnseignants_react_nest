@@ -1,14 +1,14 @@
 import { vi, type Mock } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { CreateSeanceUseCase } from './create-seance.use-case';
-import { PrismaService } from '../../prisma/prisma.service';
-import { SuiviRecalculService } from '../services/suivi-recalcul.service';
-import { AuditSeanceService } from '../services/audit-seance.service';
-import { ActionAuditSeance } from '../domain/audit-seance';
-import { StatutSeance } from '../dto/create-seance.dto';
-import { AuthContext } from '../../auth/auth-context';
-import { Role } from '../../auth/roles.enum';
+import { CreateSeanceUseCase } from './create-seance.use-case.js';
+import { PrismaService } from '../../prisma/prisma.service.js';
+import { SuiviRecalculService } from '../services/suivi-recalcul.service.js';
+import { AuditSeanceService } from '../services/audit-seance.service.js';
+import { ActionAuditSeance } from '../domain/audit-seance.js';
+import { StatutSeance } from '../dto/create-seance.dto.js';
+import { AuthContext } from '../../auth/auth-context.js';
+import { Role } from '../../auth/roles.enum.js';
 
 const enseignant: AuthContext = { userId: 'ens1', role: Role.ENSEIGNANT };
 const autreEnseignant: AuthContext = { userId: 'ens2', role: Role.ENSEIGNANT };

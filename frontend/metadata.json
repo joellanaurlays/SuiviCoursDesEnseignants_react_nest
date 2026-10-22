@@ -1,0 +1,6 @@
+{
+  "name": "EMIT - Suivi des Enseignements (Module Emploi du Temps)",
+  "description": "Module 5 : Gestion des salles et créneaux, construction automatique/manuelle de l'emploi du temps, détection temps réel des conflits, consultation interactive et gestion des contraintes pour l'EMIT.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

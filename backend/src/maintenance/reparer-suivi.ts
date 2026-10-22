@@ -1,7 +1,7 @@
 import { existsSync } from 'fs';
 import { resolve } from 'path';
-import { PrismaService } from '../prisma/prisma.service';
-import { calculerSuivi } from '../enseignements/domain/calcul-suivi';
+import { PrismaService } from '../prisma/prisma.service.js';
+import { calculerSuivi } from '../enseignements/domain/calcul-suivi.js';
 
 if (!process.env.DATABASE_URL) {
   const envPath = resolve(process.cwd(), '.env');

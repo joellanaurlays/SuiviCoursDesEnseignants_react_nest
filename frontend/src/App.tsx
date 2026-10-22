@@ -1,282 +1,336 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './auth/AuthContext';
-import { DefaultRedirect, RequireRole, RequireResponsable } from './auth/RequireRole';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
+import DashboardPlaceholder from './pages/DashboardPlaceholder.jsx';
+import ProfilePage from './pages/ProfilePage.jsx';
+import UsersListPage from './pages/UsersListPage.jsx';
+import UserFormPage from './pages/UserFormPage.jsx';
+import ExamsModuleFixed from './exams/ExamsModuleFixed.jsx';
 
+// Pont identité JWT -> en-têtes x-user-* pour le module suivi (Membres 2/4).
+import { AuthProvider as SuiviAuthProvider } from './auth/AuthContext';
+import { RequireRole, RequireResponsable } from './auth/RequireRole';
+
+// Espace enseignant (Membre 2).
 import EnseignantDashboard from './pages/enseignant/dashboard/page';
-import EnseignantList from './pages/enseignant/enseignements/page';
-import EnseignantDetail from './pages/enseignant/enseignements/[id]/page';
-import EnseignantSeances from './pages/enseignant/seances/page';
-import EnseignantDeclarerSeance from './pages/enseignant/seances/nouveau/page';
-import EnseignantHeures from './pages/enseignant/heures/page';
-
-import ScolariteList from './pages/scolarite/suivi-enseignements/page';
-import ScolariteDetail from './pages/scolarite/suivi-enseignements/[id]/page';
-import ScolariteSeances from './pages/scolarite/seances/page';
-
-import ResponsableLicenceList from './pages/responsable/licence/suivi-enseignements/page';
-import ResponsableLicenceDetail from './pages/responsable/licence/suivi-enseignements/[id]/page';
-import ResponsableLicenceSeances from './pages/responsable/licence/seances/page';
-
-import ResponsableMasterList from './pages/responsable/master/suivi-enseignements/page';
-import ResponsableMasterDetail from './pages/responsable/master/suivi-enseignements/[id]/page';
-import ResponsableMasterSeances from './pages/responsable/master/seances/page';
-
-import AdminList from './pages/admin/suivi-enseignements/page';
-import AdminDetail from './pages/admin/suivi-enseignements/[id]/page';
-import AdminSeances from './pages/admin/seances/page';
-
+import EnseignantEnseignementsPage from './pages/enseignant/enseignements/page';
+import EnseignementDetailPage from './pages/enseignant/enseignements/[id]/page';
+import EnseignantSeancesPage from './pages/enseignant/seances/page';
+import DeclarerSeance from './pages/enseignant/seances/nouveau/page';
+import EnseignantHeuresPage from './pages/enseignant/heures/page';
 import { JournalAuditPage } from './pages/suivi/JournalAuditPage';
 
-function App() {
-  return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<DefaultRedirect />} />
+// Espaces scolarité / administrateur (Membre 4).
+import ScolariteSuiviEnseignementsPage from './pages/scolarite/suivi-enseignements/page';
+import ScolariteSuiviEnseignementsDetailPage from './pages/scolarite/suivi-enseignements/[id]/page';
+import ScolariteSeancesPage from './pages/scolarite/seances/page';
+import AdminSuiviEnseignementsPage from './pages/admin/suivi-enseignements/page';
+import AdminSuiviEnseignementsDetailPage from './pages/admin/suivi-enseignements/[id]/page';
+import AdminSeancesPage from './pages/admin/seances/page';
 
-          {/* Enseignant */}
-          <Route
-            path="/enseignant"
-            element={
-              <RequireRole role="ENSEIGNANT">
-                <DefaultRedirect />
-              </RequireRole>
-            }
-          />
-          <Route
-            path="/enseignant/dashboard"
-            element={
+// Espaces responsables de parcours (Membre 4).
+import ResponsableLicenceSuiviPage from './pages/responsable/licence/suivi-enseignements/page';
+import ResponsableLicenceSuiviDetailPage from './pages/responsable/licence/suivi-enseignements/[id]/page';
+import ResponsableLicenceSeancesPage from './pages/responsable/licence/seances/page';
+import ResponsableMasterSuiviPage from './pages/responsable/master/suivi-enseignements/page';
+import ResponsableMasterSuiviDetailPage from './pages/responsable/master/suivi-enseignements/[id]/page';
+import ResponsableMasterSeancesPage from './pages/responsable/master/seances/page';
+
+// Rôles autorisés à gérer les comptes (RoleName côté Prisma/JWT).
+const MANAGE_USERS_ROLES = ['CHEF_SCOLARITE', 'ADMINISTRATEUR'];
+
+export default function App() {
+  return (
+    <SuiviAuthProvider>
+      <Routes>
+        {/* La route de connexion est désactivée temporairement pour l'aperçu local. */}
+
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+        <Route path="/dashboard" element={<DashboardPlaceholder />} />
+
+        <Route
+          path="/users"
+          element={
+            <ProtectedRoute allowedRoles={MANAGE_USERS_ROLES}>
+              <UsersListPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/users/new"
+          element={
+            <ProtectedRoute allowedRoles={MANAGE_USERS_ROLES}>
+              <UserFormPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/users/:id/edit"
+          element={
+            <ProtectedRoute allowedRoles={MANAGE_USERS_ROLES}>
+              <UserFormPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/exams"
+          element={
+            <ProtectedRoute>
+              <ExamsModuleFixed />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ===== Espace enseignant ===== */}
+        <Route
+          path="/enseignant/dashboard"
+          element={
+            <ProtectedRoute>
               <RequireRole role="ENSEIGNANT">
                 <EnseignantDashboard />
               </RequireRole>
-            }
-          />
-          <Route
-            path="/enseignant/enseignements"
-            element={
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/enseignant/enseignements"
+          element={
+            <ProtectedRoute>
               <RequireRole role="ENSEIGNANT">
-                <EnseignantList />
+                <EnseignantEnseignementsPage />
               </RequireRole>
-            }
-          />
-          <Route
-            path="/enseignant/enseignements/:id"
-            element={
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/enseignant/enseignements/:id"
+          element={
+            <ProtectedRoute>
               <RequireRole role="ENSEIGNANT">
-                <EnseignantDetail />
+                <EnseignementDetailPage />
               </RequireRole>
-            }
-          />
-          <Route
-            path="/enseignant/seances"
-            element={
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/enseignant/seances"
+          element={
+            <ProtectedRoute>
               <RequireRole role="ENSEIGNANT">
-                <EnseignantSeances />
+                <EnseignantSeancesPage />
               </RequireRole>
-            }
-          />
-          <Route
-            path="/enseignant/seances/nouveau"
-            element={
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/enseignant/seances/nouveau"
+          element={
+            <ProtectedRoute>
               <RequireRole role="ENSEIGNANT">
-                <EnseignantDeclarerSeance />
+                <DeclarerSeance />
               </RequireRole>
-            }
-          />
-          <Route
-            path="/enseignant/heures"
-            element={
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/enseignant/heures"
+          element={
+            <ProtectedRoute>
               <RequireRole role="ENSEIGNANT">
-                <EnseignantHeures />
+                <EnseignantHeuresPage />
               </RequireRole>
-            }
-          />
-          <Route
-            path="/enseignant/journal"
-            element={
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/enseignant/journal"
+          element={
+            <ProtectedRoute>
               <RequireRole role="ENSEIGNANT">
-                <JournalAuditPage
-                  title="Journal d'audit"
-                  intro="Historique des actions réalisées sur vos séances."
-                />
+                <JournalAuditPage title="Mon journal d'audit" />
               </RequireRole>
-            }
-          />
+            </ProtectedRoute>
+          }
+        />
 
-          {/* Scolarité */}
-          <Route
-            path="/scolarite"
-            element={
+        {/* ===== Espace scolarité ===== */}
+        <Route
+          path="/scolarite/suivi-enseignements"
+          element={
+            <ProtectedRoute>
               <RequireRole role="SCOLARITE">
-                <DefaultRedirect />
+                <ScolariteSuiviEnseignementsPage />
               </RequireRole>
-            }
-          />
-          <Route
-            path="/scolarite/suivi-enseignements"
-            element={
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/scolarite/suivi-enseignements/:id"
+          element={
+            <ProtectedRoute>
               <RequireRole role="SCOLARITE">
-                <ScolariteList />
+                <ScolariteSuiviEnseignementsDetailPage />
               </RequireRole>
-            }
-          />
-          <Route
-            path="/scolarite/suivi-enseignements/:id"
-            element={
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/scolarite/seances"
+          element={
+            <ProtectedRoute>
               <RequireRole role="SCOLARITE">
-                <ScolariteDetail />
+                <ScolariteSeancesPage />
               </RequireRole>
-            }
-          />
-          <Route
-            path="/scolarite/seances"
-            element={
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/scolarite/journal"
+          element={
+            <ProtectedRoute>
               <RequireRole role="SCOLARITE">
-                <ScolariteSeances />
+                <JournalAuditPage title="Journal d'audit — scolarité" />
               </RequireRole>
-            }
-          />
-          <Route
-            path="/scolarite/journal"
-            element={
-              <RequireRole role="SCOLARITE">
-                <JournalAuditPage intro="Historique global des actions réalisées sur les séances." />
-              </RequireRole>
-            }
-          />
+            </ProtectedRoute>
+          }
+        />
 
-          {/* Responsable de mention — Licence */}
-          <Route
-            path="/responsable/licence"
-            element={
-              <RequireResponsable cycle="LICENCE">
-                <DefaultRedirect />
-              </RequireResponsable>
-            }
-          />
-          <Route
-            path="/responsable/licence/suivi-enseignements"
-            element={
-              <RequireResponsable cycle="LICENCE">
-                <ResponsableLicenceList />
-              </RequireResponsable>
-            }
-          />
-          <Route
-            path="/responsable/licence/suivi-enseignements/:id"
-            element={
-              <RequireResponsable cycle="LICENCE">
-                <ResponsableLicenceDetail />
-              </RequireResponsable>
-            }
-          />
-          <Route
-            path="/responsable/licence/seances"
-            element={
-              <RequireResponsable cycle="LICENCE">
-                <ResponsableLicenceSeances />
-              </RequireResponsable>
-            }
-          />
-          <Route
-            path="/responsable/licence/journal"
-            element={
-              <RequireResponsable cycle="LICENCE">
-                <JournalAuditPage intro="Historique des actions sur les séances de votre périmètre (Licence)." />
-              </RequireResponsable>
-            }
-          />
+        {/* ===== Espace administrateur ===== */}
+        <Route
+          path="/admin/suivi-enseignements"
+          element={
+            <ProtectedRoute>
+              <RequireRole role="ADMINISTRATEUR">
+                <AdminSuiviEnseignementsPage />
+              </RequireRole>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/suivi-enseignements/:id"
+          element={
+            <ProtectedRoute>
+              <RequireRole role="ADMINISTRATEUR">
+                <AdminSuiviEnseignementsDetailPage />
+              </RequireRole>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/seances"
+          element={
+            <ProtectedRoute>
+              <RequireRole role="ADMINISTRATEUR">
+                <AdminSeancesPage />
+              </RequireRole>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/journal"
+          element={
+            <ProtectedRoute>
+              <RequireRole role="ADMINISTRATEUR">
+                <JournalAuditPage title="Journal d'audit — administration" />
+              </RequireRole>
+            </ProtectedRoute>
+          }
+        />
 
-          {/* Responsable de mention — Master */}
-          <Route
-            path="/responsable/master"
-            element={
-              <RequireResponsable cycle="MASTER">
-                <DefaultRedirect />
+        {/* ===== Espaces responsables de parcours ===== */}
+        <Route
+          path="/responsable/licence/suivi-enseignements"
+          element={
+            <ProtectedRoute>
+              <RequireResponsable cycle="LICENCE">
+                <ResponsableLicenceSuiviPage />
               </RequireResponsable>
-            }
-          />
-          <Route
-            path="/responsable/master/suivi-enseignements"
-            element={
-              <RequireResponsable cycle="MASTER">
-                <ResponsableMasterList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/responsable/licence/suivi-enseignements/:id"
+          element={
+            <ProtectedRoute>
+              <RequireResponsable cycle="LICENCE">
+                <ResponsableLicenceSuiviDetailPage />
               </RequireResponsable>
-            }
-          />
-          <Route
-            path="/responsable/master/suivi-enseignements/:id"
-            element={
-              <RequireResponsable cycle="MASTER">
-                <ResponsableMasterDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/responsable/licence/seances"
+          element={
+            <ProtectedRoute>
+              <RequireResponsable cycle="LICENCE">
+                <ResponsableLicenceSeancesPage />
               </RequireResponsable>
-            }
-          />
-          <Route
-            path="/responsable/master/seances"
-            element={
-              <RequireResponsable cycle="MASTER">
-                <ResponsableMasterSeances />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/responsable/licence/journal"
+          element={
+            <ProtectedRoute>
+              <RequireResponsable cycle="LICENCE">
+                <JournalAuditPage title="Journal d'audit — Licence" />
               </RequireResponsable>
-            }
-          />
-          <Route
-            path="/responsable/master/journal"
-            element={
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/responsable/master/suivi-enseignements"
+          element={
+            <ProtectedRoute>
               <RequireResponsable cycle="MASTER">
-                <JournalAuditPage intro="Historique des actions sur les séances de votre périmètre (Master)." />
+                <ResponsableMasterSuiviPage />
               </RequireResponsable>
-            }
-          />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/responsable/master/suivi-enseignements/:id"
+          element={
+            <ProtectedRoute>
+              <RequireResponsable cycle="MASTER">
+                <ResponsableMasterSuiviDetailPage />
+              </RequireResponsable>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/responsable/master/seances"
+          element={
+            <ProtectedRoute>
+              <RequireResponsable cycle="MASTER">
+                <ResponsableMasterSeancesPage />
+              </RequireResponsable>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/responsable/master/journal"
+          element={
+            <ProtectedRoute>
+              <RequireResponsable cycle="MASTER">
+                <JournalAuditPage title="Journal d'audit — Master" />
+              </RequireResponsable>
+            </ProtectedRoute>
+          }
+        />
 
-          {/* Administrateur */}
-          <Route
-            path="/admin"
-            element={
-              <RequireRole role="ADMINISTRATEUR">
-                <DefaultRedirect />
-              </RequireRole>
-            }
-          />
-          <Route
-            path="/admin/suivi-enseignements"
-            element={
-              <RequireRole role="ADMINISTRATEUR">
-                <AdminList />
-              </RequireRole>
-            }
-          />
-          <Route
-            path="/admin/suivi-enseignements/:id"
-            element={
-              <RequireRole role="ADMINISTRATEUR">
-                <AdminDetail />
-              </RequireRole>
-            }
-          />
-          <Route
-            path="/admin/seances"
-            element={
-              <RequireRole role="ADMINISTRATEUR">
-                <AdminSeances />
-              </RequireRole>
-            }
-          />
-          <Route
-            path="/admin/journal"
-            element={
-              <RequireRole role="ADMINISTRATEUR">
-                <JournalAuditPage intro="Historique global des actions réalisées sur les séances." />
-              </RequireRole>
-            }
-          />
-
-          {/* Fallback */}
-          <Route path="*" element={<DefaultRedirect />} />
-        </Routes>
-      </Router>
-    </AuthProvider>
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </SuiviAuthProvider>
   );
 }
-
-export default App;

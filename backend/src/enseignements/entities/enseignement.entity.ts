@@ -1,6 +1,6 @@
 // Les enums métier sont définis dans le domaine (source de vérité unique).
-import { StatutSeance } from '../domain/calcul-suivi';
-export { EtatEnseignement, StatutSeance, TypeCloture } from '../domain/calcul-suivi';
+import { StatutSeance } from '../domain/calcul-suivi.js';
+export { EtatEnseignement, StatutSeance, TypeCloture } from '../domain/calcul-suivi.js';
 
 export class Enseignement {
   id?: string;

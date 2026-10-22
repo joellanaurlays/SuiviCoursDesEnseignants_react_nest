@@ -1,6 +1,6 @@
-import { PermissionsService } from './permissions.service';
-import { AuthContext } from '../../auth/auth-context';
-import { Role } from '../../auth/roles.enum';
+import { PermissionsService } from './permissions.service.js';
+import { AuthContext } from '../../auth/auth-context.js';
+import { Role } from '../../auth/roles.enum.js';
 
 describe('PermissionsService', () => {
   const service = new PermissionsService();

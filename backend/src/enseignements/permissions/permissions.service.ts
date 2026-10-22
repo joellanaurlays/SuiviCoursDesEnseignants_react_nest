@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Cycle, Prisma } from '@prisma/client';
-import { AuthContext } from '../../auth/auth-context';
-import { Role } from '../../auth/roles.enum';
+import { AuthContext } from '../../auth/auth-context.js';
+import { Role } from '../../auth/roles.enum.js';
 
 interface EnseignementScope {
   enseignantId: string;

@@ -1,17 +1,17 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CreateSeanceDto } from '../dto/create-seance.dto';
+import { PrismaService } from '../../prisma/prisma.service.js';
+import { CreateSeanceDto } from '../dto/create-seance.dto.js';
 import { Seance } from '@prisma/client';
-import { SuiviRecalculService } from '../services/suivi-recalcul.service';
+import { SuiviRecalculService } from '../services/suivi-recalcul.service.js';
 import {
   calculerDureeSeance,
   plagesHorairesSeChevauchent,
   StatutSeance,
-} from '../domain/calcul-suivi';
-import { AuthContext } from '../../auth/auth-context';
-import { Role } from '../../auth/roles.enum';
-import { AuditSeanceService } from '../services/audit-seance.service';
-import { ActionAuditSeance, instantaneSeance } from '../domain/audit-seance';
+} from '../domain/calcul-suivi.js';
+import { AuthContext } from '../../auth/auth-context.js';
+import { Role } from '../../auth/roles.enum.js';
+import { AuditSeanceService } from '../services/audit-seance.service.js';
+import { ActionAuditSeance, instantaneSeance } from '../domain/audit-seance.js';
 
 @Injectable()
 export class CreateSeanceUseCase {

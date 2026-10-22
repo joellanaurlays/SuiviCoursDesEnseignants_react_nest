@@ -1,8 +1,8 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { AuthContext } from '../../auth/auth-context';
-import { PermissionsService } from '../permissions/permissions.service';
-import { construireSuivi, EnseignementSuiviLigne } from '../domain/construire-suivi';
+import { PrismaService } from '../../prisma/prisma.service.js';
+import { AuthContext } from '../../auth/auth-context.js';
+import { PermissionsService } from '../permissions/permissions.service.js';
+import { construireSuivi, EnseignementSuiviLigne } from '../domain/construire-suivi.js';
 
 const includeSuivi = { seances: true } as const;
 

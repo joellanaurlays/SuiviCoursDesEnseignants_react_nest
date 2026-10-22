@@ -1,15 +1,15 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
-import { EnseignementsService } from '../services/enseignements.service';
-import { CreateSeanceDto } from '../dto/create-seance.dto';
-import { UpdateSeanceDto } from '../dto/update-seance.dto';
-import { RealiserSeanceDto } from '../dto/realiser-seance.dto';
-import { AnnulerSeanceDto } from '../dto/annuler-seance.dto';
-import { SupprimerSeanceDto } from '../dto/supprimer-seance.dto';
-import { Roles } from '../../auth/roles.decorator';
-import { CurrentUser } from '../../auth/current-user.decorator';
-import { AuthContext } from '../../auth/auth-context';
-import { Role } from '../../auth/roles.enum';
-import { AuthGuard } from '../../auth/auth.guard';
+import { EnseignementsService } from '../services/enseignements.service.js';
+import { CreateSeanceDto } from '../dto/create-seance.dto.js';
+import { UpdateSeanceDto } from '../dto/update-seance.dto.js';
+import { RealiserSeanceDto } from '../dto/realiser-seance.dto.js';
+import { AnnulerSeanceDto } from '../dto/annuler-seance.dto.js';
+import { SupprimerSeanceDto } from '../dto/supprimer-seance.dto.js';
+import { Roles } from '../../auth/roles.decorator.js';
+import { CurrentUser } from '../../auth/current-user.decorator.js';
+import { AuthContext } from '../../auth/auth-context.js';
+import { Role } from '../../auth/roles.enum.js';
+import { AuthGuard } from '../../auth/auth.guard.js';
 
 @Controller('seances')
 @UseGuards(AuthGuard)

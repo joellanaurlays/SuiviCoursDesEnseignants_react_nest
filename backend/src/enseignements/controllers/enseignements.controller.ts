@@ -1,20 +1,20 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
-import { EnseignementsService } from '../services/enseignements.service';
-import { CreateEnseignementDto } from '../dto/create-enseignement.dto';
-import { UpdateEnseignementDto } from '../dto/update-enseignement.dto';
-import { CreateSeanceDto } from '../dto/create-seance.dto';
-import { UpdateSeanceDto } from '../dto/update-seance.dto';
-import { SupprimerSeanceDto } from '../dto/supprimer-seance.dto';
-import { JournalAuditQueryDto } from '../dto/journal-audit-query.dto';
-import { SuiviQueryDto } from '../dto/suivi-query.dto';
-import { GetTeacherDashboardUseCase } from '../use-cases/get-teacher-dashboard.use-case';
-import { GetSuiviStatistiquesUseCase } from '../use-cases/get-suivi-statistiques.use-case';
-import { Roles } from '../../auth/roles.decorator';
-import { CurrentUser } from '../../auth/current-user.decorator';
-import { AuthContext } from '../../auth/auth-context';
-import { Role } from '../../auth/roles.enum';
+import { EnseignementsService } from '../services/enseignements.service.js';
+import { CreateEnseignementDto } from '../dto/create-enseignement.dto.js';
+import { UpdateEnseignementDto } from '../dto/update-enseignement.dto.js';
+import { CreateSeanceDto } from '../dto/create-seance.dto.js';
+import { UpdateSeanceDto } from '../dto/update-seance.dto.js';
+import { SupprimerSeanceDto } from '../dto/supprimer-seance.dto.js';
+import { JournalAuditQueryDto } from '../dto/journal-audit-query.dto.js';
+import { SuiviQueryDto } from '../dto/suivi-query.dto.js';
+import { GetTeacherDashboardUseCase } from '../use-cases/get-teacher-dashboard.use-case.js';
+import { GetSuiviStatistiquesUseCase } from '../use-cases/get-suivi-statistiques.use-case.js';
+import { Roles } from '../../auth/roles.decorator.js';
+import { CurrentUser } from '../../auth/current-user.decorator.js';
+import { AuthContext } from '../../auth/auth-context.js';
+import { Role } from '../../auth/roles.enum.js';
 
-import { AuthGuard } from '../../auth/auth.guard';
+import { AuthGuard } from '../../auth/auth.guard.js';
 
 @Controller('enseignants')
 @UseGuards(AuthGuard)

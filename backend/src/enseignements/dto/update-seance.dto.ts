@@ -1,6 +1,6 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { IsOptional, IsString } from 'class-validator';
-import { CreateSeanceDto } from './create-seance.dto';
+import { CreateSeanceDto } from './create-seance.dto.js';
 
 export class UpdateSeanceDto extends PartialType(CreateSeanceDto) {
   /**

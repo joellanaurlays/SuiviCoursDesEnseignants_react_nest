@@ -1,11 +1,11 @@
 import { vi } from 'vitest';
 import { ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
-import { PermissionsService } from '../permissions/permissions.service';
-import { AuditSeanceService, EntreeAudit } from './audit-seance.service';
-import { ActionAuditSeance } from '../domain/audit-seance';
-import { AuthContext } from '../../auth/auth-context';
-import { Role } from '../../auth/roles.enum';
+import { PrismaService } from '../../prisma/prisma.service.js';
+import { PermissionsService } from '../permissions/permissions.service.js';
+import { AuditSeanceService, EntreeAudit } from './audit-seance.service.js';
+import { ActionAuditSeance } from '../domain/audit-seance.js';
+import { AuthContext } from '../../auth/auth-context.js';
+import { Role } from '../../auth/roles.enum.js';
 
 interface JournalRow {
   id: string;

@@ -1,13 +1,13 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from '../../prisma/prisma.service';
-import { AuthContext } from '../../auth/auth-context';
-import { PermissionsService } from '../permissions/permissions.service';
+import { PrismaService } from '../../prisma/prisma.service.js';
+import { AuthContext } from '../../auth/auth-context.js';
+import { PermissionsService } from '../permissions/permissions.service.js';
 import {
   ActionAuditSeance,
   PerimetreAudit,
   ValeursSeanceAudit,
-} from '../domain/audit-seance';
+} from '../domain/audit-seance.js';
 
 /** Entrée d'audit à enregistrer (l'auteur provient toujours du contexte d'auth). */
 export interface EntreeAudit {

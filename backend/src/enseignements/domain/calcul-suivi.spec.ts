@@ -4,7 +4,7 @@ import {
   EtatEnseignement,
   StatutSeance,
   TypeCloture,
-} from './calcul-suivi';
+} from './calcul-suivi.js';
 
 describe('calculerSuivi', () => {
   it('retourne 0 h, NON_COMMENCE, progression 0 quand aucune séance réalisée', () => {
