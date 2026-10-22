@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { fetchProfile, loginRequest, logoutRequest } from '../services/authApi.js'
 import { SESSION_EXPIRED_EVENT, TOKEN_KEY } from '../services/sessionApi.js'
+import { isLocalPreviewEnabled, LOCAL_PREVIEW_IDENTITY } from '../preview/localPreview'
 
 const AuthContext = createContext(null)
 
@@ -13,6 +14,16 @@ export function AuthProvider({ children }) {
     const storedToken = localStorage.getItem(TOKEN_KEY)
 
     if (!storedToken) {
+      // Mode de prévisualisation local (développement + VITE_ENABLE_LOCAL_PREVIEW=true) :
+      // on fournit une identité de DÉMONSTRATION pour permettre d'accéder au
+      // module Suivi des enseignements pendant que l'authentification est en
+      // cours de résolution.
+      // AUCUN jeton n'est créé, stocké ou envoyé : le backend garde ses guards
+      // et continue de renvoyer 401 sur les routes protégées. Sans ce mode,
+      // le comportement est inchangé (redirection vers /login).
+      if (isLocalPreviewEnabled()) {
+        setUser(LOCAL_PREVIEW_IDENTITY)
+      }
       setIsLoading(false)
       return
     }
