@@ -63,6 +63,8 @@ model Seance {
   heureFin        String
   duree           Float
   contenuEnseigne String?
+  salle           String?
+  typeSeance      String?
   statut          StatutSeance   @default(PLANIFIEE)
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt

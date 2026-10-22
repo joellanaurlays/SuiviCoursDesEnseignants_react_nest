@@ -6,6 +6,7 @@ import { useAuth } from '../../../../auth/AuthContext';
 import { enseignementService } from '../../../../services/enseignement.service';
 import { seanceService } from '../../../../services/seance.service';
 import { EnseignementAvecSuivi, StatutSeance } from '../../../../types/enseignement';
+import { OPTIONS_TYPE_SEANCE, PLACEHOLDER_SALLE } from '../../../../utils/seance-form-options';
 
 export default function DeclarerSeance() {
   const navigate = useNavigate();
@@ -18,6 +19,8 @@ export default function DeclarerSeance() {
   const [heureDebut, setHeureDebut] = useState('08:30');
   const [heureFin, setHeureFin] = useState('10:00');
   const [contenu, setContenu] = useState('');
+  const [salle, setSalle] = useState('');
+  const [typeSeance, setTypeSeance] = useState('');
   const [statut, setStatut] = useState<StatutSeance>('REALISEE');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -81,6 +84,8 @@ export default function DeclarerSeance() {
           heureDebut,
           heureFin,
           contenuEnseigne: contenu,
+          salle: salle.trim() || undefined,
+          typeSeance: typeSeance || undefined,
           statut,
         },
         headers,
@@ -164,6 +169,30 @@ export default function DeclarerSeance() {
               <span>
                 Durée calculée automatiquement : <span className="font-bold">{calculateDuration()}</span>
               </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className={labelClass}>Salle</label>
+                <input
+                  type="text"
+                  className={inputClass}
+                  placeholder={PLACEHOLDER_SALLE}
+                  value={salle}
+                  onChange={(e) => setSalle(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Type de séance</label>
+                <select value={typeSeance} onChange={(e) => setTypeSeance(e.target.value)} className={inputClass}>
+                  <option value="">-- Sélectionner --</option>
+                  {OPTIONS_TYPE_SEANCE.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div>

@@ -4,6 +4,7 @@ import { useAuth } from '../../auth/AuthContext';
 import { seanceService } from '../../services/seance.service';
 import { Seance } from '../../types/enseignement';
 import { formatDate, formatDuree, formatHoraire } from '../../utils/format';
+import { OPTIONS_TYPE_SEANCE, PLACEHOLDER_SALLE } from '../../utils/seance-form-options';
 import { SeanceStatutBadge } from './SeanceStatutBadge';
 import { HistoriqueSeance } from './HistoriqueSeance';
 
@@ -57,6 +58,8 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
   const [heureDebut, setHeureDebut] = useState('');
   const [heureFin, setHeureFin] = useState('');
   const [contenuEnseigne, setContenuEnseigne] = useState('');
+  const [salle, setSalle] = useState('');
+  const [typeSeance, setTypeSeance] = useState('');
   const [motifAnnulation, setMotifAnnulation] = useState('');
   const [motifCorrection, setMotifCorrection] = useState('');
 
@@ -70,6 +73,8 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
       setHeureDebut(detail.heureDebut);
       setHeureFin(detail.heureFin);
       setContenuEnseigne(detail.contenuEnseigne ?? '');
+      setSalle(detail.salle ?? '');
+      setTypeSeance(detail.typeSeance ?? '');
     } catch (e) {
       const err = e as { status?: number; message?: string };
       setLoadError(
@@ -111,6 +116,8 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
           heureDebut,
           heureFin,
           contenuEnseigne: contenuEnseigne.trim(),
+          salle: salle.trim() || undefined,
+          typeSeance: typeSeance || undefined,
         },
         headers,
       );
@@ -167,6 +174,8 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
           heureDebut,
           heureFin,
           contenuEnseigne: contenuEnseigne.trim(),
+          salle: salle.trim() || undefined,
+          typeSeance: typeSeance || undefined,
           motif: motifCorrection.trim() || undefined,
         },
         headers,
@@ -234,6 +243,8 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                 <InfoRow label="Durée réalisée" value={formatDuree(seance.duree)} />
               )}
               <InfoRow label="Contenu enseigné" value={seance.contenuEnseigne} />
+              <InfoRow label="Salle" value={seance.salle} />
+              <InfoRow label="Type de séance" value={seance.typeSeance} />
               <InfoRow label="Créée le" value={formatDate(seance.createdAt)} />
               <InfoRow label="Dernière modification" value={formatDate(seance.updatedAt)} />
             </div>
@@ -326,6 +337,35 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                       disabled={submitting}
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className={labelClass}>Salle</label>
+                  <input
+                    type="text"
+                    className={inputClass}
+                    value={salle}
+                    onChange={(e) => setSalle(e.target.value)}
+                    disabled={submitting}
+                    placeholder={PLACEHOLDER_SALLE}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>Type de séance</label>
+                  <select
+                    className={inputClass}
+                    value={typeSeance}
+                    onChange={(e) => setTypeSeance(e.target.value)}
+                    disabled={submitting}
+                  >
+                    <option value="">-- Sélectionner --</option>
+                    {OPTIONS_TYPE_SEANCE.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
@@ -447,6 +487,35 @@ export function SeanceDetailModal({ seanceId, onClose, onChanged }: SeanceDetail
                       disabled={submitting}
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className={labelClass}>Salle</label>
+                  <input
+                    type="text"
+                    className={inputClass}
+                    value={salle}
+                    onChange={(e) => setSalle(e.target.value)}
+                    disabled={submitting}
+                    placeholder={PLACEHOLDER_SALLE}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>Type de séance</label>
+                  <select
+                    className={inputClass}
+                    value={typeSeance}
+                    onChange={(e) => setTypeSeance(e.target.value)}
+                    disabled={submitting}
+                  >
+                    <option value="">-- Sélectionner --</option>
+                    {OPTIONS_TYPE_SEANCE.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>

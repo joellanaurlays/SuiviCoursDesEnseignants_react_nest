@@ -31,4 +31,12 @@ export class RealiserSeanceDto {
   @IsString()
   @IsOptional()
   contenuEnseigne?: string;
+
+  @IsString()
+  @IsOptional()
+  salle?: string;
+
+  @IsString()
+  @IsOptional()
+  typeSeance?: string;
 }

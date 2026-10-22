@@ -247,13 +247,15 @@ export class EnseignementsService {
     // strictes (enseignant responsable), règles de transition et recalcul
     // atomique des heures.
     if (statut !== undefined) {
-      return this.updateSeanceStatusUseCase.execute(seanceId, statut, context, {
-        dateSeance: autresChamps.dateSeance,
-        heureDebut: autresChamps.heureDebut,
-        heureFin: autresChamps.heureFin,
-        contenuEnseigne: autresChamps.contenuEnseigne,
-        motif,
-      });
+    return this.updateSeanceStatusUseCase.execute(seanceId, statut, context, {
+      dateSeance: autresChamps.dateSeance,
+      heureDebut: autresChamps.heureDebut,
+      heureFin: autresChamps.heureFin,
+      contenuEnseigne: autresChamps.contenuEnseigne,
+      salle: (autresChamps as Record<string, unknown>).salle as string | undefined,
+      typeSeance: (autresChamps as Record<string, unknown>).typeSeance as string | undefined,
+      motif,
+    });
     }
 
     if (context && !this.permissionsService.canManageSeance(context, seance)) {

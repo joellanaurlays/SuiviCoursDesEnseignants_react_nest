@@ -38,6 +38,8 @@ export interface ValeursSeanceAudit {
   heureFin?: string | null;
   duree?: number | null;
   contenuEnseigne?: string | null;
+  salle?: string | null;
+  typeSeance?: string | null;
   statut?: string | null;
 }
 
@@ -56,6 +58,8 @@ export function instantaneSeance(seance: {
   heureFin: string;
   duree: number;
   contenuEnseigne: string | null;
+  salle?: string | null;
+  typeSeance?: string | null;
   statut: string;
 }): ValeursSeanceAudit {
   const date = seance.dateSeance instanceof Date ? seance.dateSeance : new Date(seance.dateSeance);
@@ -65,6 +69,8 @@ export function instantaneSeance(seance: {
     heureFin: seance.heureFin,
     duree: seance.duree,
     contenuEnseigne: seance.contenuEnseigne,
+    salle: seance.salle ?? null,
+    typeSeance: seance.typeSeance ?? null,
     statut: seance.statut,
   };
 }
@@ -83,6 +89,8 @@ export function champsModifies(
     'heureFin',
     'duree',
     'contenuEnseigne',
+    'salle',
+    'typeSeance',
     'statut',
   ];
 

@@ -139,11 +139,11 @@ export default function EnseignantSeancesPage() {
                     <td className="px-6 py-4 font-medium text-gray-800">
                       {seance.enseignement?.matiereId ?? '—'}
                     </td>
-                    <td className="px-6 py-4 text-gray-500">—</td>
+                    <td className="px-6 py-4 text-gray-600">{seance.typeSeance || '—'}</td>
                     <td className="px-6 py-4 text-gray-600 whitespace-nowrap">
                       {formatHoraire(seance.heureDebut, seance.heureFin)}
                     </td>
-                    <td className="px-6 py-4 text-gray-500">—</td>
+                    <td className="px-6 py-4 text-gray-600">{seance.salle || '—'}</td>
                     <td className="px-6 py-4 text-gray-600 whitespace-nowrap">{formatDuree(seance.duree)}</td>
                     <td className="px-6 py-4">
                       <SeanceStatutBadge statut={seance.statut} />

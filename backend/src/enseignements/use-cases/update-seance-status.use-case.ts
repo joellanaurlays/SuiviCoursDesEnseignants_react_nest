@@ -19,6 +19,8 @@ export interface RealisationSeanceOptions {
   heureDebut?: string;
   heureFin?: string;
   contenuEnseigne?: string;
+  salle?: string;
+  typeSeance?: string;
   /** Motif de l'annulation (facultatif), conservé dans le journal d'audit. */
   motif?: string;
 }
@@ -145,6 +147,8 @@ export class UpdateSeanceStatusUseCase {
           heureFin,
           duree,
           contenuEnseigne,
+          salle: options.salle ?? seance.salle ?? null,
+          typeSeance: options.typeSeance ?? seance.typeSeance ?? null,
         },
       });
 
@@ -260,6 +264,8 @@ interface SeanceAvecEnseignement {
   heureFin: string;
   duree: number;
   contenuEnseigne: string | null;
+  salle: string | null;
+  typeSeance: string | null;
   statut: string;
   enseignement: {
     id: string;

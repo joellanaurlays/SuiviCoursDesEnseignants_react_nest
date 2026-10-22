@@ -1,0 +1,195 @@
+﻿STRUCTURE DU PROJET
+Racine : E:\DASI_L3\Stage
+
+├── backend
+│   ├── scripts
+│   │   ├── verifier-donnees-api.cjs
+│   │   ├── verifier-donnees-bdd.cjs
+│   │   └── verify-suivi-e2e.ts
+│   ├── src
+│   │   ├── auth
+│   │   │   ├── auth.guard.ts
+│   │   │   ├── auth-context.ts
+│   │   │   ├── current-user.decorator.ts
+│   │   │   ├── roles.decorator.ts
+│   │   │   └── roles.enum.ts
+│   │   ├── enseignements
+│   │   │   ├── controllers
+│   │   │   │   ├── cloture.controller.ts
+│   │   │   │   ├── enseignements.controller.ts
+│   │   │   │   └── seances.controller.ts
+│   │   │   ├── domain
+│   │   │   │   ├── calcul-suivi.spec.ts
+│   │   │   │   ├── calcul-suivi.ts
+│   │   │   │   └── construire-suivi.ts
+│   │   │   ├── dto
+│   │   │   │   ├── cloturer-enseignement.dto.ts
+│   │   │   │   ├── create-enseignement.dto.ts
+│   │   │   │   ├── create-seance.dto.ts
+│   │   │   │   ├── suivi-query.dto.ts
+│   │   │   │   ├── update-enseignement.dto.ts
+│   │   │   │   └── update-seance.dto.ts
+│   │   │   ├── entities
+│   │   │   │   └── enseignement.entity.ts
+│   │   │   ├── permissions
+│   │   │   │   ├── permissions.service.spec.ts
+│   │   │   │   └── permissions.service.ts
+│   │   │   ├── services
+│   │   │   │   ├── enseignements.service.ts
+│   │   │   │   └── suivi-recalcul.service.ts
+│   │   │   ├── use-cases
+│   │   │   │   ├── cloturer-enseignement.use-case.spec.ts
+│   │   │   │   ├── cloturer-enseignement.use-case.ts
+│   │   │   │   ├── create-seance.use-case.spec.ts
+│   │   │   │   ├── create-seance.use-case.ts
+│   │   │   │   ├── get-cloture-enseignement.use-case.ts
+│   │   │   │   ├── get-suivi.use-case.ts
+│   │   │   │   ├── get-suivi-statistiques.use-case.ts
+│   │   │   │   ├── get-teacher-dashboard.use-case.ts
+│   │   │   │   └── update-seance-status.use-case.ts
+│   │   │   └── enseignements.module.ts
+│   │   ├── maintenance
+│   │   │   └── reparer-suivi.ts
+│   │   ├── prisma
+│   │   │   ├── prisma.module.ts
+│   │   │   └── prisma.service.ts
+│   │   ├── app.module.ts
+│   │   └── main.ts
+│   ├── README.md
+│   └── tsconfig.json
+├── frontend
+│   ├── src
+│   │   ├── auth
+│   │   │   ├── AuthContext.tsx
+│   │   │   ├── headers.ts
+│   │   │   ├── identities.ts
+│   │   │   └── RequireRole.tsx
+│   │   ├── components
+│   │   │   ├── enseignements
+│   │   │   │   ├── ClotureBadge.tsx
+│   │   │   │   ├── ClotureModal.tsx
+│   │   │   │   ├── EnseignementTable.tsx
+│   │   │   │   ├── EtatBadge.tsx
+│   │   │   │   ├── FilterBar.tsx
+│   │   │   │   ├── SeanceStatutBadge.tsx
+│   │   │   │   ├── SeanceTable.tsx
+│   │   │   │   └── SuiviDetailView.tsx
+│   │   │   ├── ui
+│   │   │   │   ├── EmptyState.tsx
+│   │   │   │   ├── ErrorState.tsx
+│   │   │   │   ├── LoadingState.tsx
+│   │   │   │   ├── ProgressionBar.tsx
+│   │   │   │   └── StatCard.tsx
+│   │   │   └── Layout.tsx
+│   │   ├── pages
+│   │   │   ├── admin
+│   │   │   │   ├── seances
+│   │   │   │   │   └── page.tsx
+│   │   │   │   └── suivi-enseignements
+│   │   │   │       ├── [id]
+│   │   │   │       │   └── page.tsx
+│   │   │   │       └── page.tsx
+│   │   │   ├── enseignant
+│   │   │   │   ├── dashboard
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── enseignements
+│   │   │   │   │   ├── [id]
+│   │   │   │   │   │   └── page.tsx
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── heures
+│   │   │   │   │   └── page.tsx
+│   │   │   │   └── seances
+│   │   │   │       ├── nouveau
+│   │   │   │       │   └── page.tsx
+│   │   │   │       └── page.tsx
+│   │   │   ├── responsable
+│   │   │   │   ├── licence
+│   │   │   │   │   ├── seances
+│   │   │   │   │   │   └── page.tsx
+│   │   │   │   │   └── suivi-enseignements
+│   │   │   │   │       ├── [id]
+│   │   │   │   │       │   └── page.tsx
+│   │   │   │   │       └── page.tsx
+│   │   │   │   └── master
+│   │   │   │       ├── seances
+│   │   │   │       │   └── page.tsx
+│   │   │   │       └── suivi-enseignements
+│   │   │   │           ├── [id]
+│   │   │   │           │   └── page.tsx
+│   │   │   │           └── page.tsx
+│   │   │   ├── scolarite
+│   │   │   │   ├── seances
+│   │   │   │   │   └── page.tsx
+│   │   │   │   └── suivi-enseignements
+│   │   │   │       ├── [id]
+│   │   │   │       │   └── page.tsx
+│   │   │   │       └── page.tsx
+│   │   │   └── suivi
+│   │   │       ├── SeancesListPage.tsx
+│   │   │       ├── SuiviDetailPage.tsx
+│   │   │       └── SuiviListPage.tsx
+│   │   ├── services
+│   │   │   ├── api.client.ts
+│   │   │   ├── auth.service.ts
+│   │   │   ├── cloture.service.ts
+│   │   │   ├── dashboard.service.ts
+│   │   │   ├── enseignement.service.ts
+│   │   │   ├── seance.service.ts
+│   │   │   └── suivi.service.ts
+│   │   ├── types
+│   │   │   └── enseignement.ts
+│   │   ├── utils
+│   │   │   └── format.ts
+│   │   ├── App.tsx
+│   │   ├── index.css
+│   │   ├── main.tsx
+│   │   └── vite-env.d.ts
+│   ├── .eslintrc.cjs
+│   ├── index.html
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── postcss.config.js
+│   ├── tailwind.config.js
+│   ├── tsconfig.json
+│   ├── tsconfig.node.json
+│   └── vite.config.ts
+├── plans
+│   ├── development-plan.md
+│   └── migration-plan.md
+├── prisma
+│   ├── dev.db
+│   ├── schema.prisma
+│   ├── seed.js
+│   └── seed-cloture-demo.cjs
+├── src
+│   ├── data
+│   │   └── mockData.ts
+│   ├── domain
+│   │   ├── entities
+│   │   │   └── enseignement.ts
+│   │   ├── enums
+│   │   │   └── types.ts
+│   │   ├── repositories
+│   │   │   └── interfaces.ts
+│   │   └── services
+│   │       └── enseignement.service.ts
+│   ├── infrastructure
+│   │   └── repositories
+│   │       ├── enseignement.repository.ts
+│   │       └── mock.repository.ts
+│   └── tests
+│       ├── test-api.ts
+│       ├── test-rakoto.ts
+│       └── test-suivi.ts
+├── .env
+├── _probe-db.cjs
+├── create_dirs.js
+├── jest.config.js
+├── package.json
+├── package-lock.json
+├── plan.txt
+├── script-test.ts
+├── test-output.txt
+├── test-seances.ts
+├── tsconfig.json
+└── tsconfig.tsbuildinfo
