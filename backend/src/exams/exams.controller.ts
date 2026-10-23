@@ -1,10 +1,12 @@
-import { Controller, Get, Post, Patch, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { Roles } from '../auth/roles.decorator.js';
 import { Role } from '../auth/roles.enum.js';
 import { ExamsService } from './exams.service.js';
 import { CreateSessionDto, CreateExamenDto, UpdateStatutDto, CreateAlerteDto } from './dto/exams.dto.js';
 
 @Controller('exams')
+@UseGuards(JwtAuthGuard)
 export class ExamsController {
   constructor(private readonly service: ExamsService) {}
 

@@ -3,8 +3,7 @@ import { Layout } from '../../components/Layout';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { EmptyState } from '../../components/ui/EmptyState';
-import { Alerte } from '../../types/enseignement';
-import { alerteService } from '../../services/alerte.service';
+import { alerteService, type Alerte } from '../../services/alerte.service';
 import { Search } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
 import { formatDate } from '../../utils/format';
@@ -19,6 +18,7 @@ export default function EnseignantAlertesPage({ title }: AlertesListPageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
 
   const charger = useCallback(() => {
     let cancelled = false;
@@ -42,7 +42,7 @@ export default function EnseignantAlertesPage({ title }: AlertesListPageProps) {
 
   useEffect(() => charger(), [charger]);
 
-  const matieres = useMemo(
+  const typesAlerte = useMemo(
     () => Array.from(new Set(alertes.map((a) => a.typeAlerte))).sort(),
     [alertes],
   );
@@ -50,12 +50,12 @@ export default function EnseignantAlertesPage({ title }: AlertesListPageProps) {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return alertes.filter((alerte) => {
-      const matchType = !q || alerte.typeAlerte.toLowerCase().includes(q);
-      const matchSearch =
-        !q || (alerte.message ?? '').toLowerCase().includes(q) || (alerte.examenId ?? '').toLowerCase().includes(q);
-      return matchType && matchSearch;
+      const matchesSelectedType = !typeFilter || alerte.typeAlerte === typeFilter;
+      const matchesSearch = !q || [alerte.typeAlerte, alerte.message, alerte.examenId ?? '']
+        .some((value) => value.toLowerCase().includes(q));
+      return matchesSelectedType && matchesSearch;
     });
-  }, [alertes, search]);
+  }, [alertes, search, typeFilter]);
 
   const inputClass =
     'block pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-[#00e5ff] focus:border-[#00e5ff] sm:text-sm rounded-md bg-white';
@@ -81,9 +81,9 @@ export default function EnseignantAlertesPage({ title }: AlertesListPageProps) {
           />
         </div>
 
-        <select className={inputClass}>
+        <select className={inputClass} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} aria-label="Filtrer par type d’alerte">
           <option value="">Type d'alerte : Toutes</option>
-          {matieres.map((type) => (
+          {typesAlerte.map((type) => (
             <option key={type} value={type}>
               {type}
             </option>

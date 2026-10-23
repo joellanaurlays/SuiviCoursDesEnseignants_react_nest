@@ -1,18 +1,24 @@
 import { INestApplication } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
-import { JwtService } from '@nestjs/jwt';
+import { JwtModule, JwtService } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthGuard } from '../auth/auth.guard.js';
+import { JwtStrategy } from '../auth/strategies/jwt.strategy.js';
+import { UsersService } from '../users/users.service.js';
 import { ExamsController } from './exams.controller.js';
 import { ExamsService } from './exams.service.js';
 
+const JWT_SECRET = 'm6-controller-test-secret';
+const testJwtSigner = new JwtService({ secret: JWT_SECRET });
 const TOKENS = {
-  administrator: 'test-administrator-token',
-  chefScolarite: 'test-chef-scolarite-token',
-  teacher: 'test-teacher-token',
+  administrator: testJwtSigner.sign({ sub: 1, email: 'admin@emit.mg', role: 'ADMINISTRATEUR' }),
+  chefScolarite: testJwtSigner.sign({ sub: 2, email: 'chef@emit.mg', role: 'CHEF_SCOLARITE' }),
+  teacher: testJwtSigner.sign({ sub: 3, email: 'teacher@emit.mg', role: 'ENSEIGNANT' }),
 };
 
 const examId = '8f5b3d42-3a77-4a1f-9b1c-6e0f7c19d842';
@@ -36,24 +42,34 @@ describe('ExamsController permissions (HTTP)', () => {
   };
 
   beforeAll(async () => {
-    const jwtService = {
-      verify: vi.fn((token: string) => {
-        const rolesByToken: Record<string, string> = {
-          [TOKENS.administrator]: 'ADMINISTRATEUR',
-          [TOKENS.chefScolarite]: 'CHEF_SCOLARITE',
-          [TOKENS.teacher]: 'ENSEIGNANT',
-        };
-        const role = rolesByToken[token];
-        if (!role) throw new Error('Invalid test token');
-        return { sub: 1, email: 'm6-test@emit.mg', role };
-      }),
-    };
-
     const moduleRef = await Test.createTestingModule({
+      imports: [
+        PassportModule.register({ defaultStrategy: 'jwt' }),
+        JwtModule.register({ secret: JWT_SECRET }),
+      ],
       controllers: [ExamsController],
       providers: [
         { provide: ExamsService, useValue: service },
-        { provide: JwtService, useValue: jwtService },
+        {
+          provide: ConfigService,
+          useValue: { getOrThrow: (key: string) => (key === 'JWT_SECRET' ? JWT_SECRET : undefined) },
+        },
+        {
+          provide: UsersService,
+          useValue: {
+            findById: vi.fn(async (id: number) => ({
+              id,
+              email: 'm6-test@emit.mg',
+              firstName: 'M6',
+              lastName: 'Test',
+              isActive: true,
+              role: {
+                name: id === 1 ? 'ADMINISTRATEUR' : id === 2 ? 'CHEF_SCOLARITE' : 'ENSEIGNANT',
+              },
+            })),
+          },
+        },
+        JwtStrategy,
         { provide: APP_GUARD, useClass: AuthGuard },
       ],
     }).compile();
@@ -85,6 +101,17 @@ describe('ExamsController permissions (HTTP)', () => {
 
   it('refuse par HTTP 401 les appels M6 sans authentification', async () => {
     await request(app.getHttpServer()).get('/api/exams/sessions').expect(401);
+  });
+
+  it('refuse les en-têtes de rôle falsifiés sans Bearer et ne contacte pas le service', async () => {
+    await request(app.getHttpServer())
+      .post('/api/exams/sessions')
+      .set('x-user-id', '1')
+      .set('x-user-role', 'SCOLARITE')
+      .send({})
+      .expect(401);
+
+    expect(service.createSession).not.toHaveBeenCalled();
   });
 
   it.each([TOKENS.administrator, TOKENS.teacher])(

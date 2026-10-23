@@ -5,9 +5,17 @@ export type TypeAlerte = 'NOTES_NON_REMISES' | 'MISSING_DOCUMENTS' | 'EN_COURS' 
 export interface Alerte {
   id: string;
   typeAlerte: TypeAlerte;
-  message?: string;
-  examenId?: string;
+  message: string;
+  examenId: string | null;
+  estLue: boolean;
+  estTraitee: boolean;
   createdAt: string;
+  updatedAt: string;
+  examen?: {
+    id: string;
+    dateExamen: string;
+    salle: string | null;
+  } | null;
 }
 
 export const alerteService = {
