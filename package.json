@@ -20,6 +20,7 @@
     "db:reparer-suivi:dry-run": "ts-node -P backend/tsconfig.json backend/src/maintenance/reparer-suivi.ts --dry-run",
     "db:verifier": "node backend/scripts/verifier-donnees-bdd.cjs",
     "api:verifier": "node backend/scripts/verifier-donnees-api.cjs",
+    "db:setup-demo": "node prisma/setup-demo.cjs",
     "prebuild:backend": "node -e \"require('fs').rmSync('backend/dist',{recursive:true,force:true})\"",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
