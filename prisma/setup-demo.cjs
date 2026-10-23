@@ -4,25 +4,21 @@
  * Ce script prépare la base de données en une seule commande pour que
  * l'équipe puisse voir immédiatement des données dans le navigateur.
  *
+ * Prérequis : le fichier .env à la racine doit déjà contenir DATABASE_URL.
+ *
  * Usage :   node prisma/setup-demo.cjs
  *
  * Ce qu'il fait :
- * 1. Crée le compte utilisateur scolarite@emit.mg / Scolarite123!
- * 2. Crée des enseignements et séances de test (via seed.js)
- * 3. Recalcule les agrégats de suivi (heures, progression, état)
+ * 1. Crée les tables (prisma db push)
+ * 2. Crée le compte scolarite@emit.mg / Scolarite123!
+ * 3. Crée des enseignements et séances de test
+ * 4. Recalcule les agrégats de suivi (heures, progression, état)
  *
  * IDEMPOTENT : peut être relancé sans créer de doublons.
  */
-require('fs').writeFileSync('.env', [
-  'DATABASE_URL="postgresql://postgres:alphino@localhost:5432/suivi_enseignements?schema=public"',
-  'JWT_SECRET="emit-suivi-secret-de-developpement-a-changer-en-production"',
-  'JWT_EXPIRATION="7d"',
-  'PORT=3000',
-].join('\n') + '\n', { flag: 'a' });
-
 const { execSync } = require('child_process');
 
-console.log('🚀 Étape 1/3 — Création des tables (prisma db push)...');
+console.log('🚀 Étape 1/4 — Création des tables (prisma db push)...');
 try {
   execSync('npx prisma db push', { stdio: 'inherit' });
 } catch (e) {
@@ -31,17 +27,25 @@ try {
 }
 
 console.log('');
-console.log('🚀 Étape 2/3 — Création des comptes et données de test...');
+console.log('🚀 Étape 2/4 — Création des comptes de connexion...');
 try {
   execSync('node prisma/seed-comptes.cjs', { stdio: 'inherit' });
-  execSync('node prisma/seed.js', { stdio: 'inherit' });
 } catch (e) {
-  console.error('❌ Échec du seed :', e.message);
+  console.error('❌ Échec du seed comptes :', e.message);
   process.exit(1);
 }
 
 console.log('');
-console.log('🚀 Étape 3/3 — Recalcul des agrégats de suivi...');
+console.log('🚀 Étape 3/4 — Création des données de test (enseignements, séances)...');
+try {
+  execSync('node prisma/seed.js', { stdio: 'inherit' });
+} catch (e) {
+  console.error('❌ Échec du seed données :', e.message);
+  process.exit(1);
+}
+
+console.log('');
+console.log('🚀 Étape 4/4 — Recalcul des agrégats de suivi...');
 try {
   execSync('npx ts-node -P backend/tsconfig.json backend/src/maintenance/reparer-suivi.ts', { stdio: 'inherit' });
 } catch (e) {
