@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './auth/AuthContext';
 import { DefaultRedirect, RequireRole, RequireResponsable } from './auth/RequireRole';
 
+import LoginPage from './pages/LoginPage';
 import EnseignantDashboard from './pages/enseignant/dashboard/page';
 import EnseignantList from './pages/enseignant/enseignements/page';
 import EnseignantDetail from './pages/enseignant/enseignements/[id]/page';
@@ -33,6 +34,7 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={<DefaultRedirect />} />
+          <Route path="/login" element={<LoginPage />} />
 
           {/* Enseignant */}
           <Route

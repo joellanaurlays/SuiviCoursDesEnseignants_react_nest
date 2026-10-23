@@ -9,6 +9,7 @@ import { Reflector } from '@nestjs/core';
 import { AuthContext, AUTH_HEADERS } from './auth-context';
 import { Role } from './roles.enum';
 import { ROLES_KEY } from './roles.decorator';
+import { IS_PUBLIC_KEY } from './decorators/public.decorator';
 
 /**
  * Construit le contexte utilisateur à partir des headers d'identité
@@ -20,6 +21,14 @@ export class AuthGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
+    // Les routes marquées @Public() (ex: POST /auth/login) sont accessibles
+    // sans authentification : on les laisse passer avant toute vérification.
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPublic) return true;
+
     const request = context.switchToHttp().getRequest();
     const headers = request.headers as Record<string, string | undefined>;
 
