@@ -1,1 +1,2 @@
-cd D:\DASI_L3\STG\Stage-equipe\frontend; corepack yarn dev
+Set-Location -LiteralPath (Split-Path -Parent $MyInvocation.MyCommand.Path)
+corepack yarn dev

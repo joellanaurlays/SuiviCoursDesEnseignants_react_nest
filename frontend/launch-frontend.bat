@@ -1,3 +1,3 @@
 @echo off
-cd /d D:\DASI_L3\STG\Stage-equipe\frontend
+cd /d "%~dp0"
 corepack yarn dev
