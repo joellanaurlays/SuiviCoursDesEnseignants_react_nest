@@ -7,6 +7,7 @@ import UserFormPage from './pages/UserFormPage.jsx';
 import ExamsModuleFixed from './exams/ExamsModuleFixed.jsx';
 import PlanningWorkspace from './components/PlanningWorkspace';
 import RoleHomeRedirect from './routing/RoleHomeRedirect.jsx';
+import StructureApp from './structure/StructureApp.jsx';
 
 // Pont identité JWT -> en-têtes x-user-* pour le module suivi (Membres 2/4).
 import { AuthProvider as SuiviAuthProvider } from './auth/AuthContext';
@@ -82,6 +83,16 @@ export default function App() {
           element={
             <ProtectedRoute allowedRoles={MANAGE_USERS_ROLES}>
               <UserFormPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Module 3 : structure académique (lecture pour tous, écriture : chef de scolarité). */}
+        <Route
+          path="/structure-academique/*"
+          element={
+            <ProtectedRoute>
+              <StructureApp />
             </ProtectedRoute>
           }
         />
