@@ -6,4 +6,5 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.spec.ts'],
   },
+  sourcemapPathTransform: (path) => path,
 });

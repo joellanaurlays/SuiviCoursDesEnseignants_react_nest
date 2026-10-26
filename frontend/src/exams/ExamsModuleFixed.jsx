@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'react';
+import { useAuth } from '../auth/AuthContext';
+// Importation de la fonction de mappage des rôles depuis AuthContext
+import { toBackendRole } from '../auth/AuthContext';
 // Le backend Nest expose tout sous le préfixe global /api (main.ts).
 const API = `${import.meta.env.VITE_API_URL || ''}/api`;
 async function api(p, o = {}) {
@@ -23,6 +26,7 @@ export default function ExamsModuleFixed() {
   const [fs, setFs] = useState({ libelle: 'Session Normale S1', anneeUniversitaire: '2025-2026', semestre: 'S1', dateDebut: '2026-01-12', dateFin: '2026-01-24' });
   const [fe, setFe] = useState({ sessionId: '', dateExamen: '2026-01-15', salle: 'Salle A1' });
   const [fa, setFa] = useState({ message: 'Notes non remises' });
+  const canManage = toBackendRole(useAuth().role) === 'SCOLARITE';
   const load = async () => {
     setErr('');
     try {
@@ -76,7 +80,7 @@ export default function ExamsModuleFixed() {
             <li key={x.id}>{(x.dateExamen || '').slice(0, 10)} {x.salle || ''} | {x.statut} | {x.notesRemises ? 'REMISES' : 'NON REMISES'}
               {' '}<button onClick={() => st(x.id, 'EN_COURS')}>En cours</button>
               {' '}<button onClick={() => st(x.id, 'TERMINE')}>Termine</button>
-              {' '}{!x.notesRemises && <button onClick={() => ok(x.id)}>Notes OK</button>}
+              {' '}{canManage && !x.notesRemises && <button onClick={() => ok(x.id)}>Notes OK</button>}
             </li>))}</ul>
         </div>
       )}
