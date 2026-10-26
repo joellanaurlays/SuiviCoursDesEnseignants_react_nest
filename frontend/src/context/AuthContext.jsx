@@ -17,9 +17,17 @@ export function AuthProvider({ children }) {
       return
     }
 
+    // Tentative de récupération du profil ; en cas d'échec on garde le token
+    // pour permettre la réessai ou la navigation protégée sans planter l'UI.
     fetchProfile()
       .then(setUser)
-      .catch(() => localStorage.removeItem(TOKEN_KEY))
+      .catch((err) => {
+        // Erreur 401 : le token est invalide/ expiré côté serveur.
+        // On nettoie le stockage local mais on n'affiche pas d'erreur silencieuse.
+        localStorage.removeItem(TOKEN_KEY)
+        setUser(null)
+        setSessionExpired(true)
+      })
       .finally(() => setIsLoading(false))
   }, [])
 

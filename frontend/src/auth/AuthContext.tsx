@@ -39,7 +39,7 @@ interface JwtUser {
 
 const NO_SESSION: UserSession = { userId: '', role: 'ENSEIGNANT' };
 
-function toBackendRole(role: RoleName): UserRole {
+export function toBackendRole(role: RoleName): UserRole {
   switch (role) {
     case 'CHEF_SCOLARITE':
       return 'SCOLARITE';

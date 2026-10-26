@@ -6,7 +6,7 @@ import DashboardPlaceholder from './pages/DashboardPlaceholder.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 import UsersListPage from './pages/UsersListPage.jsx';
 import UserFormPage from './pages/UserFormPage.jsx';
-import ExamsModule from './exams/ExamsModuleFixed.jsx';
+import ExamsModule from './exams/ExamsModule.jsx';
 
 // Pont identité JWT -> en-têtes x-user-* pour le module suivi (Membres 2/4).
 import { AuthProvider as SuiviAuthProvider } from './auth/AuthContext';
