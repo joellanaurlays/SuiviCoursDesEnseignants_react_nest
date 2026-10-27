@@ -81,6 +81,15 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/exams"
+          element={
+            <ProtectedRoute allowedRoles={['SCOLARITE']}>
+              <ExamsModule />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/users/:id/edit"
           element={
