@@ -100,7 +100,7 @@ export default function App() {
         <Route
           path="/exams"
           element={
-            <ProtectedRoute allowedRoles={['SCOLARITE']}>
+            <ProtectedRoute allowedRoles={['SCOLARITE', 'CHEF_SCOLARITE']}>
               <ExamsModuleFixed />
             </ProtectedRoute>
           }
