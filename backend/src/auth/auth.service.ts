@@ -35,6 +35,9 @@ export class AuthService {
       parcours: user.parcours ?? undefined,
     };
 
+    const estResponsable =
+      user.role.name === 'RESPONSABLE_LICENCE' || user.role.name === 'RESPONSABLE_MASTER';
+
     return {
       accessToken: await this.jwtService.signAsync(payload),
       user: {
@@ -44,6 +47,13 @@ export class AuthService {
         lastName: user.lastName,
         phone: user.phone,
         role: user.role.name,
+        ...(estResponsable
+          ? {
+              mentionId: user.mentionId,
+              cycles: user.cycles ?? [],
+              parcours: user.parcours,
+            }
+          : {}),
       },
     };
   }

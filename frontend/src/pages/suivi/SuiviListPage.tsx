@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Plus } from 'lucide-react';
 import { Layout } from '../../components/Layout';
 import { FilterBar, FilterField } from '../../components/enseignements/FilterBar';
 import { EnseignementTable } from '../../components/enseignements/EnseignementTable';
 import { SuiviStatCards } from '../../components/enseignements/SuiviStatCards';
+import { CreerEnseignementModal } from '../../components/enseignements/CreerEnseignementModal';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { useAuth } from '../../auth/AuthContext';
 import { suiviService } from '../../services/suivi.service';
+import { peutCreerEnseignement } from '../../utils/enseignement-creation';
 import {
   SuiviEnseignement,
   SuiviQuery,
@@ -37,13 +41,17 @@ export function SuiviListPage({
   hideParcours = false,
   fixedCycle,
 }: SuiviListPageProps) {
-  const { headers } = useAuth();
+  const { headers, session } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [fullData, setFullData] = useState<SuiviEnseignement[]>([]);
   const [rows, setRows] = useState<SuiviEnseignement[]>([]);
   const [stats, setStats] = useState<SuiviStatistiques | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [applied, setApplied] = useState<SuiviQuery>({});
+  const [creationOuverte, setCreationOuverte] = useState(false);
+  const [enseignementCree, setEnseignementCree] = useState<SuiviEnseignement | null>(null);
+  const peutCreer = peutCreerEnseignement(session);
 
   const applyFilters = useCallback(
     async (filters: SuiviQuery) => {
@@ -100,6 +108,32 @@ export function SuiviListPage({
       cancelled = true;
     };
   }, [headers]);
+
+  useEffect(() => {
+    if (!peutCreer || searchParams.get('creer') !== '1') {
+      return;
+    }
+    setCreationOuverte(true);
+    const suivant = new URLSearchParams(searchParams);
+    suivant.delete('creer');
+    setSearchParams(suivant, { replace: true });
+  }, [peutCreer, searchParams, setSearchParams]);
+
+  const rechargerListe = useCallback(async () => {
+    await applyFilters(applied);
+    try {
+      const all = await suiviService.list({}, headers);
+      setFullData(all);
+    } catch {
+      // La liste filtrée et les statistiques restent la source d'affichage prioritaire.
+    }
+  }, [applyFilters, applied, headers]);
+
+  const handleEnseignementCree = (enseignement: SuiviEnseignement) => {
+    setEnseignementCree(enseignement);
+    setCreationOuverte(false);
+    void rechargerListe();
+  };
 
   const fields: FilterField[] = [
     { key: 'enseignant', label: 'Enseignant', options: distinct(fullData.map((e) => e.enseignant)) },
@@ -170,10 +204,41 @@ export function SuiviListPage({
             <h1 className="emit-title mt-1">{title}</h1>
             {intro && <p className="emit-subtitle mt-1">{intro}</p>}
           </div>
-          <span className="inline-flex w-fit items-center rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 shadow-sm">
-            {rows.length} affiché(s) sur {fullData.length}
-          </span>
+          <div className="flex flex-wrap items-center gap-3">
+            {peutCreer && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEnseignementCree(null);
+                  setCreationOuverte(true);
+                }}
+                className="emit-btn-primary w-fit"
+              >
+                <Plus size={16} aria-hidden="true" />
+                Créer un enseignement
+              </button>
+            )}
+            <span className="inline-flex w-fit items-center rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 shadow-sm">
+              {rows.length} affiché(s) sur {fullData.length}
+            </span>
+          </div>
         </div>
+
+        {enseignementCree && (
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            <span>
+              Enseignement créé : <strong>{enseignementCree.matiere}</strong> —{' '}
+              {enseignementCree.niveau} {enseignementCree.semestre},{' '}
+              {enseignementCree.anneeUniversitaire}.
+            </span>
+            <Link
+              to={`${detailBasePath}/${enseignementCree.id}`}
+              className="font-semibold text-[#0077B6] hover:underline"
+            >
+              Ouvrir la fiche
+            </Link>
+          </div>
+        )}
 
         {error ? (
           <ErrorState message={error} onRetry={() => applyFilters(applied)} />
@@ -211,6 +276,13 @@ export function SuiviListPage({
           </>
         )}
       </div>
+
+      <CreerEnseignementModal
+        open={creationOuverte}
+        headers={headers}
+        onCancel={() => setCreationOuverte(false)}
+        onCreated={handleEnseignementCree}
+      />
     </Layout>
   );
 }

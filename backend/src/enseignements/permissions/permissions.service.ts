@@ -72,6 +72,27 @@ export class PermissionsService {
     }
   }
 
+  canCreateEnseignement(context: AuthContext, enseignement: EnseignementScope): boolean {
+    switch (context.role) {
+      case Role.RESPONSABLE_MENTION:
+        if (!context.parcours || enseignement.parcours !== context.parcours) {
+          return false;
+        }
+        if (enseignement.mentionId !== context.parcours) {
+          return false;
+        }
+        if (!context.cycles || context.cycles.length === 0) {
+          return false;
+        }
+        return context.cycles.includes(enseignement.cycle);
+      case Role.SCOLARITE:
+      case Role.ADMINISTRATEUR:
+        return true;
+      default:
+        return false;
+    }
+  }
+
   canManageEnseignement(context: AuthContext, enseignement: EnseignementScope): boolean {
     switch (context.role) {
       case Role.ENSEIGNANT:

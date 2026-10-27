@@ -9,6 +9,7 @@ import { JournalAuditQueryDto } from '../dto/journal-audit-query.dto.js';
 import { SuiviQueryDto } from '../dto/suivi-query.dto.js';
 import { GetTeacherDashboardUseCase } from '../use-cases/get-teacher-dashboard.use-case.js';
 import { GetSuiviStatistiquesUseCase } from '../use-cases/get-suivi-statistiques.use-case.js';
+import { ReferentielEnseignementService } from '../services/referentiel-enseignement.service.js';
 import { Roles } from '../../auth/roles.decorator.js';
 import { CurrentUser } from '../../auth/current-user.decorator.js';
 import { AuthContext } from '../../auth/auth-context.js';
@@ -34,12 +35,21 @@ export class EnseignantsController {
 @Controller('enseignements')
 @UseGuards(AuthGuard)
 export class EnseignementsController {
-  constructor(private readonly enseignementsService: EnseignementsService) {}
+  constructor(
+    private readonly enseignementsService: EnseignementsService,
+    private readonly referentielService: ReferentielEnseignementService,
+  ) {}
+
+  @Get('referentiels')
+  @Roles(Role.SCOLARITE, Role.RESPONSABLE_MENTION, Role.ADMINISTRATEUR)
+  getReferentielCreation(@CurrentUser() context: AuthContext) {
+    return this.referentielService.obtenir(context);
+  }
 
   @Post()
-  @Roles(Role.SCOLARITE, Role.ADMINISTRATEUR)
-  create(@Body() createDto: CreateEnseignementDto) {
-    return this.enseignementsService.create(createDto);
+  @Roles(Role.SCOLARITE, Role.RESPONSABLE_MENTION, Role.ADMINISTRATEUR)
+  create(@Body() createDto: CreateEnseignementDto, @CurrentUser() context: AuthContext) {
+    return this.enseignementsService.create(createDto, context);
   }
 
   @Get()

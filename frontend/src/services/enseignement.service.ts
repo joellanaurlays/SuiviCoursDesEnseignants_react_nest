@@ -1,5 +1,11 @@
 import { request } from './api.client';
-import { EnseignementAvecSuivi, Seance } from '../types/enseignement';
+import {
+  CreateEnseignementPayload,
+  EnseignementAvecSuivi,
+  ReferentielCreationEnseignement,
+  Seance,
+  SuiviEnseignement,
+} from '../types/enseignement';
 import { isLocalPreviewEnabled, withPreviewFallback } from '../preview/localPreview';
 import { previewStore } from '../preview/demoStore';
 
@@ -42,5 +48,28 @@ export const enseignementService = {
       () => previewStore.getSeancesDeLEnseignement(id),
       (seances) => seances.length === 0,
     );
+  },
+
+  getReferentielCreation(
+    headers: Record<string, string>,
+  ): Promise<ReferentielCreationEnseignement> {
+    return request<ReferentielCreationEnseignement>(
+      '/enseignements/referentiels',
+      'GET',
+      undefined,
+      headers,
+    );
+  },
+
+  /** Alias conservé pour les écrans qui utilisaient l'ancien nom. */
+  getReferentiel(headers: Record<string, string>): Promise<ReferentielCreationEnseignement> {
+    return this.getReferentielCreation(headers);
+  },
+
+  create(
+    payload: CreateEnseignementPayload,
+    headers: Record<string, string>,
+  ): Promise<SuiviEnseignement> {
+    return request<SuiviEnseignement>('/enseignements', 'POST', payload, headers);
   },
 };

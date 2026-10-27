@@ -34,9 +34,11 @@ import AdminSeancesPage from './pages/admin/seances/page';
 import ResponsableLicenceSuiviPage from './pages/responsable/licence/suivi-enseignements/page';
 import ResponsableLicenceSuiviDetailPage from './pages/responsable/licence/suivi-enseignements/[id]/page';
 import ResponsableLicenceSeancesPage from './pages/responsable/licence/seances/page';
+import ResponsableLicenceEnseignementNouveauPage from './pages/responsable/licence/enseignement/nouveau/page';
 import ResponsableMasterSuiviPage from './pages/responsable/master/suivi-enseignements/page';
 import ResponsableMasterSuiviDetailPage from './pages/responsable/master/suivi-enseignements/[id]/page';
 import ResponsableMasterSeancesPage from './pages/responsable/master/seances/page';
+import ResponsableMasterEnseignementNouveauPage from './pages/responsable/master/enseignement/nouveau/page';
 
 // Rôles autorisés à gérer les comptes (RoleName côté Prisma/JWT).
 const MANAGE_USERS_ROLES = ['CHEF_SCOLARITE', 'ADMINISTRATEUR'];
@@ -292,6 +294,16 @@ export default function App() {
           }
         />
         <Route
+          path="/responsable/licence/enseignement/nouveau"
+          element={
+            <ProtectedRoute>
+              <RequireResponsable cycle="LICENCE">
+                <ResponsableLicenceEnseignementNouveauPage />
+              </RequireResponsable>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/responsable/licence/seances"
           element={
             <ProtectedRoute>
@@ -327,6 +339,16 @@ export default function App() {
             <ProtectedRoute>
               <RequireResponsable cycle="MASTER">
                 <ResponsableMasterSuiviDetailPage />
+              </RequireResponsable>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/responsable/master/enseignement/nouveau"
+          element={
+            <ProtectedRoute>
+              <RequireResponsable cycle="MASTER">
+                <ResponsableMasterEnseignementNouveauPage />
               </RequireResponsable>
             </ProtectedRoute>
           }

@@ -6,6 +6,7 @@ import { UpdateEnseignementDto } from '../dto/update-enseignement.dto.js';
 import { CreateSeanceDto } from '../dto/create-seance.dto.js';
 import { UpdateSeanceDto } from '../dto/update-seance.dto.js';
 import { SuiviQueryDto } from '../dto/suivi-query.dto.js';
+import { CreateEnseignementUseCase } from '../use-cases/create-enseignement.use-case.js';
 import { CreateSeanceUseCase } from '../use-cases/create-seance.use-case.js';
 import { GetSuiviUseCase } from '../use-cases/get-suivi.use-case.js';
 import {
@@ -34,14 +35,13 @@ export class EnseignementsService {
     private readonly getTeacherDashboardUseCase: GetTeacherDashboardUseCase,
     private readonly permissionsService: PermissionsService,
     private readonly auditSeanceService: AuditSeanceService,
+    private readonly createEnseignementUseCase: CreateEnseignementUseCase,
   ) {}
 
   // ---------------------------------------------------------------- Enseignements
 
-  async create(createDto: CreateEnseignementDto) {
-    return this.prisma.enseignement.create({
-      data: createDto,
-    });
+  async create(createDto: CreateEnseignementDto, context?: AuthContext) {
+    return this.createEnseignementUseCase.execute(createDto, context);
   }
 
   async findAll(context?: AuthContext) {
