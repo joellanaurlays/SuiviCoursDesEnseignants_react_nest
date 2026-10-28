@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Bell, BookOpenCheck, CalendarDays, Check, ClipboardList, Plus, RefreshCw, Search, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Bell, BookOpenCheck, CalendarDays, Check, ClipboardList, Plus, RefreshCw, Search, X } from 'lucide-react';
 import { Layout } from '../components/Layout';
+import { useAuth } from '../auth/AuthContext';
+import { getRoleHomePath } from '../routing/roleRoutes.js';
 
 // Le backend Nest expose les routes du module sous le préfixe global /api.
 const API = `${import.meta.env.VITE_API_URL || ''}/api`;
@@ -25,6 +28,7 @@ async function api(path, options = {}) {
 const today = new Date().toISOString().slice(0, 10);
 const inputClass = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100';
 const buttonClass = 'inline-flex items-center justify-center gap-2 rounded-lg bg-[#0a0a32] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#17175a] disabled:cursor-not-allowed disabled:opacity-50';
+const outlineButtonClass = 'inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-[#0a0a32] disabled:cursor-not-allowed disabled:opacity-50';
 
 function dateLabel(value) {
   if (!value) return '—';
@@ -60,6 +64,13 @@ export default function ExamsModule() {
   });
   const [examForm, setExamForm] = useState({ sessionId: '', dateExamen: today, heureDebut: '08:00', heureFin: '10:00', salle: '' });
   const [alertForm, setAlertForm] = useState({ examenId: '', typeAlerte: 'NOTES_NON_REMISES', message: '' });
+
+  const navigate = useNavigate();
+  const { session } = useAuth();
+
+  const handleBack = () => {
+    navigate(getRoleHomePath(session));
+  };
 
   const load = useCallback(async (showLoader = true) => {
     if (showLoader) setLoading(true);
@@ -147,11 +158,32 @@ export default function ExamsModule() {
   return (
     <Layout>
       <div className="mx-auto max-w-7xl space-y-6">
-        <header className="flex flex-col justify-between gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-end">
-          <div>
-            <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-cyan-700">Administration académique · Module 6</p>
-            <h1 className="text-3xl font-bold tracking-tight text-[#0a0a32]">Examens, notes & alertes</h1>
-            <p className="mt-2 text-sm text-slate-500">Gérez les sessions d’examen, le calendrier et le suivi des remises de notes.</p>
+        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5 border-b border-slate-200 pb-6">
+          <div className="flex flex-col sm:flex-row items-center sm:justify-between w-full gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-[#00B4D8] text-[#03045E] flex items-center justify-center font-bold text-xl shadow-sm">
+                EM
+              </div>
+              <div className="flex flex-col">
+                <h2 className="text-sm font-semibold text-[#03045E] uppercase tracking-wider">EMIT</h2>
+                <p className="text-[10px] text-slate-500 leading-tight">Université de Fianarantsoa</p>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row items-end gap-4 w-full sm:w-auto">
+              <div className="flex flex-col">
+                <h1 className="text-3xl font-bold text-[#0a0a32] tracking-tight">Examens, notes &amp; alertes</h1>
+                <p className="text-sm text-slate-500 mt-1">Gérez les sessions d'examen, le calendrier et le suivi des remises de notes.</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="hidden sm:flex flex-col items-end">
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">Utilisateur connecté</p>
+                  <p className="text-sm font-medium text-slate-800">{session?.userId || '—'}</p>
+                </div>
+                <button type="button" className={outlineButtonClass} onClick={handleBack} disabled={loading || busy}>
+                  <ArrowLeft size={16} /> Retour à l'application
+                </button>
+              </div>
+            </div>
           </div>
           <button type="button" className={`${buttonClass} bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50`} onClick={() => void load()} disabled={loading || busy}>
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} /> Actualiser
@@ -168,7 +200,7 @@ export default function ExamsModule() {
             { label: 'Notes à remettre', value: notesPending, note: 'Examens sans notes remises', icon: BookOpenCheck, color: 'text-amber-700 bg-amber-50' },
             { label: 'Alertes non lues', value: unreadCount, note: 'À consulter', icon: Bell, color: 'text-rose-700 bg-rose-50' },
           ].map(({ label, value, note, icon: Icon, color }) => (
-            <div key={label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div key={label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between"><div><p className="text-sm font-medium text-slate-500">{label}</p><p className="mt-2 text-3xl font-bold text-[#0a0a32]">{loading ? '—' : value}</p></div><span className={`rounded-xl p-3 ${color}`}><Icon size={20} /></span></div>
               <p className="mt-3 text-xs text-slate-400">{note}</p>
             </div>
