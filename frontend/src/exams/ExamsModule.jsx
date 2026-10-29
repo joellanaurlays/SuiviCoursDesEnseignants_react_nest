@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bell, BookOpenCheck, CalendarDays, Check, ClipboardList, Plus, RefreshCw, Search, X } from 'lucide-react';
+import { ArrowLeft, Bell, BookOpenCheck, CalendarDays, Check, CheckCircle, ClipboardList, Plus, RefreshCw, Search, X } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { useAuth } from '../auth/AuthContext';
 import { getRoleHomePath } from '../routing/roleRoutes.js';
@@ -150,9 +150,9 @@ export default function ExamsModule() {
   );
 
   const tabs = [
-    { id: 'sessions', label: 'Sessions', task: 'T26', icon: CalendarDays, count: sessions.length },
-    { id: 'examens', label: 'Examens & notes', task: 'T27–T29', icon: ClipboardList, count: examens.length },
-    { id: 'alertes', label: 'Alertes', task: 'T30', icon: Bell, count: unreadCount },
+    { id: 'sessions', label: 'Sessions', task: '', icon: CalendarDays, count: sessions.length },
+    { id: 'examens', label: 'Examens & notes', task: '', icon: ClipboardList, count: examens.length },
+    { id: 'alertes', label: 'Alertes', task: '', icon: Bell, count: unreadCount },
   ];
 
   return (
@@ -199,7 +199,7 @@ export default function ExamsModule() {
             { label: 'Examens planifiés', value: examens.length, note: 'Toutes les sessions', icon: ClipboardList, color: 'text-violet-700 bg-violet-50' },
             { label: 'Notes à remettre', value: notesPending, note: 'Examens sans notes remises', icon: BookOpenCheck, color: 'text-amber-700 bg-amber-50' },
             { label: 'Alertes non lues', value: unreadCount, note: 'À consulter', icon: Bell, color: 'text-rose-700 bg-rose-50' },
-{ label: 'Examens terminés', value: examens.filter((item) => item.statut === 'TERMINE').length, note: 'Examens marqués comme terminés', icon: CheckCircle, color: 'text-emerald-700 bg-emerald-50' },\
+{ label: 'Examens terminés', value: examens.filter((item) => item.statut === 'TERMINE').length, note: 'Examens marqués comme terminés', icon: CheckCircle, color: 'text-emerald-700 bg-emerald-50' }
           ].map(({ label, value, note, icon: Icon, color }) => (
             <div key={label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between"><div><p className="text-sm font-medium text-slate-500">{label}</p><p className="mt-2 text-3xl font-bold text-[#0a0a32]">{loading ? '—' : value}</p></div><span className={`rounded-xl p-3 ${color}`}><Icon size={20} /></span></div>
