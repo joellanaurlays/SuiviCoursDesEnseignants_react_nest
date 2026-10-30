@@ -1,5 +1,5 @@
 import { ExecutionContext, ForbiddenException, UnauthorizedException } from '@nestjs/common';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthGuard } from './auth.guard.js';
 import { Role } from './roles.enum.js';
 import { IS_PUBLIC_KEY } from './decorators/public.decorator.js';
@@ -24,6 +24,8 @@ describe('AuthGuard dual-mode', () => {
   let metadata: Record<string, unknown>;
 
   beforeEach(() => {
+    vi.stubEnv('NODE_ENV', 'test');
+    vi.stubEnv('AUTH_ALLOW_HEADER_IDENTITY', 'true');
     jwtVerify = vi.fn();
     reflectorGet = vi.fn((key: string) => metadata[key]);
     metadata = {};
@@ -31,6 +33,10 @@ describe('AuthGuard dual-mode', () => {
       { getAllAndOverride: reflectorGet } as never,
       { verify: jwtVerify } as never,
     );
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it('@Public → accessible sans identité', () => {
@@ -73,11 +79,29 @@ describe('AuthGuard dual-mode', () => {
     expect(() => guard.canActivate(ctx)).toThrow(UnauthorizedException);
   });
 
+  it('Bearer RESPONSABLE sans mention → 401', () => {
+    jwtVerify.mockReturnValue({
+      sub: 3, role: 'RESPONSABLE_LICENCE',
+      cycles: ['LICENCE'], parcours: 'Informatique',
+    });
+    const { ctx } = makeContext({ authorization: 'Bearer resp' });
+    expect(() => guard.canActivate(ctx)).toThrow(UnauthorizedException);
+  });
+
+  it('Headers RESPONSABLE sans mention → 401', () => {
+    const { ctx } = makeContext({
+      'x-user-id': '3',
+      'x-user-role': 'RESPONSABLE_MENTION',
+      'x-user-cycle': 'LICENCE',
+      'x-user-parcours': 'Informatique',
+    });
+    expect(() => guard.canActivate(ctx)).toThrow(UnauthorizedException);
+  });
   it('Bearer invalide ou expiré → 401', () => {
     jwtVerify.mockImplementation(() => {
       throw new Error('jwt expired');
     });
-    const { ctx } = makeContext({ authorization: 'Bearer mauvais' });
+    const { ctx } = makeContext({ authorization: 'Bearer mauvais', 'x-user-id': '1', 'x-user-role': 'SCOLARITE' });
     expect(() => guard.canActivate(ctx)).toThrow(UnauthorizedException);
   });
 
@@ -92,6 +116,14 @@ describe('AuthGuard dual-mode', () => {
 
   it('Sans Bearer ni headers → 401', () => {
     const { ctx } = makeContext({});
+    expect(() => guard.canActivate(ctx)).toThrow(UnauthorizedException);
+  });
+  it('Production : headers SCOLARITE sans Bearer -> 401', () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    const { ctx } = makeContext({
+      'x-user-id': '1',
+      'x-user-role': 'SCOLARITE',
+    });
     expect(() => guard.canActivate(ctx)).toThrow(UnauthorizedException);
   });
 
