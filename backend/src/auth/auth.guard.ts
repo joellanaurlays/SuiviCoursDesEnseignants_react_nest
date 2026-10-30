@@ -67,9 +67,33 @@ export class AuthGuard implements CanActivate {
 
   private buildAuthContext(request: { headers: Record<string, string | undefined> }): AuthContext {
     const authorization = request.headers['authorization'];
-    if (authorization && authorization.startsWith('Bearer ')) {
-      return this.contextFromJwt(authorization.slice('Bearer '.length).trim(), request);
+
+    // Si Authorization est présent, il doit obligatoirement contenir un Bearer JWT.
+    // Un JWT invalide ne doit jamais déclencher un fallback vers les headers.
+    if (authorization !== undefined) {
+      if (!authorization.startsWith('Bearer ')) {
+        throw new UnauthorizedException('En-tête Authorization invalide.');
+      }
+
+      const token = authorization.slice('Bearer '.length).trim();
+
+      if (!token) {
+        throw new UnauthorizedException('Jeton Bearer manquant.');
+      }
+
+      return this.contextFromJwt(token, request);
     }
+
+    // Les headers d'identité ne sont acceptés qu'avec une activation explicite
+    // en environnement non-production.
+    const allowHeaderIdentity =
+      process.env.NODE_ENV !== 'production' &&
+      process.env.AUTH_ALLOW_HEADER_IDENTITY === 'true';
+
+    if (!allowHeaderIdentity) {
+      throw new UnauthorizedException('Authentification Bearer requise.');
+    }
+
     return this.contextFromHeaders(request.headers);
   }
 
@@ -97,9 +121,9 @@ export class AuthGuard implements CanActivate {
     if (role === Role.RESPONSABLE_MENTION) {
       authContext.cycles = (claims.cycles ?? []).map((c) => c.toUpperCase());
       authContext.parcours = claims.parcours ?? '';
-      if (authContext.cycles.length === 0 || !authContext.parcours) {
+      if (!authContext.mentionId || authContext.cycles.length === 0 || !authContext.parcours) {
         throw new UnauthorizedException(
-          'Le périmètre (cycles et parcours) est requis pour un responsable de mention.',
+          'Le périmètre (mention, cycles et parcours) est requis pour un responsable de mention.',
         );
       }
     }
@@ -157,6 +181,12 @@ export class AuthGuard implements CanActivate {
     const mentionId = (headers[AUTH_HEADERS.mentionId] ?? '').trim();
     if (mentionId) {
       authContext.mentionId = mentionId;
+    }
+
+    if (role === Role.RESPONSABLE_MENTION && !authContext.mentionId) {
+      throw new UnauthorizedException(
+        `Header ${AUTH_HEADERS.mentionId} requis pour le rôle RESPONSABLE_MENTION`,
+      );
     }
 
     return authContext;

@@ -18,7 +18,17 @@ export function AuthProvider({ children }) {
     }
 
     fetchProfile()
-      .then(setUser)
+      .then(user => {
+        // Normalisation du rôle backend→frontend
+        const roleNormalizationMap = {
+          'RESPONSABLE_LICENCE': 'RESPONSABLE_MENTION',
+          'RESPONSABLE_MASTER': 'RESPONSABLE_MENTION',
+        }
+        if (user.role && user.role in roleNormalizationMap) {
+          user = { ...user, role: roleNormalizationMap[user.role] }
+        }
+        setUser(user)
+      })
       .catch(() => localStorage.removeItem(TOKEN_KEY))
       .finally(() => setIsLoading(false))
   }, [])

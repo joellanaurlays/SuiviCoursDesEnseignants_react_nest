@@ -32,7 +32,7 @@ export class Examen {
   @Column({ name: 'session_id' })
   sessionId: string;
 
-  @Column({ name: 'enseignement_id', type: 'uuid', nullable: true })
+  @Column({ name: 'enseignement_id', type: 'text', nullable: true })
   enseignementId: string | null;
 
   @Column({ name: 'matiere_id', type: 'uuid', nullable: true })

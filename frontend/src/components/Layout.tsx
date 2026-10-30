@@ -62,24 +62,24 @@ function navForRole(session: UserSession): NavItem[] {
   }
 }
 
-function describeSession(session: UserSession): { name: string; sub: string } {
+function describeSession(session: UserSession, displayName: string): { name: string; sub: string } {
   const cycle = session.cycles?.join(', ') ?? '';
   switch (session.role) {
     case 'ENSEIGNANT':
-      return { name: session.userId, sub: 'Enseignant' };
+      return { name: displayName, sub: 'Enseignant' };
     case 'SCOLARITE':
-      return { name: session.userId, sub: 'Chef de scolarité' };
+      return { name: displayName, sub: 'Chef de scolarité' };
     case 'RESPONSABLE_MENTION': {
       const parcours = session.parcours ? `Parcours ${session.parcours}` : '';
       return {
-        name: session.userId,
+        name: displayName,
         sub: `Responsable ${parcours}${cycle ? ` · ${cycle}` : ''}`.trim(),
       };
     }
     case 'ADMINISTRATEUR':
-      return { name: session.userId, sub: 'Administrateur' };
+      return { name: displayName, sub: 'Administrateur' };
     default:
-      return { name: session.userId, sub: session.role };
+      return { name: displayName, sub: session.role };
   }
 }
 
@@ -94,11 +94,11 @@ const WORKSPACE_LINKS: NavItem[] = [
 export function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { session } = useAuth();
+  const { session, displayName } = useAuth();
   const { logout } = useJwtAuth() as { logout: () => Promise<void> };
   const navItems = navForRole(session);
   const role = roleLabel(session.role);
-  const current = describeSession(session);
+  const current = describeSession(session, displayName);
 
   const onLogout = async () => {
     await logout();
@@ -110,7 +110,7 @@ export function Layout({ children }: { children: ReactNode }) {
       <aside className="w-64 bg-[#03045E] text-white flex flex-col shrink-0">
         <div className="p-6 flex items-center space-x-3">
           <div className="w-10 h-10 bg-[#00B4D8] text-[#03045E] rounded-md flex items-center justify-center font-bold text-xl">
-            S
+            {displayName ? displayName.trim().split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0].toUpperCase()).join("") : "U"}
           </div>
           <div>
             <h1 className="font-bold leading-tight">
@@ -171,7 +171,7 @@ export function Layout({ children }: { children: ReactNode }) {
               <GraduationCap size={16} />
             </div>
             <div className="leading-tight min-w-0">
-              <p className="text-sm font-bold text-white truncate">{current.name}</p>
+              <p className="text-sm font-bold text-white truncate">{displayName}</p>
               <p className="text-xs text-[#00B4D8] truncate">{current.sub}</p>
             </div>
             <Check size={14} className="ml-auto text-[#0077B6]" />
@@ -183,7 +183,7 @@ export function Layout({ children }: { children: ReactNode }) {
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         <header className="bg-white border-b border-gray-200 px-8 py-3 flex items-center justify-end gap-4 shrink-0">
           <p className="text-sm text-gray-600">
-            Bienvenue, <span className="font-semibold text-[#03045E]">{current.name}</span>
+            Bienvenue, <span className="font-semibold text-[#03045E]">{displayName}</span>
           </p>
         </header>
         <div className="flex-1 overflow-y-auto p-8">{children}</div>
