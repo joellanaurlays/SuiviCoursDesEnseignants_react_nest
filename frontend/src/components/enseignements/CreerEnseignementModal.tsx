@@ -170,7 +170,8 @@ export function CreerEnseignementModal({
               Créer un enseignement
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              L&apos;enseignement sera créé avec 0 heure réalisée et l&apos;état « Non commencé ».
+              L&apos;enseignement sera créé sans enseignant affecté : l&apos;affectation se fait ensuite
+              depuis le suivi, par le responsable de parcours (« Affecter un enseignant »).
             </p>
           </div>
           <button
@@ -236,27 +237,6 @@ export function CreerEnseignementModal({
                   ))}
                 </select>
                 {erreur('matiereId')}
-              </div>
-
-              <div>
-                <label htmlFor="creation-enseignant" className={LABEL_CLASS}>
-                  Enseignant <span className="text-rose-600">*</span>
-                </label>
-                <select
-                  id="creation-enseignant"
-                  value={formulaire.enseignantId}
-                  onChange={(event) => changerChamp('enseignantId', event.target.value)}
-                  disabled={envoi}
-                  className={SELECT_CLASS}
-                >
-                  <option value="">Sélectionner un enseignant</option>
-                  {referentiel.enseignants.map((enseignant) => (
-                    <option key={enseignant} value={enseignant}>
-                      {enseignant}
-                    </option>
-                  ))}
-                </select>
-                {erreur('enseignantId')}
               </div>
 
               <div>

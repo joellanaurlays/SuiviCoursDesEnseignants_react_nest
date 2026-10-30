@@ -75,7 +75,7 @@ enum ActionAuditSeance {
 model Enseignement {
   id                  String           @id @default(cuid())
   matiereId           String
-  enseignantId        String
+  enseignantId        String?          @map("enseignant_id")
   mentionId           String
   cycle               Cycle
   niveauId            String

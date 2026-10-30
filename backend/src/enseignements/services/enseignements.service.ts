@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { Role } from '../../auth/roles.enum.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { CreateEnseignementDto } from '../dto/create-enseignement.dto.js';
 import { UpdateEnseignementDto } from '../dto/update-enseignement.dto.js';
@@ -42,6 +43,101 @@ export class EnseignementsService {
 
   async create(createDto: CreateEnseignementDto, context?: AuthContext) {
     return this.createEnseignementUseCase.execute(createDto, context);
+  }
+
+  async assignTeacher(enseignementId: string, enseignantId: string, context: AuthContext) {
+    // Vérifier que l'utilisateur est RESPONSABLE_MENTION
+    if (context.role !== Role.RESPONSABLE_MENTION) {
+      throw new ForbiddenException('Seul un responsable de mention peut affecter un enseignant');
+    }
+
+    if (!enseignantId || typeof enseignantId !== 'string') {
+      throw new BadRequestException("L'identifiant de l'enseignant est requis");
+    }
+
+    // Vérifier que l'enseignement existe
+    const enseignement = await this.prisma.enseignement.findUnique({
+      where: { id: enseignementId },
+      select: {
+        matiereId: true,
+        mentionId: true,
+        cycle: true,
+        parcours: true,
+      },
+    });
+
+    if (!enseignement) {
+      throw new NotFoundException('Enseignement non trouvé');
+    }
+
+    // Périmètre du responsable : l'enseignement doit relever de SON
+    // (cycle, parcours). Déduit du contexte d'authentification uniquement.
+    if (
+      !this.permissionsService.canAccessEnseignement(context, {
+        enseignantId: null,
+        mentionId: enseignement.mentionId,
+        cycle: enseignement.cycle,
+        parcours: enseignement.parcours,
+      })
+    ) {
+      throw new ForbiddenException('Cet enseignement ne relève pas de votre périmètre');
+    }
+
+    // Vérifier que l'enseignant existe (enseignantId est une string, User.id est number)
+    const userId = Number.parseInt(enseignantId, 10);
+    if (Number.isNaN(userId)) {
+      throw new NotFoundException("L'enseignant spécifié n'existe pas");
+    }
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        isActive: true,
+        firstName: true,
+        lastName: true,
+        role: { select: { name: true } },
+        cycles: true,
+        parcours: true,
+      },
+    });
+
+    if (!user || !user.isActive || user.role.name !== 'ENSEIGNANT') {
+      throw new NotFoundException("L'enseignant spécifié n'existe pas");
+    }
+
+    // L'enseignant peut intervenir dans une AUTRE mention / parcours que son
+    // rattachement administratif (User.parcours / User.mentionId ne sont JAMAIS
+    // modifiés par une affectation). Seule contrainte pédagogique : son cycle
+    // déclaré doit couvrir celui de l'enseignement (si des cycles sont définis).
+    if (user.cycles && user.cycles.length > 0 && !user.cycles.includes(enseignement.cycle)) {
+      throw new ForbiddenException("Cet enseignant n'intervient pas dans le cycle de l'enseignement");
+    }
+
+    // L'affectation stocke le NOM AFFICHÉ (prénom + nom) : le module identifie
+    // un enseignant par cette chaîne (dashboards, filtres, périmètre).
+    const nomAffiche = `${user.firstName} ${user.lastName}`.trim();
+
+    const actuel = await this.prisma.enseignement.findUnique({
+      where: { id: enseignementId },
+      select: { enseignantId: true },
+    });
+
+    // Déjà affecté à ce même enseignant : retour idempotent, aucune mutation.
+    if (actuel?.enseignantId === nomAffiche) {
+      return;
+    }
+
+    // Un autre enseignant est déjà affecté : ne pas le remplacer silencieusement.
+    if (actuel?.enseignantId) {
+      throw new ConflictException(
+        `Un enseignant est déjà affecté à cet enseignement : ${actuel.enseignantId}`,
+      );
+    }
+
+    await this.prisma.enseignement.update({
+      where: { id: enseignementId },
+      data: { enseignantId: nomAffiche },
+    });
   }
 
   async findAll(context?: AuthContext) {

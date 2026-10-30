@@ -20,6 +20,9 @@ function trim({ value }: { value: unknown }): unknown {
 }
 
 export class CreateEnseignementDto {
+  // L'affectation d'un enseignant ne se fait PAS à la création : elle est
+  // réalisée ultérieurement par un RESPONSABLE_MENTION via PATCH /enseignements/:id/teacher.
+
   @Transform(trim)
   @IsString()
   @IsNotEmpty()
@@ -28,13 +31,6 @@ export class CreateEnseignementDto {
 
   @Transform(trim)
   @IsString()
-  @IsNotEmpty()
-  @MaxLength(150)
-  enseignantId: string;
-
-  @Transform(trim)
-  @IsString()
-  @IsNotEmpty()
   @MaxLength(80)
   mentionId: string;
 

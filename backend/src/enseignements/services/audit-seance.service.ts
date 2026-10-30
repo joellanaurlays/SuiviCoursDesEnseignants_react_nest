@@ -68,7 +68,7 @@ export class AuditSeanceService {
         statutApres: (entree.statutApres ?? null) as Prisma.SeanceCreateInput['statut'] | null,
         valeursAvant: (entree.valeursAvant ?? undefined) as Prisma.InputJsonValue | undefined,
         valeursApres: (entree.valeursApres ?? undefined) as Prisma.InputJsonValue | undefined,
-        enseignantId: entree.perimetre.enseignantId,
+        enseignantId: entree.perimetre.enseignantId ?? '',
         mentionId: entree.perimetre.mentionId,
         cycle: entree.perimetre.cycle as Prisma.JournalAuditSeanceCreateInput['cycle'],
         parcours: entree.perimetre.parcours,

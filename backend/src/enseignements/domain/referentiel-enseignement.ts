@@ -13,8 +13,8 @@ export const SEMESTRES_PAR_NIVEAU: Record<string, string[]> = {
   L1: ['S1', 'S2'],
   L2: ['S3', 'S4'],
   L3: ['S5', 'S6'],
-  M1: ['S1', 'S2'],
-  M2: ['S3', 'S4'],
+  M1: ['S7', 'S8'],
+  M2: ['S9', 'S10'],
 };
 
 export interface CoherenceAcademique {

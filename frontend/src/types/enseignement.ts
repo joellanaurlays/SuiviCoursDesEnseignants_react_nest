@@ -287,7 +287,6 @@ export interface ReferentielCreationEnseignement {
 /** Formulaire de création d'enseignement (champs saisis par l'utilisateur). */
 export interface FormulaireCreationEnseignement {
   matiereId: string;
-  enseignantId: string;
   mentionId: string;
   cycle: Cycle | '';
   niveauId: string;
@@ -302,10 +301,9 @@ export type ErreursCreationEnseignement = Partial<
   Record<keyof FormulaireCreationEnseignement, string>
 >;
 
-/** Payload envoyé à l'API lors de la création d'un enseignement. */
+/** Payload envoyé à l'API lors de la création d'un enseignement (sans enseignant : l'affectation est une action distincte). */
 export interface CreateEnseignementPayload {
   matiereId: string;
-  enseignantId: string;
   mentionId: string;
   cycle: Cycle;
   niveauId: string;

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { Cycle, RoleName } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { AuthContext } from '../../auth/auth-context.js';
@@ -105,7 +105,7 @@ export class ReferentielEnseignementService {
     const verrouParcours = estResponsable ? context.parcours ?? null : null;
     const matieres = dedupe(lignesPerimetre.map((ligne) => ligne.matiereId));
     const enseignants = dedupe([
-      ...lignesGlobales.map((ligne) => ligne.enseignantId),
+      ...lignesGlobales.map((ligne) => ligne.enseignantId).filter((id): id is string => id !== null),
       ...comptesEnseignants.map((compte) => `${compte.firstName} ${compte.lastName}`.trim()),
     ]);
     const mentions = verrouParcours
@@ -147,47 +147,33 @@ export class ReferentielEnseignementService {
   }
 
   /**
-   * Vérifie que la matière, l'enseignant, la mention et le parcours soumis
-   * existent réellement. L'enseignant peut être un compte actif de rôle
-   * ENSEIGNANT (nom affiché) ou un nom déjà présent dans un enseignement.
+   * Vérifie que la matière, la mention et le parcours soumis existent réellement.
+   * La création ne comporte plus d'enseignant : l'affectation est une action distincte.
    */
   async verifierReferences(dto: CreateEnseignementDto): Promise<void> {
-    const [matiere, enseignantExistant, mention, parcours, comptesEnseignants] =
-      await Promise.all([
-        this.prisma.enseignement.findFirst({
-          where: { matiereId: dto.matiereId },
-          select: { id: true },
-        }),
-        this.prisma.enseignement.findFirst({
-          where: { enseignantId: dto.enseignantId },
-          select: { id: true },
-        }),
-        this.prisma.enseignement.findFirst({
-          where: { mentionId: dto.mentionId },
-          select: { id: true },
-        }),
-        this.prisma.enseignement.findFirst({
-          where: { parcours: dto.parcours },
-          select: { id: true },
-        }),
-        this.prisma.user.findMany({
-          where: { isActive: true, role: { name: RoleName.ENSEIGNANT } },
-          select: { firstName: true, lastName: true },
-        }),
-      ]);
+    const [matiere, mention, parcours] = await Promise.all([
+      this.prisma.enseignement.findFirst({
+        where: { matiereId: dto.matiereId },
+        select: { id: true },
+      }),
+      this.prisma.enseignement.findFirst({
+        where: { mentionId: dto.mentionId },
+        select: { id: true },
+      }),
+      this.prisma.enseignement.findFirst({
+        where: { parcours: dto.parcours },
+        select: { id: true },
+      }),
+    ]);
 
     const mentionOfficielle = (PARCOURS_OFFICIELS as readonly string[]).includes(dto.mentionId);
     const parcoursOfficiel = (PARCOURS_OFFICIELS as readonly string[]).includes(dto.parcours);
-    const enseignantCompte = comptesEnseignants.some(
-      (compte) => `${compte.firstName} ${compte.lastName}`.trim() === dto.enseignantId,
-    );
 
     if (!matiere) {
       throw new BadRequestException(`La matière « ${dto.matiereId} » n'existe pas dans le référentiel.`);
     }
-    if (!enseignantExistant && !enseignantCompte) {
-      throw new BadRequestException(`L'enseignant « ${dto.enseignantId} » n'existe pas dans le référentiel.`);
-    }
+    // La création se fait SANS enseignant : l'affectation est une action
+    // distincte réalisée par un RESPONSABLE_MENTION (PATCH :id/teacher).
     if (!mention && !mentionOfficielle) {
       throw new BadRequestException(`La mention « ${dto.mentionId} » n'existe pas dans le référentiel.`);
     }

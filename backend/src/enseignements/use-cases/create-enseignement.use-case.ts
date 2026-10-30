@@ -5,6 +5,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { EtatEnseignement } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { AuthContext } from '../../auth/auth-context.js';
 import { CreateEnseignementDto } from '../dto/create-enseignement.dto.js';
@@ -28,7 +29,8 @@ export class CreateEnseignementUseCase {
     if (!context) {
       throw new ForbiddenException('Authentification requise');
     }
-    if (!this.permissionsService.canCreateEnseignement(context, createDto)) {
+    // createDto no longer has enseignantId, so we just check role-based permissions
+    if (!this.permissionsService.canCreateEnseignement(context)) {
       throw new ForbiddenException(
         "Vous n'êtes pas autorisé à créer cet enseignement dans votre périmètre",
       );
@@ -44,7 +46,6 @@ export class CreateEnseignementUseCase {
     const doublon = await this.prisma.enseignement.findFirst({
       where: {
         matiereId: createDto.matiereId,
-        enseignantId: createDto.enseignantId,
         mentionId: createDto.mentionId,
         cycle: createDto.cycle,
         niveauId: createDto.niveauId,
@@ -60,24 +61,25 @@ export class CreateEnseignementUseCase {
       );
     }
 
+    const enseignementData: Prisma.EnseignementCreateInput = {
+      matiereId: createDto.matiereId,
+      mentionId: createDto.mentionId,
+      cycle: createDto.cycle,
+      niveauId: createDto.niveauId,
+      parcours: createDto.parcours,
+      semestreId: createDto.semestreId,
+      anneeUniversitaireId: createDto.anneeUniversitaireId,
+      volumePrevu: createDto.volumePrevu,
+      heuresRealisees: 0,
+      progression: 0,
+      etat: EtatEnseignement.NON_COMMENCE,
+      clotureAnticipee: false,
+      motifCloture: null,
+      dateCloture: null,
+    };
+
     const enseignement = await this.prisma.enseignement.create({
-      data: {
-        matiereId: createDto.matiereId,
-        enseignantId: createDto.enseignantId,
-        mentionId: createDto.mentionId,
-        cycle: createDto.cycle,
-        niveauId: createDto.niveauId,
-        parcours: createDto.parcours,
-        semestreId: createDto.semestreId,
-        anneeUniversitaireId: createDto.anneeUniversitaireId,
-        volumePrevu: createDto.volumePrevu,
-        heuresRealisees: 0,
-        progression: 0,
-        etat: EtatEnseignement.NON_COMMENCE,
-        clotureAnticipee: false,
-        motifCloture: null,
-        dateCloture: null,
-      },
+      data: enseignementData,
       include: { seances: true },
     });
 

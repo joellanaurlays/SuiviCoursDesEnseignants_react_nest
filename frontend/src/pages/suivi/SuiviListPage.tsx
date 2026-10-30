@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { Layout } from '../../components/Layout';
@@ -6,6 +6,7 @@ import { FilterBar, FilterField } from '../../components/enseignements/FilterBar
 import { EnseignementTable } from '../../components/enseignements/EnseignementTable';
 import { SuiviStatCards } from '../../components/enseignements/SuiviStatCards';
 import { CreerEnseignementModal } from '../../components/enseignements/CreerEnseignementModal';
+import { AffecterEnseignantModal } from '../../components/enseignements/AffecterEnseignantModal';
 import { LoadingState } from '../../components/ui/LoadingState';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { useAuth } from '../../auth/AuthContext';
@@ -27,6 +28,8 @@ interface SuiviListPageProps {
   hideMention?: boolean;
   hideParcours?: boolean;
   fixedCycle?: string;
+  /** Contenu optionnel rendu dans la page (ex. modal de création). */
+  children?: ReactNode;
 }
 
 function distinct(options: string[]): { value: string; label: string }[] {
@@ -40,6 +43,7 @@ export function SuiviListPage({
   hideMention = false,
   hideParcours = false,
   fixedCycle,
+  children,
 }: SuiviListPageProps) {
   const { headers, session } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -51,7 +55,10 @@ export function SuiviListPage({
   const [applied, setApplied] = useState<SuiviQuery>({});
   const [creationOuverte, setCreationOuverte] = useState(false);
   const [enseignementCree, setEnseignementCree] = useState<SuiviEnseignement | null>(null);
+  const [enseignementAAffecter, setEnseignementAAffecter] = useState<SuiviEnseignement | null>(null);
   const peutCreer = peutCreerEnseignement(session);
+  // Un responsable de mention n'a pas le droit de créer : il affecte.
+  const peutAffecter = session.role === 'RESPONSABLE_MENTION';
 
   const applyFilters = useCallback(
     async (filters: SuiviQuery) => {
@@ -132,6 +139,11 @@ export function SuiviListPage({
   const handleEnseignementCree = (enseignement: SuiviEnseignement) => {
     setEnseignementCree(enseignement);
     setCreationOuverte(false);
+    void rechargerListe();
+  };
+
+  const handleEnseignantAffecte = () => {
+    setEnseignementAAffecter(null);
     void rechargerListe();
   };
 
@@ -270,7 +282,11 @@ export function SuiviListPage({
               {loading ? (
                 <LoadingState label="Application des filtres..." />
               ) : (
-                <EnseignementTable enseignement={rows} detailBasePath={detailBasePath} />
+                <EnseignementTable
+                  enseignement={rows}
+                  detailBasePath={detailBasePath}
+                  actionAffecter={peutAffecter ? { onAffecter: (e) => setEnseignementAAffecter(e) } : undefined}
+                />
               )}
             </div>
           </>
@@ -283,6 +299,13 @@ export function SuiviListPage({
         onCancel={() => setCreationOuverte(false)}
         onCreated={handleEnseignementCree}
       />
+      <AffecterEnseignantModal
+        enseignement={enseignementAAffecter}
+        headers={headers}
+        onCancel={() => setEnseignementAAffecter(null)}
+        onAffected={handleEnseignantAffecte}
+      />
+      {children}
     </Layout>
   );
 }

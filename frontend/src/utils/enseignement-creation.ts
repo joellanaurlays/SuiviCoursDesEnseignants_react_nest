@@ -15,13 +15,9 @@ export type {
 } from '../types/enseignement';
 
 export function peutCreerEnseignement(session: UserSession): boolean {
-  if (session.role === 'SCOLARITE' || session.role === 'ADMINISTRATEUR') {
-    return true;
-  }
-  if (session.role === 'RESPONSABLE_MENTION') {
-    return Boolean(session.parcours && session.cycles?.length);
-  }
-  return false;
+  // Seuls ADMIN et CHEF_SCOLARITE créent un enseignement. Le responsable de
+  // mention affecte uniquement des enseignants à des enseignements existants.
+  return session.role === 'SCOLARITE' || session.role === 'ADMINISTRATEUR';
 }
 
 export function formulaireInitial(
@@ -29,7 +25,6 @@ export function formulaireInitial(
 ): FormulaireCreationEnseignement {
   return {
     matiereId: '',
-    enseignantId: '',
     mentionId: referentiel.verrous.mention ?? '',
     cycle: referentiel.verrous.cycle ?? '',
     niveauId: '',
@@ -99,9 +94,6 @@ export function validerFormulaireCreation(
 
   if (!formulaire.matiereId) {
     erreurs.matiereId = 'Sélectionnez une matière.';
-  }
-  if (!formulaire.enseignantId) {
-    erreurs.enseignantId = 'Sélectionnez un enseignant.';
   }
   if (!formulaire.mentionId) {
     erreurs.mentionId = 'Sélectionnez une mention.';
@@ -175,7 +167,6 @@ export function construirePayloadCreation(
 ): CreateEnseignementPayload {
   return {
     matiereId: formulaire.matiereId.trim(),
-    enseignantId: formulaire.enseignantId.trim(),
     mentionId: formulaire.mentionId.trim(),
     cycle: formulaire.cycle as Cycle,
     niveauId: formulaire.niveauId.trim(),

@@ -47,7 +47,7 @@ export class EnseignementsController {
   }
 
   @Post()
-  @Roles(Role.SCOLARITE, Role.RESPONSABLE_MENTION, Role.ADMINISTRATEUR)
+  @Roles(Role.SCOLARITE, Role.ADMINISTRATEUR)
   create(@Body() createDto: CreateEnseignementDto, @CurrentUser() context: AuthContext) {
     return this.enseignementsService.create(createDto, context);
   }
@@ -68,6 +68,16 @@ export class EnseignementsController {
   @Roles(Role.ENSEIGNANT, Role.SCOLARITE, Role.RESPONSABLE_MENTION, Role.ADMINISTRATEUR)
   findOne(@Param('id') id: string, @CurrentUser() context: AuthContext) {
     return this.enseignementsService.findOne(id, context);
+  }
+
+  @Patch(':id/teacher')
+  @Roles(Role.RESPONSABLE_MENTION)
+  assignTeacher(
+    @Param('id') enseignementId: string,
+    @Body() dto: { enseignantId: string },
+    @CurrentUser() context: AuthContext,
+  ) {
+    return this.enseignementsService.assignTeacher(enseignementId, dto.enseignantId, context);
   }
 
   @Patch(':id')

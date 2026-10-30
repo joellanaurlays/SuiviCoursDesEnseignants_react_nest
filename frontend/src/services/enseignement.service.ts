@@ -72,4 +72,21 @@ export const enseignementService = {
   ): Promise<SuiviEnseignement> {
     return request<SuiviEnseignement>('/enseignements', 'POST', payload, headers);
   },
+
+  /**
+   * Affectation d'un enseignant à un enseignement existant, réservée au
+   * RESPONSABLE_MENTION (le backend revalide le périmètre cycle/parcours).
+   */
+  assignTeacher(
+    enseignementId: string,
+    enseignantId: string,
+    headers: Record<string, string>,
+  ): Promise<void> {
+    return request<void>(
+      `/enseignements/${encodeURIComponent(enseignementId)}/teacher`,
+      'PATCH',
+      { enseignantId },
+      headers,
+    );
+  },
 };

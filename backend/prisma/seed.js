@@ -133,7 +133,7 @@ const ENSEIGNEMENTS = [
     parcours: 'Statistique',
     cycle: 'MASTER',
     niveauId: 'M2',
-    semestreId: 'S4',
+    semestreId: 'S9',
     anneeUniversitaireId: '2026-2027',
     volumePrevu: 30,
     // 12 h + 12 h + 6 h = 30 h REALISEE -> 100 %, TERMINE, cloture NORMALE.
@@ -173,7 +173,7 @@ const ENSEIGNEMENTS = [
     parcours: 'Science des donnees',
     cycle: 'MASTER',
     niveauId: 'M2',
-    semestreId: 'S3',
+    semestreId: 'S9',
     anneeUniversitaireId: '2026-2027',
     volumePrevu: 40,
     // 3 h + 3 h + 4 h = 10 h REALISEE -> 25 %, EN_COURS.

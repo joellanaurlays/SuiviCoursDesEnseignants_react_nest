@@ -10,6 +10,8 @@ interface EnseignementTableProps {
   enseignement: SuiviEnseignement[];
   detailBasePath: string;
   emptyMessage?: string;
+  /** Réservé au RESPONSABLE_MENTION : ajoute une action « Affecter » par ligne. */
+  actionAffecter?: { onAffecter: (enseignement: SuiviEnseignement) => void };
 }
 
 /**
@@ -24,6 +26,7 @@ export function EnseignementTable({
   enseignement,
   detailBasePath,
   emptyMessage = 'Aucun enseignement ne correspond à vos critères.',
+  actionAffecter,
 }: EnseignementTableProps) {
   return (
     <div className="overflow-x-auto">
@@ -87,13 +90,24 @@ export function EnseignementTable({
                 <ClotureBadge typeCloture={ens.typeCloture} />
               </td>
               <td className="emit-table-td text-right">
-                <Link
-                  to={`${detailBasePath}/${ens.id}`}
-                  className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold text-[#0077B6] transition hover:bg-[#CAF0F8] hover:text-[#03045E]"
-                >
-                  Détail
-                  <ArrowUpRight size={14} aria-hidden="true" />
-                </Link>
+                <div className="inline-flex items-center gap-1">
+                  {actionAffecter && (
+                    <button
+                      type="button"
+                      onClick={() => actionAffecter.onAffecter(ens)}
+                      className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-[#CAF0F8] hover:text-[#03045E]"
+                    >
+                      Affecter
+                    </button>
+                  )}
+                  <Link
+                    to={`${detailBasePath}/${ens.id}`}
+                    className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold text-[#0077B6] transition hover:bg-[#CAF0F8] hover:text-[#03045E]"
+                  >
+                    Détail
+                    <ArrowUpRight size={14} aria-hidden="true" />
+                  </Link>
+                </div>
               </td>
             </tr>
           ))}

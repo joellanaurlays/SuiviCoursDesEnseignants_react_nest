@@ -45,7 +45,8 @@ export interface ValeursSeanceAudit {
 
 /** Périmètre figé au moment de l'action (sert au contrôle d'accès à l'historique). */
 export interface PerimetreAudit {
-  enseignantId: string;
+  /** Null si aucun enseignant n'était affecté au moment de l'action. */
+  enseignantId: string | null;
   mentionId: string;
   cycle: string;
   parcours: string;

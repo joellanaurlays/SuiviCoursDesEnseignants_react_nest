@@ -300,7 +300,8 @@ interface SeanceAvecEnseignement {
   statut: string;
   enseignement: {
     id: string;
-    enseignantId: string;
+    /** Null tant qu'aucun enseignant n'a été affecté à l'enseignement. */
+    enseignantId: string | null;
     mentionId: string;
     cycle: string;
     parcours: string;
