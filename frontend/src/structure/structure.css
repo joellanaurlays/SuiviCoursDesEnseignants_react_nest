@@ -1068,3 +1068,83 @@
   text-decoration: none;
 }
 .sa-root .sidebar-footer .back-link:hover { text-decoration: underline; }
+
+/* --- Generation automatique, calendrier, apercu --- */
+.sa-root .gen-preview {
+  border: 1px dashed var(--light);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: rgba(100, 116, 139, 0.06);
+}
+.sa-root .gen-preview-title { font-weight: 600; margin-bottom: 8px; }
+.sa-root .gen-cycle { margin-bottom: 6px; }
+.sa-root .gen-cycle ul { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 14px; }
+.sa-root .drawer-preview { padding: 0 24px 12px; }
+.sa-root .field input[type='date'] { width: 100%; font: inherit; }
+.sa-root .check { display: flex; gap: 10px; align-items: flex-start; font-weight: 500; cursor: pointer; }
+.sa-root .check input { width: auto; margin-top: 3px; }
+.sa-root .tree-period { margin-left: 10px; font-size: 12px; opacity: 0.7; white-space: nowrap; }
+.sa-root .add-subject { margin: 8px 0 4px; }
+
+/* --- Mise en page "Emploi du temps" : bandeau + onglets (remplace la barre laterale) --- */
+.sa-root .app-shell { display: block; min-height: 100vh; }
+.sa-root .sa-header { background: var(--navy); color: #fff; border-bottom: 1px solid rgba(255,255,255,.08); }
+.sa-root .sa-header-inner { max-width: 1240px; margin: 0 auto; padding: 14px 20px 0; }
+.sa-root .sa-header-top { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,.12); }
+.sa-root .sa-brand { display: flex; align-items: center; gap: 12px; }
+.sa-root .sa-logo { width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, var(--cyan), var(--blue)); display: grid; place-items: center; font: 700 22px var(--font-display); }
+.sa-root .sa-brand-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font: 700 20px var(--font-display); }
+.sa-root .sa-chip { font: 700 12px var(--font-body); background: var(--pale); color: var(--navy); border-radius: 999px; padding: 3px 10px; }
+.sa-root .sa-chip.outline { background: transparent; color: var(--light); border: 1px solid var(--cyan); }
+.sa-root .sa-chip.soft { background: var(--pale); color: var(--blue); margin-left: 8px; vertical-align: middle; }
+.sa-root .sa-brand-sub { font-size: 13px; color: rgba(255,255,255,.8); margin-top: 3px; }
+.sa-root .sa-header-right { display: flex; align-items: center; gap: 10px; }
+.sa-root .sa-ghost, .sa-root .sa-user { border: 1px solid rgba(255,255,255,.2); border-radius: 10px; padding: 8px 14px; font-size: 13px; font-weight: 600; color: #fff; text-decoration: none; background: rgba(255,255,255,.05); }
+.sa-root .sa-tabs { display: flex; gap: 6px; overflow-x: auto; padding: 12px 0; }
+.sa-root .sa-tabs .tab { white-space: nowrap; color: #fff; text-decoration: none; font-weight: 600; font-size: 14px; padding: 9px 16px; border-radius: 10px; opacity: .9; }
+.sa-root .sa-tabs .tab:hover { background: rgba(255,255,255,.1); }
+.sa-root .sa-tabs .tab.active { background: var(--blue); opacity: 1; }
+.sa-root .main { max-width: 1240px; margin: 0 auto; padding: 24px 20px 48px; width: 100%; }
+.sa-root .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow); padding: 22px 24px; margin-bottom: 20px; }
+.sa-root .panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.sa-root .panel h2 { margin: 0; font: 700 24px var(--font-display); color: var(--navy); }
+.sa-root .panel p { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+.sa-root .seg { display: inline-flex; background: var(--surface-muted); border: 1px solid var(--border); border-radius: 12px; padding: 4px; }
+.sa-root .seg button { border: 0; background: transparent; padding: 8px 14px; border-radius: 9px; font: 600 13px var(--font-body); color: var(--ink-soft); cursor: pointer; }
+.sa-root .seg button.on { background: var(--blue); color: #fff; }
+.sa-root .filters { display: flex; gap: 14px; flex-wrap: wrap; border-top: 1px solid var(--border); margin-top: 18px; padding-top: 16px; }
+.sa-root .filters label { display: grid; gap: 6px; min-width: 200px; flex: 1; max-width: 260px; }
+.sa-root .filters label span { font: 700 11px var(--font-body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.sa-root .filters select { padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font: 600 14px var(--font-body); background: #fff; color: var(--ink); }
+.sa-root .page-header { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow); padding: 22px 24px; margin-bottom: 20px; }
+.sa-root .page-header h2 { color: var(--navy); }
+@media (max-width: 900px) { .sa-root .app-shell { display: block; } .sa-root .topbar, .sa-root .scrim { display: none; } }
+
+/* Filtres Mention / Niveau des listes */
+.sa-root .filters-panel { padding: 16px 20px; margin-bottom: 16px; }
+.sa-root .filters-inline { border-top: 0; margin-top: 0; padding-top: 0; }
+
+/* Actions Modifier / Supprimer integrees a l'arbre */
+.sa-root .tree-actions { margin-left: auto; display: inline-flex; gap: 6px; }
+.sa-root .tree-actions .mini { border: 1px solid var(--border); background: #fff; color: var(--blue); font: 600 12px var(--font-body); padding: 3px 10px; border-radius: 8px; }
+.sa-root .tree-actions .mini.danger { color: var(--danger); }
+.sa-root .tree-node > summary { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.sa-root .subject-right { display: inline-flex; align-items: center; gap: 10px; }
+.sa-root .page-header .filters { margin-top: 16px; }
+
+/* Vue limitee a un niveau (Mentions seules, Cycles...) */
+.sa-root .seg.vues { margin-top: 16px; flex-wrap: wrap; }
+.sa-root .tree-node.leaf > summary { cursor: default; }
+.sa-root .tree-node.leaf > summary::-webkit-details-marker { display: none; }
+.sa-root .tree-node.leaf > summary::marker { content: ''; }
+.sa-root .tree-node.leaf > summary::before { display: none; }
+
+/* Barre de navigation fixe : reste en haut pendant le defilement */
+.sa-root .sa-header { position: sticky; top: 0; z-index: 40; }
+
+/* En-tete de la vue arborescente : titre + actions a droite, filtres dessous */
+.sa-root .page-header { display: block; }
+.sa-root .page-header .panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.sa-root .page-header .panel-head h2 { font-size: 24px; }
+.sa-root .head-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sa-root .page-header .filters { margin-top: 18px; }

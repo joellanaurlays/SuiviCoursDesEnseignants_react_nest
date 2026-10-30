@@ -10,7 +10,14 @@ export class AnneeUniversitaire {
   id: number;
 
   @Column({ length: 9 })
-  libelle: string; // ex: "2025-2026"
+  libelle: string; // ex: "2025-2026" (calcule a partir de dateDebut)
+
+  /** Calendrier : debut et fin de l'annee universitaire (AAAA-MM-JJ). */
+  @Column({ type: 'date', nullable: true })
+  dateDebut: string | null;
+
+  @Column({ type: 'date', nullable: true })
+  dateFin: string | null;
 
   @ManyToOne(() => Niveau, (niveau) => niveau.anneesUniversitaires, { onDelete: 'CASCADE', nullable: false })
   @JoinColumn({ name: 'niveauId' })

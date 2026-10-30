@@ -1,4 +1,5 @@
-import { IsInt, Max, Min } from 'class-validator';
+import { IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsIsoDate } from '../../common/is-iso-date.decorator.js';
 
 export class CreateSemestreDto {
   @IsInt({ message: 'Le numéro doit être un nombre entier' })
@@ -9,4 +10,13 @@ export class CreateSemestreDto {
   @IsInt({ message: 'Veuillez choisir une année universitaire' })
   @Min(1, { message: 'Veuillez choisir une année universitaire' })
   anneeUniversitaireId: number;
+
+  /** Calendrier du semestre ; calcule depuis l'annee si omis. */
+  @IsOptional()
+  @IsIsoDate()
+  dateDebut?: string;
+
+  @IsOptional()
+  @IsIsoDate()
+  dateFin?: string;
 }

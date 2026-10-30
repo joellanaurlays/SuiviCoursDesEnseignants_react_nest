@@ -5,6 +5,8 @@
 // (avec regles de validation identiques a celles du backend) et la facon
 // d'afficher un element dans une liste deroulante (`optionLabel`).
 
+import { anneeOptions, debutParDefaut, formatPeriode, libelleAnnee } from '../utils/dates.js';
+
 const dash = '—';
 
 export const entities = {
@@ -13,7 +15,8 @@ export const entities = {
     singular: 'Mention',
     article: 'une',
     endpoint: '/mentions',
-    description: "Les grandes filières de l'établissement (ex : Informatique, Gestion).",
+    description: "Les grandes filières de l'établissement. L'ajout d'une mention génère automatiquement ses cycles, niveaux, année et semestres.",
+    afterCreate: 'tree', // apres creation : affiche l'arbre de la mention generee
     optionLabel: (r) => r.nom,
     searchText: (r) => r.nom,
     columns: [
@@ -34,6 +37,13 @@ export const entities = {
         placeholder: 'ex : Informatique',
         rules: { minLength: 2, maxLength: 100 },
       },
+      {
+        name: 'genererStructure',
+        label: 'Générer automatiquement Licence (L1-L3) et Master (M1-M2) avec leurs semestres S1 à S10',
+        type: 'checkbox',
+        createOnly: true,
+        defaultValue: () => true,
+      },
     ],
   },
 
@@ -42,6 +52,7 @@ export const entities = {
     singular: 'Cycle',
     article: 'un',
     endpoint: '/cycles',
+    filterBy: { mention: (r) => r.mentionId, niveau: (r) => null },
     description: 'Licence ou Master, rattaché à une mention (un seul cycle de chaque type par mention).',
     optionLabel: (r) => `${r.type} — ${r.mention?.nom ?? ''}`,
     searchText: (r) => `${r.type} ${r.mention?.nom ?? ''}`,
@@ -69,6 +80,7 @@ export const entities = {
     singular: 'Niveau',
     article: 'un',
     endpoint: '/niveaux',
+    filterBy: { mention: (r) => r.cycle?.mentionId, niveau: (r) => r.libelle },
     description: "Les niveaux d'étude (L1, L2, L3, M1, M2) au sein d'un cycle.",
     optionLabel: (r) => `${r.libelle} — ${r.cycle?.type ?? ''} ${r.cycle?.mention?.nom ?? ''}`.trim(),
     searchText: (r) => `${r.libelle} ${r.cycle?.type ?? ''} ${r.cycle?.mention?.nom ?? ''}`,
@@ -83,16 +95,11 @@ export const entities = {
     fields: [
       {
         name: 'libelle',
-        label: 'Libellé du niveau',
-        type: 'text',
+        label: 'Niveau',
+        type: 'select',
         required: true,
-        placeholder: 'ex : L1, L2, M1…',
-        rules: {
-          minLength: 2,
-          maxLength: 30,
-          pattern: /^[\p{L}0-9 _-]+$/u,
-          patternMessage: 'Lettres, chiffres, espaces ou tirets uniquement',
-        },
+        help: 'Licence : L1, L2, L3 — Master : M1, M2.',
+        options: ['L1', 'L2', 'L3', 'M1', 'M2'].map((v) => ({ value: v, label: v })),
       },
       { name: 'cycleId', label: 'Cycle', type: 'relation', required: true, target: 'cycles' },
     ],
@@ -103,11 +110,13 @@ export const entities = {
     singular: 'Année universitaire',
     article: 'une',
     endpoint: '/annees-universitaires',
+    filterBy: { mention: (r) => r.niveau?.cycle?.mentionId, niveau: (r) => r.niveau?.libelle },
     description: 'Les années universitaires (ex : 2025-2026) rattachées à un niveau.',
     optionLabel: (r) => `${r.libelle} — ${r.niveau?.libelle ?? ''} (${r.niveau?.cycle?.mention?.nom ?? ''})`,
     searchText: (r) => `${r.libelle} ${r.niveau?.libelle ?? ''} ${r.niveau?.cycle?.mention?.nom ?? ''}`,
     columns: [
       { key: 'libelle', label: 'Année', render: (r) => <strong>{r.libelle}</strong> },
+      { key: 'periode', label: 'Période', render: (r) => formatPeriode(r.dateDebut, r.dateFin) || dash },
       {
         key: 'niveau',
         label: 'Niveau',
@@ -119,20 +128,14 @@ export const entities = {
     ],
     fields: [
       {
-        name: 'libelle',
-        label: "Année universitaire",
-        type: 'text',
+        name: 'dateDebut',
+        label: 'Année universitaire',
+        type: 'select',
         required: true,
-        placeholder: 'ex : 2025-2026',
-        help: 'Format AAAA-AAAA, deux années consécutives.',
-        rules: {
-          pattern: /^(\d{4})-(\d{4})$/,
-          patternMessage: 'Format attendu : AAAA-AAAA (ex : 2025-2026)',
-          custom: (v) => {
-            const m = /^(\d{4})-(\d{4})$/.exec(v);
-            return m && Number(m[2]) !== Number(m[1]) + 1 ? 'Les deux années doivent être consécutives' : null;
-          },
-        },
+        options: anneeOptions(),
+        extraLabel: libelleAnnee,
+        defaultValue: debutParDefaut,
+        help: 'Choisissez dans la liste (ex : 2026-2027).',
       },
       { name: 'niveauId', label: 'Niveau', type: 'relation', required: true, target: 'niveaux' },
     ],
@@ -143,6 +146,7 @@ export const entities = {
     singular: 'Semestre',
     article: 'un',
     endpoint: '/semestres',
+    filterBy: { mention: (r) => r.anneeUniversitaire?.niveau?.cycle?.mentionId, niveau: (r) => r.anneeUniversitaire?.niveau?.libelle },
     description: 'Les semestres (S1, S2…) rattachés à une année universitaire.',
     optionLabel: (r) =>
       `S${r.numero} — ${r.anneeUniversitaire?.libelle ?? ''} · ${r.anneeUniversitaire?.niveau?.libelle ?? ''}`,
@@ -150,6 +154,7 @@ export const entities = {
       `S${r.numero} ${r.anneeUniversitaire?.libelle ?? ''} ${r.anneeUniversitaire?.niveau?.libelle ?? ''}`,
     columns: [
       { key: 'numero', label: 'Semestre', render: (r) => <strong>S{r.numero}</strong> },
+      { key: 'periode', label: 'Période', render: (r) => formatPeriode(r.dateDebut, r.dateFin) || dash },
       {
         key: 'annee',
         label: 'Année universitaire',
@@ -166,6 +171,7 @@ export const entities = {
         type: 'number',
         required: true,
         placeholder: 'ex : 1',
+        help: 'L1 : S1-S2 · L2 : S3-S4 · L3 : S5-S6 · M1 : S7-S8 · M2 : S9-S10.',
         rules: { integer: true, min: 1, max: 10 },
       },
       {
@@ -183,6 +189,7 @@ export const entities = {
     singular: 'Matière',
     article: 'une',
     endpoint: '/matieres',
+    filterBy: { mention: (r) => r.semestre?.anneeUniversitaire?.niveau?.cycle?.mentionId, niveau: (r) => r.semestre?.anneeUniversitaire?.niveau?.libelle },
     description: "Les matières enseignées pendant un semestre, avec leur volume horaire.",
     optionLabel: (r) => r.nom,
     searchText: (r) =>

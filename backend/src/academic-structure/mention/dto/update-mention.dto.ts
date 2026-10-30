@@ -1,4 +1,4 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { PartialType, PickType } from '@nestjs/mapped-types';
 import { CreateMentionDto } from './create-mention.dto.js';
 
-export class UpdateMentionDto extends PartialType(CreateMentionDto) {}
+export class UpdateMentionDto extends PartialType(PickType(CreateMentionDto, ['nom'] as const)) {}
