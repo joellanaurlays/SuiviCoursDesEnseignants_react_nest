@@ -1,7 +1,9 @@
 import 'dotenv/config';
-import { Logger, ValidationPipe } from '@nestjs/common';
+import 'dotenv/config';
+import { BadRequestException, Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
+import type { ValidationError } from 'class-validator';
 import type { NextFunction, Request, Response } from 'express';
 import { AppModule } from './app.module.js';
 import { createIdentityMiddleware } from './auth/identity.middleware.js';
@@ -17,6 +19,20 @@ async function bootstrap() {
       transform: true,
       whitelist: true,
       forbidNonWhitelisted: false,
+      // Même corps de réponse qu'avant (`message` = liste de messages) + `fieldErrors`
+      // (champ → messages) pour afficher les erreurs sous chaque champ du formulaire.
+      exceptionFactory: (errors: ValidationError[]) => {
+        const fieldErrors: Record<string, string[]> = {};
+        for (const err of errors) {
+          fieldErrors[err.property] = Object.values(err.constraints ?? { invalid: 'Valeur invalide' });
+        }
+        return new BadRequestException({
+          statusCode: 400,
+          error: 'Bad Request',
+          message: Object.values(fieldErrors).flat(),
+          fieldErrors,
+        });
+      },
     }),
   );
 

@@ -11,6 +11,7 @@ import {
   History,
   CalendarDays,
   ClipboardList,
+  Layers,
   Users,
   LogOut,
   Menu,
@@ -88,6 +89,7 @@ function describeSession(session: UserSession): { name: string; sub: string } {
 const WORKSPACE_LINKS: NavItem[] = [
   { name: 'Emploi du temps', path: '/planning', icon: CalendarDays },
   { name: 'Examens & notes', path: '/exams', icon: ClipboardList },
+  { name: 'Structure académique', path: '/structure-academique', icon: Layers },
   { name: 'Compteurs & rôles', path: '/users', icon: Users },
   { name: 'Mon profil', path: '/profile', icon: UserCircle2 },
 ];
