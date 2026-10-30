@@ -40,9 +40,10 @@ export class TreeService {
     };
   }
 
-  /** Arbre complet : Mention > Cycle > Niveau > Annee > Semestre > Matiere. */
-  tree() {
+  /** Arbre complet (ou d'une seule mention) : Mention > Cycle > Niveau > Annee > Semestre > Matiere. */
+  tree(mentionId?: number) {
     return this.dataSource.getRepository(Mention).find({
+      where: mentionId ? { id: mentionId } : {},
       relations: {
         cycles: { niveaux: { anneesUniversitaires: { semestres: { matieres: true } } } },
       },
@@ -53,7 +54,7 @@ export class TreeService {
           niveaux: {
             libelle: 'ASC',
             anneesUniversitaires: {
-              libelle: 'ASC',
+              libelle: 'DESC',
               semestres: { numero: 'ASC', matieres: { nom: 'ASC' } },
             },
           },

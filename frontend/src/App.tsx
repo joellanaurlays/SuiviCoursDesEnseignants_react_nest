@@ -4,7 +4,7 @@ import LoginPage from './pages/LoginPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 import UsersListPage from './pages/UsersListPage.jsx';
 import UserFormPage from './pages/UserFormPage.jsx';
-import ExamsModuleFixed from './exams/ExamsModuleFixed.jsx';
+import ExamsModule from './exams/ExamsModule.jsx';
 import PlanningWorkspace from './components/PlanningWorkspace';
 import RoleHomeRedirect from './routing/RoleHomeRedirect.jsx';
 import StructureApp from './structure/StructureApp.jsx';
@@ -102,8 +102,8 @@ export default function App() {
         <Route
           path="/exams"
           element={
-            <ProtectedRoute>
-              <ExamsModuleFixed />
+            <ProtectedRoute allowedRoles={['SCOLARITE', 'CHEF_SCOLARITE']}>
+              <ExamsModule />
             </ProtectedRoute>
           }
         />

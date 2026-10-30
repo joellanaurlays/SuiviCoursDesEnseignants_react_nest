@@ -4,18 +4,53 @@ import api from '../api/client';
 import { entities } from '../config/entities.jsx';
 import { toPayload, validateAll, validateField } from '../utils/validation';
 import { BASE } from '../config/paths.js';
+import { PLAN_STANDARD, libelleAnnee } from '../utils/dates.js';
+
+// Champs affiches : ceux marques `createOnly` n'existent qu'a la creation.
+function visibleFields(config, isEdit) {
+  return config.fields.filter((f) => !(isEdit && f.createOnly));
+}
 
 function buildInitialValues(config, initialData) {
+  const isEdit = Boolean(initialData?.id);
   const values = {};
-  config.fields.forEach((field) => {
+  visibleFields(config, isEdit).forEach((field) => {
     const existing = initialData ? initialData[field.name] : undefined;
-    values[field.name] = existing === undefined || existing === null ? '' : existing;
+    if (existing !== undefined && existing !== null) values[field.name] = existing;
+    else if (!isEdit && field.defaultValue) values[field.name] = field.defaultValue();
+    else values[field.name] = field.type === 'checkbox' ? false : '';
   });
   return values;
 }
 
+/** Apercu de la structure creee automatiquement avec une nouvelle mention. */
+function StructurePreview({ debut }) {
+  const annee = libelleAnnee(debut);
+  return (
+    <div className="gen-preview" aria-live="polite">
+      <div className="gen-preview-title">
+        Sera généré automatiquement{annee ? ` pour ${annee}` : ''} :
+      </div>
+      {PLAN_STANDARD.map((cycle) => (
+        <div key={cycle.type} className="gen-cycle">
+          <strong>{cycle.type}</strong>
+          <ul>
+            {cycle.niveaux.map(([niveau, [a, b]]) => (
+              <li key={niveau}>
+                <span className="pill">{niveau}</span> S{a} · S{b}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+      <p className="field-hint">Les matières s'ajoutent ensuite, semestre par semestre, dans la vue arborescente.</p>
+    </div>
+  );
+}
+
 export default function EntityDrawer({ config, initialData, onClose, onSaved }) {
   const isEdit = Boolean(initialData?.id);
+  const fields = visibleFields(config, isEdit);
   const [values, setValues] = useState(() => buildInitialValues(config, initialData));
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
@@ -66,7 +101,7 @@ export default function EntityDrawer({ config, initialData, onClose, onSaved }) 
     setValues((prev) => ({ ...prev, [name]: value }));
     // re-valide en direct une fois le champ touche
     if (touched[name] || errors[name]) {
-      const field = config.fields.find((f) => f.name === name);
+      const field = fields.find((f) => f.name === name);
       setErrors((prev) => ({ ...prev, [name]: validateField(field, value) }));
     }
   }
@@ -79,21 +114,28 @@ export default function EntityDrawer({ config, initialData, onClose, onSaved }) 
   async function handleSubmit(e) {
     e.preventDefault();
     setFormError('');
-    const found = validateAll(config.fields, values);
+    const found = validateAll(fields, values);
     setErrors(found);
-    setTouched(Object.fromEntries(config.fields.map((f) => [f.name, true])));
+    setTouched(Object.fromEntries(fields.map((f) => [f.name, true])));
     if (Object.keys(found).length > 0) {
-      const firstInvalid = config.fields.find((f) => found[f.name]);
+      const firstInvalid = fields.find((f) => found[f.name]);
       formRef.current?.querySelector(`#field-${firstInvalid.name}`)?.focus();
       return;
     }
 
     setSaving(true);
     try {
-      const payload = toPayload(config.fields, values);
-      if (isEdit) await api.patch(`${config.endpoint}/${initialData.id}`, payload);
-      else await api.post(config.endpoint, payload);
-      onSaved(isEdit ? 'modifié' : 'ajouté');
+      let payload = toPayload(fields, values);
+      let saved;
+      if (isEdit) {
+        // Modification : seuls les champs changes sont envoyes (evite de renvoyer une ancienne date de fin).
+        const initial = JSON.parse(initialRef.current);
+        payload = Object.fromEntries(Object.entries(payload).filter(([k]) => String(values[k]) !== String(initial[k])));
+        saved = (await api.patch(`${config.endpoint}/${initialData.id}`, payload)).data;
+      } else {
+        saved = (await api.post(config.endpoint, payload)).data;
+      }
+      onSaved(isEdit ? 'modifié' : 'ajouté', saved);
     } catch (err) {
       if (err.fieldErrors) {
         setErrors(Object.fromEntries(Object.entries(err.fieldErrors).map(([k, v]) => [k, v[0]])));
@@ -141,7 +183,7 @@ export default function EntityDrawer({ config, initialData, onClose, onSaved }) 
         )}
 
         <div className="drawer-body">
-          {config.fields.map((field) => {
+          {fields.map((field) => {
             const id = `field-${field.name}`;
             const error = errors[field.name];
             const describedBy = error ? `${id}-error` : field.help ? `${id}-help` : undefined;
@@ -157,7 +199,7 @@ export default function EntityDrawer({ config, initialData, onClose, onSaved }) 
 
             return (
               <div className="field" key={field.name}>
-                <label htmlFor={id}>
+                <label htmlFor={id} className={field.type === 'checkbox' ? 'sr-only' : undefined}>
                   {field.label}
                   {field.required && (
                     <span className="req" aria-hidden="true">
@@ -176,6 +218,11 @@ export default function EntityDrawer({ config, initialData, onClose, onSaved }) 
                     <option value="" disabled>
                       Choisir…
                     </option>
+                    {values[field.name] && !field.options.some((o) => o.value === values[field.name]) && (
+                      <option value={values[field.name]}>
+                        {field.extraLabel ? field.extraLabel(values[field.name]) : values[field.name]}
+                      </option>
+                    )}
                     {field.options.map((o) => (
                       <option key={o.value} value={o.value}>
                         {o.label}
@@ -214,6 +261,29 @@ export default function EntityDrawer({ config, initialData, onClose, onSaved }) 
                   </>
                 )}
 
+                {field.type === 'date' && (
+                  <input
+                    {...common}
+                    type="date"
+                    min="2000-01-01"
+                    max="2100-12-31"
+                    value={values[field.name]}
+                    onChange={(e) => setValue(field.name, e.target.value)}
+                  />
+                )}
+
+                {field.type === 'checkbox' && (
+                  <label className="check">
+                    <input
+                      {...common}
+                      type="checkbox"
+                      checked={Boolean(values[field.name])}
+                      onChange={(e) => setValue(field.name, e.target.checked)}
+                    />
+                    <span>{field.label}</span>
+                  </label>
+                )}
+
                 {(field.type === 'text' || field.type === 'number') && (
                   <input
                     {...common}
@@ -244,7 +314,6 @@ export default function EntityDrawer({ config, initialData, onClose, onSaved }) 
             );
           })}
         </div>
-
         <div className="drawer-actions">
           <button type="button" className="btn-secondary" onClick={requestClose}>
             Annuler

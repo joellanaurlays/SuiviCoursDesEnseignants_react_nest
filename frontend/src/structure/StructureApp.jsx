@@ -2,7 +2,6 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import StructurePage from './pages/StructurePage';
-import CrudPage from './pages/CrudPage';
 import { ToastProvider } from './components/Toast';
 import { BASE } from './config/paths.js';
 import './structure.css';
@@ -19,7 +18,6 @@ export default function StructureApp() {
           <Routes>
             <Route index element={<Dashboard />} />
             <Route path="arborescence" element={<StructurePage />} />
-            <Route path=":entityKey" element={<CrudPage />} />
             <Route path="*" element={<Navigate to={BASE} replace />} />
           </Routes>
         </Layout>

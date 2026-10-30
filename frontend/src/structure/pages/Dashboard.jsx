@@ -43,7 +43,7 @@ export default function Dashboard() {
 
       <div className="stat-grid">
         {navOrder.map((key, i) => (
-          <Link className="stat-card" key={key} to={`${BASE}/${key}`}>
+          <Link className="stat-card" key={key} to={`${BASE}/arborescence?vue=${key}`}>
             <span className="stat-step">{i + 1}</span>
             <div className="value">{stats ? stats[statsKey[key]] : '…'}</div>
             <div className="label">{entities[key].label}</div>
@@ -81,25 +81,14 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {isEmpty && (
+            {isEmpty && (
         <div className="hierarchy start-card">
           <h3>Pour commencer</h3>
-          <ol>
-            <li>
-              Créez une <Link to={`${BASE}/mentions`}>mention</Link> (ex : Informatique).
-            </li>
-            <li>
-              Ajoutez-lui un <Link to={`${BASE}/cycles`}>cycle</Link> (Licence ou Master).
-            </li>
-            <li>
-              Définissez les <Link to={`${BASE}/niveaux`}>niveaux</Link> (L1, L2…), puis leurs{' '}
-              <Link to={`${BASE}/annees-universitaires`}>années universitaires</Link>.
-            </li>
-            <li>
-              Ajoutez les <Link to={`${BASE}/semestres`}>semestres</Link> et enfin les{' '}
-              <Link to={`${BASE}/matieres`}>matières</Link>.
-            </li>
-          </ol>
+          <p>
+            Ouvrez la <Link to={`${BASE}/arborescence?ajouter=mentions`}>vue arborescente</Link> et ajoutez une mention
+            (ex : Informatique) : ses cycles, niveaux, année et semestres S1 à S10 sont créés automatiquement. Il ne
+            reste ensuite qu'à ajouter les matières de chaque semestre.
+          </p>
         </div>
       )}
     </>

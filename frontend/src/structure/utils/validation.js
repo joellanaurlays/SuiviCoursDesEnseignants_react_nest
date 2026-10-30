@@ -1,3 +1,5 @@
+import { isIsoDate } from './dates.js';
+
 // Validation cote client (miroir des regles du backend) : retourne un message ou null.
 
 export function validateField(field, raw) {
@@ -5,11 +7,20 @@ export function validateField(field, raw) {
   const isEmpty = value === '' || value === null || value === undefined;
   const rules = field.rules ?? {};
 
+  if (field.type === 'checkbox') return null;
+
   if (isEmpty) {
     if (!field.required) return null;
     return field.type === 'relation' || field.type === 'select'
       ? 'Veuillez faire un choix'
       : 'Ce champ est obligatoire';
+  }
+
+  if (field.type === 'date') {
+    if (!isIsoDate(value)) return 'Choisissez une date dans le calendrier';
+    const year = Number(value.slice(0, 4));
+    if (year < 2000 || year > 2100) return 'L\'année doit être comprise entre 2000 et 2100';
+    return null;
   }
 
   if (field.type === 'number') {
@@ -58,7 +69,10 @@ export function toPayload(fields, values) {
   const payload = {};
   fields.forEach((field) => {
     const raw = values[field.name];
-    if (field.type === 'number' || field.type === 'relation') payload[field.name] = Number(raw);
+    if (field.type === 'checkbox') payload[field.name] = Boolean(raw);
+    else if (field.type === 'date') {
+      if (raw) payload[field.name] = raw; // date facultative vide : omise
+    } else if (field.type === 'number' || field.type === 'relation') payload[field.name] = Number(raw);
     else payload[field.name] = typeof raw === 'string' ? raw.trim() : raw;
   });
   return payload;
