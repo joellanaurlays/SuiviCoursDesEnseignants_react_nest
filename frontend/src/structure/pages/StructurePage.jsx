@@ -9,6 +9,7 @@ import { useCanEdit } from '../hooks/useCanEdit';
 import { debutParDefaut, formatPeriode, libelleAnnee } from '../utils/dates.js';
 
 const NIVEAUX = ['L1', 'L2', 'L3', 'M1', 'M2'];
+const NIVEAUX_DU_CYCLE = { Licence: ['L1', 'L2', 'L3'], Master: ['M1', 'M2'] };
 
 // Profondeur d'affichage selon la vue choisie (tableau de bord ou boutons) : 1 = mentions seulement ... 6 = jusqu'aux matieres.
 const VUES = [
@@ -129,6 +130,7 @@ export default function StructurePage() {
   const [niveau, setNiveau] = useState('');
   const vue = VUES.find((v) => v.key === params.get('vue')) ?? VUES[0];
   const depth = vue.depth;
+    const cycleParam = NIVEAUX_DU_CYCLE[params.get('cycle')] ? params.get('cycle') : null; // onglet Licence / Master
   const setVue = (key) =>
     setParams((p) => {
       if (key === 'tout') p.delete('vue');
@@ -164,17 +166,19 @@ export default function StructurePage() {
   }, [ajouter, canEdit, setParams]);
 
   // Filtres Mention / Niveau appliques a l'arbre
-  const shown = useMemo(() => {
+    const shown = useMemo(() => {
     if (!tree) return null;
     return tree
       .filter((m) => !mentionId || String(m.id) === mentionId)
       .map((m) => ({
         ...m,
+        totalCycles: m.cycles.length,
         cycles: m.cycles
+          .filter((c) => !cycleParam || c.type === cycleParam)
           .map((c) => ({ ...c, niveaux: c.niveaux.filter((n) => !niveau || n.libelle === niveau) }))
           .filter((c) => !niveau || c.niveaux.length > 0),
       }));
-  }, [tree, mentionId, niveau]);
+  }, [tree, mentionId, niveau, cycleParam]);
 
   async function confirmDelete() {
     setDeleting(true);
@@ -210,7 +214,7 @@ export default function StructurePage() {
           <div>
             <h2>
               Structure académique
-              <span className="sa-chip soft">{vue.key === 'tout' ? 'Vue complète' : vue.label}</span>
+              <span className="sa-chip soft">{cycleParam ?? (vue.key === 'tout' ? 'Vue complète' : vue.label)}</span>
             </h2>
             <p>Mention → Cycle → Niveau → Année → Semestre → Matière</p>
           </div>
@@ -240,7 +244,7 @@ export default function StructurePage() {
             <span>Niveau</span>
             <select value={niveau} onChange={(e) => setNiveau(e.target.value)}>
               <option value="">Tous les niveaux</option>
-              {NIVEAUX.map((n) => (
+              {(cycleParam ? NIVEAUX_DU_CYCLE[cycleParam] : NIVEAUX).map((n) => (
                 <option key={n} value={n}>{n}</option>
               ))}
             </select>
@@ -278,7 +282,7 @@ export default function StructurePage() {
               forceOpen={forceOpen}
               empty="Aucun cycle pour cette mention."
             >
-              {m.cycles.length === 0 && canEdit && !niveau && (
+              {m.totalCycles === 0 && canEdit && !niveau && (
                 <button className="btn-primary" onClick={() => setGenerateFor(m)}>
                   Générer la structure (Licence, Master, S1–S10)
                 </button>

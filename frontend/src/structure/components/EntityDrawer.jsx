@@ -97,7 +97,9 @@ export default function EntityDrawer({ config, initialData, onClose, onSaved }) 
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  function setValue(name, value) {
+    function setValue(name, value) {
+    const f = fields.find((x) => x.name === name);
+    if (f?.format) value = f.format(value); // mise en forme automatique pendant la saisie
     setValues((prev) => ({ ...prev, [name]: value }));
     // re-valide en direct une fois le champ touche
     if (touched[name] || errors[name]) {

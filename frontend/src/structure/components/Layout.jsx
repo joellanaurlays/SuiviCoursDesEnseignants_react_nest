@@ -4,22 +4,18 @@ import { useAuth } from '../../context/AuthContext.jsx';
 
 const tabClass = ({ isActive }) => `tab${isActive ? ' active' : ''}`;
 
-// Onglets : chaque element de la hierarchie ouvre la vue arborescente limitee a cet element.
+// Onglets : vue complete, puis un onglet par cycle (Licence / Master).
 const VUE_TABS = [
-  { label: 'Vue arborescente', vue: null },
-  { label: 'Mention', vue: 'mentions' },
-  { label: 'Cycle', vue: 'cycles' },
-  { label: 'Niveau', vue: 'niveaux' },
-  { label: 'Année', vue: 'annees-universitaires' },
-  { label: 'Semestre', vue: 'semestres' },
-  { label: 'Matière', vue: 'matieres' },
+  { label: 'Vue arborescente', cycle: null },
+  { label: 'Licence', cycle: 'Licence' },
+  { label: 'Master', cycle: 'Master' },
 ];
 
 /** Mise en page identique au module Emploi du temps : bandeau bleu marine + onglets. */
 export default function Layout({ children }) {
   const { user } = useAuth();
   const { pathname, search } = useLocation();
-  const currentVue = new URLSearchParams(search).get('vue');
+  const currentCycle = new URLSearchParams(search).get('cycle')
   const onTree = pathname.endsWith('/arborescence');
   return (
     <div className="app-shell">
@@ -49,8 +45,8 @@ export default function Layout({ children }) {
             {VUE_TABS.map((t) => (
               <Link
                 key={t.label}
-                to={t.vue ? `${BASE}/arborescence?vue=${t.vue}` : `${BASE}/arborescence`}
-                className={`tab${onTree && currentVue === t.vue ? ' active' : ''}`}
+                to={t.cycle ? `${BASE}/arborescence?cycle=${t.cycle}` : `${BASE}/arborescence`}
+                className={`tab${onTree && currentCycle === t.cycle ? ' active' : ''}`}
               >
                 {t.label}
               </Link>
