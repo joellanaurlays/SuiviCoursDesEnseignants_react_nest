@@ -4,7 +4,6 @@ import {
   Layers,
   Building2,
   ShieldAlert,
-  BookOpen,
   Clock,
   CheckCircle2,
   AlertTriangle,
@@ -15,8 +14,8 @@ import {
 import { CurrentUserSession } from '../types/schedule';
 
 interface NavbarProps {
-  activeTab: 'calendar' | 'builder' | 'rooms' | 'constraints' | 'docs';
-  setActiveTab: (tab: 'calendar' | 'builder' | 'rooms' | 'constraints' | 'docs') => void;
+  activeTab: 'calendar' | 'builder' | 'rooms' | 'constraints';
+  setActiveTab: (tab: 'calendar' | 'builder' | 'rooms' | 'constraints') => void;
   currentUser: CurrentUserSession;
   conflictCount: number;
   onPrint: () => void;
@@ -143,17 +142,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span>Contraintes </span>
           </button>
 
-          <button
-            onClick={() => setActiveTab('docs')}
-            className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition whitespace-nowrap ${
-              activeTab === 'docs'
-                ? 'bg-[#0077B6] text-white shadow-md'
-                : 'text-slate-300 hover:text-white hover:bg-white/10'
-            }`}
-          >
-            <BookOpen className="w-4 h-4 text-[#CAF0F8]" />
-            <span>Dossier Technique & UML</span>
-          </button>
         </nav>
       </div>
     </header>

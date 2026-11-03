@@ -4,7 +4,6 @@ import { ScheduleCalendarView } from './ScheduleCalendarView';
 import { ScheduleBuilderView } from './ScheduleBuilderView';
 import { RoomManagementView } from './RoomManagementView';
 import { ConstraintsManagementView } from './ConstraintsManagementView';
-import { Member5DocumentationView } from './Member5DocumentationView';
 
 import {
   ContraintePlanificationEntity,
@@ -31,7 +30,7 @@ function toPlanningRole(roleName: string): CurrentUserSession['role'] {
 
 export default function PlanningWorkspace() {
   // Navigation
-  const [activeTab, setActiveTab] = useState<'calendar' | 'builder' | 'rooms' | 'constraints' | 'docs'>('calendar');
+  const [activeTab, setActiveTab] = useState<'calendar' | 'builder' | 'rooms' | 'constraints'>('calendar');
 
   // Application Data States (Membre 5 scope)
   const [rooms, setRooms] = useState<SalleEntity[]>([]);
@@ -201,9 +200,6 @@ export default function PlanningWorkspace() {
           />
         )}
 
-        {activeTab === 'docs' && (
-          <Member5DocumentationView />
-        )}
         </>
         )}
         {!loading && !loadError && !scheduleMeta && <div className="rounded-xl bg-white p-6 text-slate-600">Aucun emploi du temps n’est encore configuré dans la base.</div>}
