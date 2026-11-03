@@ -20,10 +20,12 @@ import {
 } from 'lucide-react';
 import {
   AcademicLevel,
+  CreneauHoraireEntity,
   CurrentUserSession,
   DayOfWeek,
   MentionCode,
   SalleEntity,
+  EnseignementEntity,
   SeancePlanifieeEntity,
   SeanceStatut
 } from '../types/schedule';
@@ -31,6 +33,8 @@ import {
 interface ScheduleCalendarViewProps {
   sessions: SeancePlanifieeEntity[];
   rooms: SalleEntity[];
+  timeSlots: CreneauHoraireEntity[];
+  teachings: EnseignementEntity[];
   currentUser: CurrentUserSession;
   onEditSession: (session: SeancePlanifieeEntity) => void;
   onDeleteSession: (sessionId: number) => void;
@@ -39,16 +43,11 @@ interface ScheduleCalendarViewProps {
 
 const DAYS: DayOfWeek[] = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 
-const TIME_SLOTS_DEF = [
-  { label: '08:00 - 10:00', start: '08:00', end: '10:00', badge: 'Matin 1' },
-  { label: '10:15 - 12:15', start: '10:15', end: '12:15', badge: 'Matin 2' },
-  { label: '13:30 - 15:30', start: '13:30', end: '15:30', badge: 'Après-midi 1' },
-  { label: '15:45 - 17:45', start: '15:45', end: '17:45', badge: 'Après-midi 2' },
-];
-
 export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = ({
   sessions,
   rooms,
+  timeSlots,
+  teachings,
   currentUser,
   onEditSession,
   onDeleteSession,
@@ -81,11 +80,33 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = ({
 
   // Unique lists for filter dropdowns
   const teachersList = useMemo(() => {
-    const list = Array.from(new Set(sessions.map(s => s.nomEnseignant)));
+    const list = Array.from(new Set([
+      ...teachings.map(teaching => teaching.nomEnseignant),
+      ...sessions.map(session => session.nomEnseignant),
+    ]));
     return list.sort();
-  }, [sessions]);
-  const mentionsList = useMemo(() => [...new Set(sessions.map(session => session.mentionNom))].sort(), [sessions]);
-  const levelsList = useMemo(() => [...new Set(sessions.map(session => session.codeNiveau))].sort(), [sessions]);
+  }, [teachings, sessions]);
+  const mentionsList = useMemo(() => [...new Set([
+    ...teachings.map(teaching => teaching.mentionNom),
+    ...sessions.map(session => session.mentionNom),
+  ])].sort(), [teachings, sessions]);
+  const levelsList = useMemo(() => [...new Set([
+    ...teachings.map(teaching => teaching.codeNiveau),
+    ...sessions.map(session => session.codeNiveau),
+  ])].sort(), [teachings, sessions]);
+  const calendarSlots = useMemo(() => {
+    const periods = new Map<string, number>();
+    return timeSlots.filter(slot => slot.actif).map(slot => {
+      const periodNumber = (periods.get(slot.plage) ?? 0) + 1;
+      periods.set(slot.plage, periodNumber);
+      return {
+        label: `${slot.heureDebut} - ${slot.heureFin}`,
+        start: slot.heureDebut,
+        end: slot.heureFin,
+        badge: `${slot.plage} ${periodNumber}`,
+      };
+    });
+  }, [timeSlots]);
 
   // Filtered sessions
   const filteredSessions = useMemo(() => {
@@ -401,7 +422,7 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                {TIME_SLOTS_DEF.map((slot, slotIdx) => (
+                {calendarSlots.map((slot, slotIdx) => (
                   <tr key={slot.label} className={slotIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
                     {/* Time slot header */}
                     <td className="p-3 text-center align-middle border-r border-slate-200 bg-slate-50">
@@ -502,7 +523,7 @@ export const ScheduleCalendarView: React.FC<ScheduleCalendarViewProps> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {TIME_SLOTS_DEF.map(slot => {
+            {calendarSlots.map(slot => {
               const daySessions = filteredSessions.filter(
                 s => s.jourSemaine === selectedDay && s.heureDebut === slot.start
               );

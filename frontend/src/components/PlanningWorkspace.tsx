@@ -156,6 +156,8 @@ export default function PlanningWorkspace() {
           <ScheduleCalendarView
             sessions={sessions}
             rooms={rooms}
+            timeSlots={timeSlots}
+            teachings={teachings}
             currentUser={currentUser}
             onEditSession={handleEditSession}
             onDeleteSession={handleDeleteSession}

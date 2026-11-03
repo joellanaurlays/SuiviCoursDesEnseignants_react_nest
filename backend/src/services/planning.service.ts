@@ -34,6 +34,7 @@ export class PlanningService {
     semestreNom?: string;
     statut?: string;
   }): Promise<{ metadata: EmploiDuTempsEntity; sessions: SeancePlanifieeEntity[] }> {
+    await this.store.refreshSessionsFromDatabase();
     let list = [...this.store.sessions];
 
     if (filters?.codeNiveau && filters.codeNiveau !== 'Tous') {

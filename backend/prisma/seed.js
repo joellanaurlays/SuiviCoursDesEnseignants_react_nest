@@ -29,7 +29,8 @@
  *   seed-enseig-30h-depasse             32 h  / 30 h  -> 100 %  TERMINE (plafonné, 0 restante)
  *   seed-enseig-master-info-40h        10 h  / 40 h  ->  25 %  EN_COURS  (perimètre MASTER)
  */
-const { PrismaClient } = require('@prisma/client');
+import 'dotenv/config';
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 

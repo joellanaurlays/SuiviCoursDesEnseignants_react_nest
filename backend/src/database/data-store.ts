@@ -329,4 +329,20 @@ export class DataStore {
       LEFT JOIN niveau n ON n.${q(levelId!)} = e.${q(courseLevelId!)} ORDER BY e.${q(id!)}`);
     this.teachings = result.rows.map(row => camelCaseRow(row) as unknown as EnseignementReference);
   }
+
+  /**
+   * Les tables relationnelles sont la source de vérité des séances planning.
+   * Le JSON `planning_app_state` est un cache d'application et peut être plus
+   * ancien (par exemple après un import SQL ou une écriture externe).
+   */
+  public async refreshSessionsFromDatabase(): Promise<void> {
+    const { rows } = await pool.query(`SELECT s.*, r.nom AS nom_salle,
+      c.jour_semaine, c.heure_debut, c.heure_fin
+      FROM seance_planifiee s
+      JOIN salle r ON r.id = s.salle_id
+      JOIN creneau_horaire c ON c.id = s.creneau_id
+      ORDER BY s.id`);
+    this.sessions = rows.map(row => new SeancePlanifieeEntity(camelCaseRow(row) as any));
+    this.capturePersistedIds();
+  }
 }
