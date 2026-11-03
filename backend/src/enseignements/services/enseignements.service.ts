@@ -83,35 +83,54 @@ export class EnseignementsService {
       throw new ForbiddenException('Cet enseignement ne relève pas de votre périmètre');
     }
 
-    // Vérifier que l'enseignant existe (enseignantId est une string, User.id est number)
+    // L'identifiant transmis est soit l'ID numérique du compte User, soit le
+    // nom affiché « Prénom Nom » (tel que la liste du référentiel le présente
+    // et tel que le module identifie un enseignant). Les deux formes sont
+    // résolues vers le même compte actif ; toute autre valeur reste rejetée.
+    const selectUser = {
+      id: true,
+      isActive: true,
+      firstName: true,
+      lastName: true,
+      role: { select: { name: true } },
+      cycles: true,
+      parcours: true,
+    } as const;
+    // Statut pédagogique d'enseignant : le rôle ENSEIGNANT, ou un responsable
+    // de mention qui enseigne également (il doit rester sélectionnable).
+    const rolesPedagogiques = ['ENSEIGNANT', 'RESPONSABLE_LICENCE', 'RESPONSABLE_MASTER'] as const;
+
     const userId = Number.parseInt(enseignantId, 10);
-    if (Number.isNaN(userId)) {
+    const nomAfficheRecherche = enseignantId.trim();
+    const [prenom, ...resteNom] = nomAfficheRecherche.split(/\s+/);
+    const nom = resteNom.join(' ');
+
+    const user = Number.isNaN(userId)
+      ? await this.prisma.user.findFirst({
+          where: {
+            isActive: true,
+            role: { name: { in: [...rolesPedagogiques] } },
+            // Nom affiché exact : prénom et nom transmiss séparement côté SQL.
+            firstName: { equals: prenom },
+            lastName: { equals: nom },
+          },
+          select: selectUser,
+        })
+      : await this.prisma.user.findUnique({
+          where: { id: userId },
+          select: selectUser,
+        });
+
+    if (!user || !user.isActive) {
       throw new NotFoundException("L'enseignant spécifié n'existe pas");
     }
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        isActive: true,
-        firstName: true,
-        lastName: true,
-        role: { select: { name: true } },
-        cycles: true,
-        parcours: true,
-      },
-    });
 
-    if (!user || !user.isActive || user.role.name !== 'ENSEIGNANT') {
-      throw new NotFoundException("L'enseignant spécifié n'existe pas");
-    }
-
-    // L'enseignant peut intervenir dans une AUTRE mention / parcours que son
-    // rattachement administratif (User.parcours / User.mentionId ne sont JAMAIS
-    // modifiés par une affectation). Seule contrainte pédagogique : son cycle
-    // déclaré doit couvrir celui de l'enseignement (si des cycles sont définis).
-    if (user.cycles && user.cycles.length > 0 && !user.cycles.includes(enseignement.cycle)) {
-      throw new ForbiddenException("Cet enseignant n'intervient pas dans le cycle de l'enseignement");
-    }
+    // L'enseignant peut intervenir dans une AUTRE mention / parcours / cycle
+    // que son rattachement administratif (User.parcours / User.mentionId ne
+    // sont JAMAIS modifiés par une affectation). La relation 1:N autorise
+    // plusieurs enseignements, éventuellement dans différents parcours : le
+    // cycle déclaré n'est plus un filtre bloquant, l'autorisation repose sur
+    // le périmètre du responsable de mention.
 
     // L'affectation stocke le NOM AFFICHÉ (prénom + nom) : le module identifie
     // un enseignant par cette chaîne (dashboards, filtres, périmètre).

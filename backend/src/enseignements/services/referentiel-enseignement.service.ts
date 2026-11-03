@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
-import { Cycle, RoleName } from '@prisma/client';
+import { Cycle } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { AuthContext } from '../../auth/auth-context.js';
 import { Role } from '../../auth/roles.enum.js';
@@ -90,7 +90,13 @@ export class ReferentielEnseignementService {
         },
       }),
       this.prisma.user.findMany({
-        where: { isActive: true, role: { name: RoleName.ENSEIGNANT } },
+        // Statut pédagogique d'enseignant : comptes ENSEIGNANT actifs, plus
+        // les responsables de mention qui enseignent également (ils doivent
+        // rester sélectionnables dans l'affectation).
+        where: {
+          isActive: true,
+          role: { name: { in: ['ENSEIGNANT', 'RESPONSABLE_LICENCE', 'RESPONSABLE_MASTER'] } },
+        },
         select: { firstName: true, lastName: true },
       }),
     ]);
