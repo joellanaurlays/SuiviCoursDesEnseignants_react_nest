@@ -107,7 +107,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-gray-50 font-sans">
-      <aside className="w-64 bg-[#03045E] text-white flex flex-col shrink-0">
+      <aside className="sticky top-0 h-screen w-64 bg-[#03045E] text-white flex flex-col shrink-0 overflow-y-auto">
         <div className="p-6 flex items-center space-x-3">
           <div className="w-10 h-10 bg-[#00B4D8] text-[#03045E] rounded-md flex items-center justify-center font-bold text-xl">
             {displayName ? displayName.trim().split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0].toUpperCase()).join("") : "U"}
@@ -180,7 +180,7 @@ export function Layout({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
+      <main className="min-w-0 flex-1 flex flex-col h-screen overflow-hidden">
         <header className="bg-white border-b border-gray-200 px-8 py-3 flex items-center justify-end gap-4 shrink-0">
           <p className="text-sm text-gray-600">
             Bienvenue, <span className="font-semibold text-[#03045E]">{displayName}</span>
