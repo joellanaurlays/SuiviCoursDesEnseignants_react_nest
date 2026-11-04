@@ -6,6 +6,7 @@
 // d'afficher un element dans une liste deroulante (`optionLabel`).
 
 import { anneeOptions, debutParDefaut, formatPeriode, libelleAnnee } from '../utils/dates.js';
+import { formatNomMatiere } from '../utils/text.js';
 
 const dash = '—';
 
@@ -209,13 +210,15 @@ export const entities = {
       },
     ],
     fields: [
-      {
+            {
         name: 'nom',
         label: 'Nom de la matière',
         type: 'text',
         required: true,
-        placeholder: 'ex : Algorithmique',
-        rules: { minLength: 2, maxLength: 150 },
+        placeholder: 'ex : Algorithmique Avancée',
+        help: 'Sans chiffres ; chaque mot commence par une majuscule (mise en forme automatique).',
+        format: formatNomMatiere,
+        rules: { minLength: 2, maxLength: 150, pattern: /^[^\d]+$/, patternMessage: 'Les chiffres ne sont pas autorisés' },
       },
       {
         name: 'volumeHoraire',
