@@ -8,6 +8,22 @@ export function loginRequest(email, password) {
   })
 }
 
+export function forgotPasswordRequest(email) {
+  return apiFetch('/auth/forgot-password', {
+    method: 'POST',
+    body: { email },
+    auth: false,
+  })
+}
+
+export function resetPasswordRequest(email, code, newPassword) {
+  return apiFetch('/auth/reset-password', {
+    method: 'POST',
+    body: { email, code, newPassword },
+    auth: false,
+  })
+}
+
 export function fetchProfile() {
   return apiFetch('/auth/profile')
 }

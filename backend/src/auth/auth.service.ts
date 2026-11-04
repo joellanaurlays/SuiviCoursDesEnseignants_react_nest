@@ -2,7 +2,9 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service.js';
+import { ForgotPasswordDto } from './dto/forgot-password.dto.js';
 import { LoginDto } from './dto/login.dto.js';
+import { ResetPasswordDto } from './dto/reset-password.dto.js';
 
 @Injectable()
 export class AuthService {
@@ -46,5 +48,27 @@ export class AuthService {
         role: user.role.name,
       },
     };
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const issued = await this.usersService.issuePasswordResetCode(dto.email);
+
+    if (!issued) {
+      return {
+        message: 'Si un compte est associé à cette adresse, un code de vérification a été généré.',
+      };
+    }
+
+    // Aucun service email n'étant configuré, le code est renvoyé pour être
+    // affiché à l'écran (démonstration).
+    return {
+      message: 'Un code de vérification a été généré pour cette adresse.',
+      code: issued.code,
+      expiresAt: issued.expiresAt.toISOString(),
+    };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    return this.usersService.resetPasswordWithCode(dto.email, dto.code, dto.newPassword);
   }
 }

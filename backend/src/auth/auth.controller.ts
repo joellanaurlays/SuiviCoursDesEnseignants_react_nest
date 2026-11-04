@@ -5,7 +5,9 @@ import { Public } from './decorators/public.decorator.js';
 import { CurrentUser } from './current-user.decorator.js';
 import type { AuthContext } from './auth-context.js';
 import { AuthService } from './auth.service.js';
+import { ForgotPasswordDto } from './dto/forgot-password.dto.js';
 import { LoginDto } from './dto/login.dto.js';
+import { ResetPasswordDto } from './dto/reset-password.dto.js';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -21,6 +23,22 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @ApiOperation({ summary: 'Mot de passe oublié (génère un code de vérification)' })
+  @Public()
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto);
+  }
+
+  @ApiOperation({ summary: 'Réinitialisation du mot de passe avec le code reçu' })
+  @Public()
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto);
   }
 
   @ApiBearerAuth('access-token')

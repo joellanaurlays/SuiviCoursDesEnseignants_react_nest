@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { randomInt, timingSafeEqual } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
@@ -63,6 +64,57 @@ export class UsersService {
     });
 
     return { message: 'Mot de passe mis à jour avec succès.' };
+  }
+
+  static readonly RESET_CODE_TTL_MS = 10 * 60 * 1000;
+
+  async issuePasswordResetCode(email: string) {
+    const user = await this.findByEmail(email);
+    if (!user || !user.isActive) {
+      return null;
+    }
+
+    const code = randomInt(0, 1_000_000).toString().padStart(6, '0');
+    const expiresAt = new Date(Date.now() + UsersService.RESET_CODE_TTL_MS);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { resetCode: code, resetCodeExpiresAt: expiresAt },
+    });
+
+    return { userId: user.id, code, expiresAt };
+  }
+
+  async resetPasswordWithCode(email: string, code: string, newPassword: string) {
+    const user = await this.findByEmail(email);
+    if (!user || !user.isActive || !user.resetCode || !user.resetCodeExpiresAt) {
+      throw new UnauthorizedException('Code de vérification invalide.');
+    }
+    if (user.resetCodeExpiresAt.getTime() < Date.now()) {
+      throw new UnauthorizedException('Code de vérification expiré, veuillez en demander un nouveau.');
+    }
+    if (!UsersService.codesMatch(user.resetCode, code)) {
+      throw new UnauthorizedException('Code de vérification invalide.');
+    }
+    if (await bcrypt.compare(newPassword, user.password)) {
+      throw new BadRequestException('Le nouveau mot de passe doit être différent de l\'ancien.');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashedPassword, resetCode: null, resetCodeExpiresAt: null },
+    });
+
+    return { message: 'Mot de passe réinitialisé avec succès.' };
+  }
+
+  private static codesMatch(expected: string, received: string): boolean {
+    const a = Buffer.from(expected);
+    const b = Buffer.from(received);
+    if (a.length !== b.length) {
+      return false;
+    }
+    return timingSafeEqual(a, b);
   }
 
   async create(dto: CreateUserDto) {
