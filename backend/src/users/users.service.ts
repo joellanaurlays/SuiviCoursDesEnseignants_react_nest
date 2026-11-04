@@ -50,7 +50,9 @@ export class UsersService {
 
     const isCurrentPasswordValid = await bcrypt.compare(dto.currentPassword, user.password);
     if (!isCurrentPasswordValid) {
-      throw new UnauthorizedException('Mot de passe actuel incorrect.');
+      // 400 et non 401 : un 401 ferait déconnecter l'utilisateur par le
+      // gestionnaire de session du frontend.
+      throw new BadRequestException('Mot de passe actuel incorrect.');
     }
 
     if (dto.currentPassword === dto.newPassword) {
