@@ -1,3 +1,5 @@
+import 'dotenv/config';
+import 'dotenv/config';
 import { BadRequestException, Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';

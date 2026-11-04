@@ -21,7 +21,8 @@ export type EnseignementSuiviLigne = Prisma.EnseignementGetPayload<{
 export interface SuiviEnseignement {
   id: string;
   matiereId: string;
-  enseignantId: string;
+  /** Null tant qu'aucun enseignant n'a été affecté à l'enseignement. */
+  enseignantId: string | null;
   mentionId: string;
   cycle: string;
   niveauId: string;
@@ -30,7 +31,8 @@ export interface SuiviEnseignement {
   anneeUniversitaireId: string;
   volumePrevu: number;
   matiere: string;
-  enseignant: string;
+  /** Identifiant de l'enseignant affecté (null si non affecté). */
+  enseignant: string | null;
   mention: string;
   niveau: string;
   semestre: string;

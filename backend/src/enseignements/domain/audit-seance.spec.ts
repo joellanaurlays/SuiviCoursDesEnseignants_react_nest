@@ -21,6 +21,8 @@ describe('audit-seance — domaine', () => {
       heureFin: '10:00',
       duree: 2,
       contenuEnseigne: 'Cours',
+      salle: null,
+      typeSeance: null,
       statut: 'REALISEE',
     });
   });

@@ -32,6 +32,8 @@ const LABELS_CHAMPS: Record<keyof ValeursSeanceAudit, string> = {
   heureFin: 'Heure fin',
   duree: 'Durée',
   contenuEnseigne: 'Contenu',
+  salle: 'Salle',
+  typeSeance: 'Type de séance',
   statut: 'Statut',
 };
 

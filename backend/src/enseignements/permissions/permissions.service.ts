@@ -4,7 +4,8 @@ import { AuthContext } from '../../auth/auth-context.js';
 import { Role } from '../../auth/roles.enum.js';
 
 interface EnseignementScope {
-  enseignantId: string;
+  /** Null tant qu'aucun enseignant n'a été affecté (création par ADMIN / CHEF_SCOLARITE). */
+  enseignantId: string | null;
   mentionId: string;
   cycle: string;
   parcours: string;
@@ -58,7 +59,8 @@ export class PermissionsService {
   canAccessEnseignement(context: AuthContext, enseignement: EnseignementScope): boolean {
     switch (context.role) {
       case Role.ENSEIGNANT:
-        return enseignement.enseignantId === context.userId;
+        // Un enseignement sans enseignant affecté n'appartient à personne.
+        return enseignement.enseignantId !== null && enseignement.enseignantId === context.userId;
       case Role.RESPONSABLE_MENTION:
         if (!context.parcours || enseignement.parcours !== context.parcours) {
           return false;
@@ -69,6 +71,19 @@ export class PermissionsService {
         return true;
       default:
         return true;
+    }
+  }
+
+  canCreateEnseignement(context: AuthContext): boolean {
+    switch (context.role) {
+      case Role.RESPONSABLE_MENTION:
+        // RESPONSABLE_MENTION ne peut plus créer d'enseignement
+        return false;
+      case Role.SCOLARITE:
+      case Role.ADMINISTRATEUR:
+        return true;
+      default:
+        return false;
     }
   }
 

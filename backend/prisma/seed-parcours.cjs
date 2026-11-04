@@ -179,7 +179,7 @@ const ENSEIGNEMENTS = [
     parcours: 'Informatique',
     cycle: 'MASTER',
     niveauId: 'M1',
-    semestreId: 'S1',
+    semestreId: 'S7',
     anneeUniversitaireId: '2026-2027',
     volumePrevu: 40,
     seances: [
@@ -195,7 +195,7 @@ const ENSEIGNEMENTS = [
     parcours: 'Informatique',
     cycle: 'MASTER',
     niveauId: 'M2',
-    semestreId: 'S3',
+    semestreId: 'S9',
     anneeUniversitaireId: '2026-2027',
     volumePrevu: 30,
     seances: [
@@ -212,7 +212,7 @@ const ENSEIGNEMENTS = [
     parcours: 'Management',
     cycle: 'MASTER',
     niveauId: 'M1',
-    semestreId: 'S2',
+    semestreId: 'S8',
     anneeUniversitaireId: '2026-2027',
     volumePrevu: 20,
     seances: [
@@ -228,7 +228,7 @@ const ENSEIGNEMENTS = [
     parcours: 'Management',
     cycle: 'MASTER',
     niveauId: 'M2',
-    semestreId: 'S3',
+    semestreId: 'S10',
     anneeUniversitaireId: '2026-2027',
     volumePrevu: 24,
     seances: [
@@ -247,7 +247,7 @@ const ENSEIGNEMENTS = [
     parcours: 'ICM',
     cycle: 'MASTER',
     niveauId: 'M1',
-    semestreId: 'S1',
+    semestreId: 'S7',
     anneeUniversitaireId: '2026-2027',
     volumePrevu: 30,
     seances: [
@@ -262,7 +262,7 @@ const ENSEIGNEMENTS = [
     parcours: 'ICM',
     cycle: 'MASTER',
     niveauId: 'M2',
-    semestreId: 'S3',
+    semestreId: 'S9',
     anneeUniversitaireId: '2026-2027',
     volumePrevu: 30,
     seances: [
