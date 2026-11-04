@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { AlertTriangle, X } from 'lucide-react'
 import { listUsers, updateUser } from '../services/usersApi.js'
 import { FilterBar } from '../components/enseignements/FilterBar'
 import { StatCard } from '../components/ui/StatCard'
@@ -50,6 +51,7 @@ function UsersListPage() {
   const [page, setPage] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
+  const [userToDeactivate, setUserToDeactivate] = useState(null)
 
   const loadStats = useCallback(() => {
     Promise.all([
@@ -213,7 +215,9 @@ function UsersListPage() {
                       </Link>
                       <button
                         type="button"
-                        onClick={() => handleToggleActive(user)}
+                        onClick={() =>
+                          user.isActive ? setUserToDeactivate(user) : handleToggleActive(user)
+                        }
                         className={`font-medium hover:underline ${
                           user.isActive ? 'text-red-600 hover:text-red-700' : 'text-green-700 hover:text-green-800'
                         }`}
@@ -254,6 +258,95 @@ function UsersListPage() {
           </div>
         </div>
       )}
+
+      <DeactivateModal
+        user={userToDeactivate}
+        onCancel={() => setUserToDeactivate(null)}
+        onConfirm={async (user) => {
+          await handleToggleActive(user)
+          setUserToDeactivate(null)
+        }}
+      />
+    </div>
+  )
+}
+
+function DeactivateModal({ user, onCancel, onConfirm }) {
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+
+  if (!user) {
+    return null
+  }
+
+  async function handleConfirm() {
+    if (submitting) return
+    setSubmitting(true)
+    setError('')
+    try {
+      await onConfirm(user)
+    } catch (err) {
+      setError(err.message || "La désactivation n'a pas pu être enregistrée.")
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-[#03045E]/50" onClick={submitting ? undefined : onCancel} />
+
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="desactivation-titre"
+        className="relative w-full max-w-lg bg-white rounded-xl border border-gray-200 shadow-xl"
+      >
+        <div className="flex items-start justify-between px-6 py-5 border-b border-gray-100">
+          <h2 id="desactivation-titre" className="text-xl font-bold text-[#03045E]">
+            Désactivation du compte
+          </h2>
+          <button
+            onClick={onCancel}
+            disabled={submitting}
+            aria-label="Fermer"
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="px-6 py-5">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={22} />
+            <p className="text-sm text-gray-700">
+              Vous êtes sur le point de désactiver le compte de{' '}
+              <span className="font-semibold text-gray-900">
+                {user.firstName} {user.lastName}
+              </span>{' '}
+              (<span className="font-mono">{user.email}</span>). L'utilisateur ne pourra plus se
+              connecter à l'application.
+            </p>
+          </div>
+          {error && <p className="mt-4 text-sm text-red-600 bg-red-50 border border-red-100 rounded-md px-3 py-2">{error}</p>}
+        </div>
+
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-xl">
+          <button
+            onClick={onCancel}
+            disabled={submitting}
+            className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-600 bg-white hover:bg-gray-50 transition-colors"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={handleConfirm}
+            disabled={submitting}
+            className="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 disabled:opacity-60 transition-colors"
+          >
+            {submitting ? 'Désactivation...' : 'Confirmer la désactivation'}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
