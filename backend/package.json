@@ -12,6 +12,8 @@
     "db:migrate": "prisma migrate deploy",
     "db:sync": "prisma db push",
     "db:seed": "prisma db seed",
+    "db:seed:exams": "node prisma/seed-exams-demo.cjs",
+    "db:seed:planning": "node prisma/seed-planning-demo.cjs",
     "seed:structure": "nest build && node dist/academic-structure/seed.js",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",

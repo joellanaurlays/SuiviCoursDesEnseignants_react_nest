@@ -1,4 +1,4 @@
-import { IsString, IsDateString, IsBoolean, IsOptional, IsIn, IsUUID } from 'class-validator';
+import { IsString, IsNotEmpty, IsDateString, IsBoolean, IsOptional, IsIn, IsUUID } from 'class-validator';
 
 export class CreateSessionDto {
   @IsString() libelle: string;
@@ -11,7 +11,7 @@ export class CreateSessionDto {
 
 export class CreateExamenDto {
   @IsUUID() sessionId: string;
-  @IsOptional() @IsUUID() enseignementId?: string;
+  @IsString() @IsNotEmpty() enseignementId: string;
   @IsOptional() @IsUUID() matiereId?: string;
   @IsOptional() @IsUUID() enseignantId?: string;
   @IsDateString() dateExamen: string;

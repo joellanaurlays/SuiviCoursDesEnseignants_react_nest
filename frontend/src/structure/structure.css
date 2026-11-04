@@ -95,8 +95,7 @@
 /* ---------- Layout ---------- */
 
 .sa-root .app-shell {
-  display: grid;
-  grid-template-columns: 270px minmax(0, 1fr);
+  display: block;
   min-height: 100vh;
 }
 

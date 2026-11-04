@@ -28,7 +28,11 @@ export function createIdentityMiddleware(jwtService: JwtService) {
   return function identityMiddleware(req: Request, res: Response, next: NextFunction): void {
     const authorization = req.headers.authorization;
 
-    if (authorization && authorization.startsWith('Bearer ')) {
+    if (authorization) {
+      if (!authorization.startsWith('Bearer ')) {
+        unauthorized(res, 'En-tête Authorization invalide.');
+        return;
+      }
       let claims: JwtClaims;
       try {
         claims = jwtService.verify<JwtClaims>(authorization.slice('Bearer '.length).trim());
@@ -44,10 +48,29 @@ export function createIdentityMiddleware(jwtService: JwtService) {
       }
 
       const authContext: AuthContext = { userId: String(claims.sub), role };
-      if (claims.mentionId) authContext.mentionId = claims.mentionId;
+      const mentionId = (claims.mentionId ?? '').trim();
+      if (mentionId) authContext.mentionId = mentionId;
       if (role === Role.RESPONSABLE_MENTION) {
         authContext.cycles = (claims.cycles ?? []).map((c) => c.toUpperCase());
         authContext.parcours = claims.parcours ?? '';
+        if (!authContext.mentionId || authContext.cycles.length === 0 || !authContext.parcours.trim()) {
+          unauthorized(res, 'Périmètre responsable incomplet.');
+          return;
+        }
+        // Synchronisation des en-têtes HTTP avec les claims JWT pour cohérence.
+        // Les routes /exams utilisent le middleware Express hors pipeline Nest qui
+        // peut basculer vers le chemin des en-têtes selon les circonstances.
+        // En alignant les en-têtes avec les claims JWT, on s'assure que l'identité
+        // est cohérente quel que soit le chemin d'authentification utilisé.
+        if (claims.parcours) {
+          req.headers[AUTH_HEADERS.parcours] = claims.parcours;
+        }
+        if (claims.cycles && claims.cycles.length > 0) {
+          req.headers[AUTH_HEADERS.cycles] = claims.cycles
+            .map((c) => c.toUpperCase())
+            .filter((c) => c.length > 0)
+            .join(',');
+        }
       }
 
       Object.assign(req, {
@@ -55,6 +78,15 @@ export function createIdentityMiddleware(jwtService: JwtService) {
         authContext,
       });
       next();
+      return;
+    }
+
+    const allowHeaderIdentity =
+      process.env.NODE_ENV !== 'production' &&
+      process.env.AUTH_ALLOW_HEADER_IDENTITY === 'true';
+
+    if (!allowHeaderIdentity) {
+      unauthorized(res, 'Authentification Bearer requise.');
       return;
     }
 
@@ -74,6 +106,10 @@ export function createIdentityMiddleware(jwtService: JwtService) {
         .map((c) => c.trim().toUpperCase())
         .filter((c) => c.length > 0);
       authContext.parcours = (req.headers[AUTH_HEADERS.parcours] ?? '').toString().trim();
+      if (!authContext.mentionId || authContext.cycles.length === 0 || !authContext.parcours) {
+        unauthorized(res, 'Périmètre responsable incomplet.');
+        return;
+      }
     }
 
     Object.assign(req, { authContext });

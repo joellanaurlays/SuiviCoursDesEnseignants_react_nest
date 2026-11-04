@@ -65,24 +65,24 @@ function navForRole(session: UserSession): NavItem[] {
   }
 }
 
-function describeSession(session: UserSession): { name: string; sub: string } {
+function describeSession(session: UserSession, displayName: string): { name: string; sub: string } {
   const cycle = session.cycles?.join(', ') ?? '';
   switch (session.role) {
     case 'ENSEIGNANT':
-      return { name: session.userId, sub: 'Enseignant' };
+      return { name: displayName, sub: 'Enseignant' };
     case 'SCOLARITE':
-      return { name: session.userId, sub: 'Chef de scolarité' };
+      return { name: displayName, sub: 'Chef de scolarité' };
     case 'RESPONSABLE_MENTION': {
       const parcours = session.parcours ? `Parcours ${session.parcours}` : '';
       return {
-        name: session.userId,
+        name: displayName,
         sub: `Responsable ${parcours}${cycle ? ` · ${cycle}` : ''}`.trim(),
       };
     }
     case 'ADMINISTRATEUR':
-      return { name: session.userId, sub: 'Administrateur' };
+      return { name: displayName, sub: 'Administrateur' };
     default:
-      return { name: session.userId, sub: session.role };
+      return { name: displayName, sub: session.role };
   }
 }
 
@@ -97,16 +97,12 @@ const WORKSPACE_LINKS: NavItem[] = [
 export function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { session } = useAuth();
+  const { session, displayName } = useAuth();
   const { logout } = useJwtAuth() as { logout: () => Promise<void> };
   const navItems = navForRole(session);
   const role = roleLabel(session.role);
-  const current = describeSession(session);
+  const current = describeSession(session, displayName);
   const [menuOuvert, setMenuOuvert] = useState(false);
-
-  useEffect(() => {
-    setMenuOuvert(false);
-  }, [location.pathname]);
 
   const onLogout = async () => {
     await logout();

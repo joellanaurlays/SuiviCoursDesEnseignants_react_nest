@@ -6,6 +6,7 @@ import UsersListPage from './pages/UsersListPage.jsx';
 import UserFormPage from './pages/UserFormPage.jsx';
 import ExamsModule from './exams/ExamsModule.jsx';
 import PlanningWorkspace from './components/PlanningWorkspace';
+import { Layout } from './components/Layout';
 import RoleHomeRedirect from './routing/RoleHomeRedirect.jsx';
 import StructureApp from './structure/StructureApp.jsx';
 
@@ -59,7 +60,9 @@ export default function App() {
           path="/planning"
           element={
             <ProtectedRoute>
-              <PlanningWorkspace />
+              <Layout>
+                <PlanningWorkspace />
+              </Layout>
             </ProtectedRoute>
           }
         />
@@ -68,7 +71,7 @@ export default function App() {
           path="/users"
           element={
             <ProtectedRoute allowedRoles={MANAGE_USERS_ROLES}>
-              <UsersListPage />
+              <Layout><UsersListPage /></Layout>
             </ProtectedRoute>
           }
         />
@@ -76,7 +79,7 @@ export default function App() {
           path="/users/new"
           element={
             <ProtectedRoute allowedRoles={MANAGE_USERS_ROLES}>
-              <UserFormPage />
+              <Layout><UserFormPage /></Layout>
             </ProtectedRoute>
           }
         />
@@ -84,7 +87,7 @@ export default function App() {
           path="/users/:id/edit"
           element={
             <ProtectedRoute allowedRoles={MANAGE_USERS_ROLES}>
-              <UserFormPage />
+              <Layout><UserFormPage /></Layout>
             </ProtectedRoute>
           }
         />
@@ -94,7 +97,7 @@ export default function App() {
           path="/structure-academique/*"
           element={
             <ProtectedRoute>
-              <StructureApp />
+              <Layout><StructureApp /></Layout>
             </ProtectedRoute>
           }
         />
@@ -102,7 +105,7 @@ export default function App() {
         <Route
           path="/exams"
           element={
-            <ProtectedRoute allowedRoles={['SCOLARITE', 'CHEF_SCOLARITE']}>
+            <ProtectedRoute allowedRoles={['SCOLARITE', 'RESPONSABLE_MENTION']}>
               <ExamsModule />
             </ProtectedRoute>
           }
@@ -112,7 +115,7 @@ export default function App() {
           path="/profile"
           element={
             <ProtectedRoute>
-              <ProfilePage />
+              <Layout><ProfilePage /></Layout>
             </ProtectedRoute>
           }
         />
