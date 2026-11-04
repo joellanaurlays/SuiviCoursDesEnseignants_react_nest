@@ -18,6 +18,7 @@ interface FilterBarProps {
   onFiltersChange: (filters: Record<string, string>) => void;
   onSearch?: (term: string) => void;
   searchValue?: string;
+  searchPlaceholder?: string;
   onReset?: () => void;
 }
 
@@ -29,6 +30,7 @@ export function FilterBar({
   onFiltersChange,
   onSearch,
   searchValue = '',
+  searchPlaceholder = 'Matière, enseignant, mention...',
   onReset,
 }: FilterBarProps) {
   const [searchTerm, setSearchTerm] = useState(searchValue);
@@ -79,7 +81,7 @@ export function FilterBar({
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') onSearch(searchTerm);
                 }}
-                placeholder="Matière, enseignant, mention..."
+                placeholder={searchPlaceholder}
                 className={`${inputClass} pl-9`}
               />
             </div>

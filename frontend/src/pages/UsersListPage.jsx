@@ -1,6 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { listUsers, updateUser } from '../services/usersApi.js'
+import { FilterBar } from '../components/enseignements/FilterBar'
+import { StatCard } from '../components/ui/StatCard'
+import { LoadingState } from '../components/ui/LoadingState'
+import { EmptyState } from '../components/ui/EmptyState'
+import { ErrorState } from '../components/ui/ErrorState'
 
 const ROLE_OPTIONS = [
   { value: '', label: 'Tous les rôles' },
@@ -11,14 +16,56 @@ const ROLE_OPTIONS = [
   { value: 'ENSEIGNANT', label: 'Enseignant' },
 ]
 
+const ROLE_LABELS = ROLE_OPTIONS.reduce((acc, opt) => {
+  if (opt.value) acc[opt.value] = opt.label
+  return acc
+}, {})
+
+const ROLE_BADGE_STYLES = {
+  ADMINISTRATEUR: 'bg-violet-100 text-violet-800',
+  CHEF_SCOLARITE: 'bg-sky-100 text-sky-800',
+  RESPONSABLE_LICENCE: 'bg-yellow-100 text-yellow-800',
+  RESPONSABLE_MASTER: 'bg-teal-100 text-teal-800',
+  ENSEIGNANT: 'bg-gray-100 text-gray-800',
+}
+
+const FIELDS = [
+  { key: 'role', label: 'Rôle', options: ROLE_OPTIONS.filter((o) => o.value) },
+  {
+    key: 'isActive',
+    label: 'Statut',
+    options: [
+      { value: 'true', label: 'Actif' },
+      { value: 'false', label: 'Désactivé' },
+    ],
+  },
+]
+
 function UsersListPage() {
   const [data, setData] = useState({ data: [], meta: { total: 0, page: 1, totalPages: 1 } })
+  const [stats, setStats] = useState({ total: 0, actifs: 0, inactifs: 0 })
   const [search, setSearch] = useState('')
   const [role, setRole] = useState('')
   const [isActive, setIsActive] = useState('')
   const [page, setPage] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
+
+  const loadStats = useCallback(() => {
+    Promise.all([
+      listUsers({ page: 1, limit: 1 }),
+      listUsers({ page: 1, limit: 1, isActive: 'true' }),
+      listUsers({ page: 1, limit: 1, isActive: 'false' }),
+    ])
+      .then(([all, actifs, inactifs]) => {
+        setStats({ total: all.meta.total, actifs: actifs.meta.total, inactifs: inactifs.meta.total })
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    loadStats()
+  }, [loadStats])
 
   useEffect(() => {
     let ignore = false
@@ -48,133 +95,127 @@ function UsersListPage() {
         ...prev,
         data: prev.data.map((u) => (u.id === user.id ? { ...u, isActive: !u.isActive } : u)),
       }))
+      loadStats()
     } catch (err) {
       setError(err.message)
     }
   }
 
+  function handleFiltersChange(filters) {
+    setPage(1)
+    setRole(filters.role ?? '')
+    setIsActive(filters.isActive ?? '')
+  }
+
+  function handleReset() {
+    setPage(1)
+    setSearch('')
+    setRole('')
+    setIsActive('')
+  }
+
   return (
-    <div className="min-h-screen bg-bg px-6 py-8">
-      <div className="max-w-5xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <Link to="/dashboard" className="text-sm text-primary hover:text-primary-dark">
-              &larr; Retour
-            </Link>
-            <h1 className="text-2xl font-bold text-text mt-2">Gestion des utilisateurs</h1>
-          </div>
-          <Link
-            to="/users/new"
-            className="bg-primary hover:bg-primary-dark text-white font-medium rounded-lg px-4 py-2 transition-colors"
-          >
-            + Nouvel utilisateur
-          </Link>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-xl p-4 mb-4 flex flex-wrap gap-3">
-          <input
-            type="text"
-            placeholder="Rechercher (nom, email...)"
-            value={search}
-            onChange={(e) => {
-              setPage(1)
-              setSearch(e.target.value)
-            }}
-            className="flex-1 min-w-[200px] rounded-lg border border-slate-300 px-3 py-2 text-text focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-          <select
-            value={role}
-            onChange={(e) => {
-              setPage(1)
-              setRole(e.target.value)
-            }}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-text focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            {ROLE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          <select
-            value={isActive}
-            onChange={(e) => {
-              setPage(1)
-              setIsActive(e.target.value)
-            }}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-text focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="">Tous les statuts</option>
-            <option value="true">Actif</option>
-            <option value="false">Désactivé</option>
-          </select>
-        </div>
-
-        {error && (
-          <p className="text-sm text-error bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4">
-            {error}
+    <div className="max-w-7xl mx-auto">
+      <div className="flex justify-between items-center mb-2 border-b pb-4">
+        <div>
+          <h1 className="text-3xl font-bold text-[#03045E]">Gestion des utilisateurs</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Créez, modifiez et activez les comptes de l'application.
           </p>
-        )}
+        </div>
+        <Link
+          to="/users/new"
+          className="px-4 py-2 bg-[#0077B6] text-white rounded-md text-sm hover:bg-[#03045E] transition-colors font-medium"
+        >
+          + Nouvel utilisateur
+        </Link>
+      </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-left text-slate-500">
-              <tr>
-                <th className="px-4 py-3">Nom</th>
-                <th className="px-4 py-3">Email</th>
-                <th className="px-4 py-3">Rôle</th>
-                <th className="px-4 py-3">Statut</th>
-                <th className="px-4 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading && (
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 mb-6">
+        <StatCard label="Utilisateurs" value={stats.total} />
+        <StatCard label="Actifs" value={stats.actifs} hint="Peuvent se connecter" />
+        <StatCard label="Désactivés" value={stats.inactifs} hint="Accès suspendu" />
+      </div>
+
+      <FilterBar
+        fields={FIELDS}
+        filters={{ role, isActive }}
+        onFiltersChange={handleFiltersChange}
+        onSearch={(term) => {
+          setPage(1)
+          setSearch(term)
+        }}
+        searchValue={search}
+        searchPlaceholder="Nom, email..."
+        onReset={handleReset}
+      />
+
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        {error ? (
+          <ErrorState
+            message={error}
+            onRetry={() => {
+              setIsLoading(true)
+              setError('')
+              listUsers({ search, role, isActive, page, limit: 10 })
+                .then(setData)
+                .catch((err) => setError(err.message))
+                .finally(() => setIsLoading(false))
+            }}
+          />
+        ) : isLoading ? (
+          <LoadingState label="Chargement des utilisateurs..." />
+        ) : data.data.length === 0 ? (
+          <EmptyState message="Aucun utilisateur ne correspond à vos critères." />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left border-collapse">
+              <thead className="text-gray-500 text-sm border-b border-gray-100">
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
-                    Chargement...
-                  </td>
+                  <th className="px-4 py-4 font-medium">Nom</th>
+                  <th className="px-4 py-4 font-medium">Email</th>
+                  <th className="px-4 py-4 font-medium">Rôle</th>
+                  <th className="px-4 py-4 font-medium">Statut</th>
+                  <th className="px-4 py-4 font-medium text-right">Actions</th>
                 </tr>
-              )}
-
-              {!isLoading && data.data.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
-                    Aucun utilisateur trouvé.
-                  </td>
-                </tr>
-              )}
-
-              {!isLoading &&
-                data.data.map((user) => (
-                  <tr key={user.id} className="border-t border-slate-100">
-                    <td className="px-4 py-3 text-text">
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {data.data.map((user) => (
+                  <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-4 font-medium text-gray-900">
                       {user.firstName} {user.lastName}
                     </td>
-                    <td className="px-4 py-3 text-slate-500">{user.email}</td>
-                    <td className="px-4 py-3 text-slate-500">{user.role}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-4 text-gray-600">{user.email}</td>
+                    <td className="px-4 py-4">
                       <span
-                        className={`text-xs font-medium rounded-full px-2 py-1 ${
-                          user.isActive
-                            ? 'text-success bg-green-50'
-                            : 'text-error bg-red-50'
+                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          ROLE_BADGE_STYLES[user.role] || 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
+                        {ROLE_LABELS[user.role] || user.role}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span
+                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                         }`}
                       >
                         {user.isActive ? 'Actif' : 'Désactivé'}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                    <td className="px-4 py-4 text-right whitespace-nowrap">
                       <Link
                         to={`/users/${user.id}/edit`}
-                        className="text-primary hover:text-primary-dark text-sm font-medium mr-3"
+                        className="text-[#0077B6] hover:text-[#0077B6] hover:underline font-medium mr-4"
                       >
                         Modifier
                       </Link>
                       <button
                         type="button"
                         onClick={() => handleToggleActive(user)}
-                        className={`text-sm font-medium ${
-                          user.isActive ? 'text-error hover:text-red-700' : 'text-success hover:text-green-700'
+                        className={`font-medium hover:underline ${
+                          user.isActive ? 'text-red-600 hover:text-red-700' : 'text-green-700 hover:text-green-800'
                         }`}
                       >
                         {user.isActive ? 'Désactiver' : 'Réactiver'}
@@ -182,11 +223,14 @@ function UsersListPage() {
                     </td>
                   </tr>
                 ))}
-            </tbody>
-          </table>
-        </div>
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
-        <div className="flex items-center justify-between mt-4 text-sm text-slate-500">
+      {!isLoading && !error && data.data.length > 0 && (
+        <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
           <span>
             Page {data.meta.page} sur {data.meta.totalPages || 1} — {data.meta.total} utilisateur(s)
           </span>
@@ -195,7 +239,7 @@ function UsersListPage() {
               type="button"
               disabled={page <= 1}
               onClick={() => setPage((p) => p - 1)}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 disabled:opacity-40"
+              className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-600 bg-white hover:bg-gray-50 disabled:opacity-40 transition-colors"
             >
               Précédent
             </button>
@@ -203,13 +247,13 @@ function UsersListPage() {
               type="button"
               disabled={page >= data.meta.totalPages}
               onClick={() => setPage((p) => p + 1)}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 disabled:opacity-40"
+              className="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-600 bg-white hover:bg-gray-50 disabled:opacity-40 transition-colors"
             >
               Suivant
             </button>
           </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
