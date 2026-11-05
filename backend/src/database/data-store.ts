@@ -248,10 +248,11 @@ export class DataStore {
       return new Set(result.rows.map(row => row.column_name as string));
     };
     const prismaCourse = await getColumns('Enseignement');
-    if (prismaCourse.has('matiereId') && prismaCourse.has('enseignantId') && prismaCourse.has('niveauId')) {
-      const result = await pool.query(`SELECT "id", "matiereId", "enseignantId", "mentionId", "cycle",
-        "niveauId", "parcours", "semestreId", "volumePrevu", "heuresRealisees"
-        FROM "Enseignement" ORDER BY "id"`);
+    // La table Enseignement (Prisma) garde ses champs camelCase en base
+    // (matiereId, niveauId…), SAUF enseignant_id (@map("enseignant_id")) :
+    // la détection doit donc refléter exactement ce mix.
+    if (prismaCourse.has('matiereId') && prismaCourse.has('enseignant_id') && prismaCourse.has('niveauId')) {
+      const result = await pool.query(`SELECT "id", "matiereId", "enseignant_id" AS "enseignantId", "mentionId", "cycle", "niveauId", "parcours", "semestreId", "anneeUniversitaireId", "volumePrevu", "heuresRealisees", "progression" FROM "Enseignement" ORDER BY "id"`);
       const courseIds = stableNumericIds(result.rows.map(row => String(row.id)));
       const teacherIds = stableNumericIds(result.rows.map(row => String(row.enseignantId ?? 'inconnu')));
       const levelIds = stableNumericIds(result.rows.map(row => String(row.niveauId ?? 'inconnu')));
