@@ -11,15 +11,23 @@
  */
 
 const BASE = process.env.API_URL || 'http://localhost:3000/api';
+require('dotenv').config();
+const jwt = require('jsonwebtoken');
 
 const SCOLARITE = { 'x-user-id': 'Chef de scolarit\u00e9', 'x-user-role': 'SCOLARITE' };
 
 const force = process.argv.includes('--force');
 
 async function api(path, { method = 'GET', body, headers = SCOLARITE } = {}) {
+  const role = headers['x-user-role'] === 'SCOLARITE' ? 'CHEF_SCOLARITE' : headers['x-user-role'];
+  const token = jwt.sign(
+    { sub: headers['x-user-id'], email: 'demo@emit.mg', role },
+    process.env.JWT_SECRET,
+    { expiresIn: '1h' },
+  );
   const res = await fetch(`${BASE}${path}`, {
     method,
-    headers: { 'Content-Type': 'application/json', ...headers },
+    headers: { 'Content-Type': 'application/json', ...headers, Authorization: `Bearer ${token}` },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const text = await res.text();

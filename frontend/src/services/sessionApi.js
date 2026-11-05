@@ -1,6 +1,6 @@
 // Le backend Nest expose ses routes sous le préfixe global /api (main.ts).
 const API_URL = `${import.meta.env.VITE_API_URL || ''}/api`
-const TOKEN_KEY = 'emit_access_token'
+export const TOKEN_KEY = 'emit_access_token'
 const SESSION_EXPIRED_EVENT = 'emit:session-expired'
 
 export async function apiFetch(path, { method = 'GET', body, auth = true } = {}) {
@@ -33,4 +33,4 @@ export async function apiFetch(path, { method = 'GET', body, auth = true } = {})
   return data
 }
 
-export { SESSION_EXPIRED_EVENT, TOKEN_KEY }
+export { SESSION_EXPIRED_EVENT }

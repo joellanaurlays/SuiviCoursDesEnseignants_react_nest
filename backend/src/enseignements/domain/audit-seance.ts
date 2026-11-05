@@ -38,12 +38,15 @@ export interface ValeursSeanceAudit {
   heureFin?: string | null;
   duree?: number | null;
   contenuEnseigne?: string | null;
+  salle?: string | null;
+  typeSeance?: string | null;
   statut?: string | null;
 }
 
 /** Périmètre figé au moment de l'action (sert au contrôle d'accès à l'historique). */
 export interface PerimetreAudit {
-  enseignantId: string;
+  /** Null si aucun enseignant n'était affecté au moment de l'action. */
+  enseignantId: string | null;
   mentionId: string;
   cycle: string;
   parcours: string;
@@ -56,6 +59,8 @@ export function instantaneSeance(seance: {
   heureFin: string;
   duree: number;
   contenuEnseigne: string | null;
+  salle?: string | null;
+  typeSeance?: string | null;
   statut: string;
 }): ValeursSeanceAudit {
   const date = seance.dateSeance instanceof Date ? seance.dateSeance : new Date(seance.dateSeance);
@@ -65,6 +70,8 @@ export function instantaneSeance(seance: {
     heureFin: seance.heureFin,
     duree: seance.duree,
     contenuEnseigne: seance.contenuEnseigne,
+    salle: seance.salle ?? null,
+    typeSeance: seance.typeSeance ?? null,
     statut: seance.statut,
   };
 }
@@ -83,6 +90,8 @@ export function champsModifies(
     'heureFin',
     'duree',
     'contenuEnseigne',
+    'salle',
+    'typeSeance',
     'statut',
   ];
 

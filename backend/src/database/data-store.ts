@@ -45,6 +45,25 @@ function camelCaseRow(row: Record<string, unknown>): Record<string, unknown> {
   ]));
 }
 
+function stableNumericIds(values: Array<string | null | undefined>): Map<string, number> {
+  const uniqueValues = [...new Set(values.filter((value): value is string => Boolean(value)).map(String))].sort();
+  const used = new Set<number>();
+  const ids = new Map<string, number>();
+
+  for (const value of uniqueValues) {
+    let hash = 2166136261;
+    for (let index = 0; index < value.length; index += 1) {
+      hash = Math.imul(hash ^ value.charCodeAt(index), 16777619);
+    }
+    let id = (hash >>> 0) & 0x7fffffff;
+    if (id === 0) id = 1;
+    while (used.has(id)) id = id === 0x7fffffff ? 1 : id + 1;
+    used.add(id);
+    ids.set(value, id);
+  }
+  return ids;
+}
+
 /** PostgreSQL-backed application state. No demo or fallback records are loaded. */
 export class DataStore {
   private static instance: DataStore;
@@ -228,6 +247,37 @@ export class DataStore {
         WHERE table_schema = current_schema() AND table_name = $1`, [table]);
       return new Set(result.rows.map(row => row.column_name as string));
     };
+    const prismaCourse = await getColumns('Enseignement');
+    if (prismaCourse.has('matiereId') && prismaCourse.has('enseignantId') && prismaCourse.has('niveauId')) {
+      const result = await pool.query(`SELECT "id", "matiereId", "enseignantId", "mentionId", "cycle",
+        "niveauId", "parcours", "semestreId", "volumePrevu", "heuresRealisees"
+        FROM "Enseignement" ORDER BY "id"`);
+      const courseIds = stableNumericIds(result.rows.map(row => String(row.id)));
+      const teacherIds = stableNumericIds(result.rows.map(row => String(row.enseignantId ?? 'inconnu')));
+      const levelIds = stableNumericIds(result.rows.map(row => String(row.niveauId ?? 'inconnu')));
+      this.teachings = result.rows.map(row => {
+        const matiere = String(row.matiereId ?? 'Matière');
+        const enseignant = String(row.enseignantId ?? 'inconnu');
+        const niveau = String(row.niveauId ?? 'inconnu');
+        return {
+          id: courseIds.get(String(row.id))!,
+          codeMatiere: matiere,
+          nomMatiere: matiere,
+          enseignantId: teacherIds.get(enseignant)!,
+          nomEnseignant: enseignant,
+          niveauId: levelIds.get(niveau)!,
+          codeNiveau: niveau,
+          mentionNom: String(row.mentionId ?? row.parcours ?? 'Toutes'),
+          semestreNom: String(row.semestreId ?? ''),
+          effectifEtudiants: 0,
+          volumeHoraireTotal: Number(row.volumePrevu ?? 0),
+          heuresPlanifiees: 0,
+          heuresRealisees: Number(row.heuresRealisees ?? 0),
+          typeSalleRequis: 'SALLE_TD' as const,
+        };
+      });
+      return;
+    }
     const pick = (columns: Set<string>, names: string[], required = true): string | undefined => {
       const found = names.find(name => columns.has(name));
       if (!found && required) throw new Error(`Schéma académique incompatible: colonne attendue parmi ${names.join(', ')}`);
@@ -278,5 +328,21 @@ export class DataStore {
       FROM enseignement e LEFT JOIN enseignant t ON t.${q(t(['id'])!)} = e.${q(courseTeacherId!)}
       LEFT JOIN niveau n ON n.${q(levelId!)} = e.${q(courseLevelId!)} ORDER BY e.${q(id!)}`);
     this.teachings = result.rows.map(row => camelCaseRow(row) as unknown as EnseignementReference);
+  }
+
+  /**
+   * Les tables relationnelles sont la source de vérité des séances planning.
+   * Le JSON `planning_app_state` est un cache d'application et peut être plus
+   * ancien (par exemple après un import SQL ou une écriture externe).
+   */
+  public async refreshSessionsFromDatabase(): Promise<void> {
+    const { rows } = await pool.query(`SELECT s.*, r.nom AS nom_salle,
+      c.jour_semaine, c.heure_debut, c.heure_fin
+      FROM seance_planifiee s
+      JOIN salle r ON r.id = s.salle_id
+      JOIN creneau_horaire c ON c.id = s.creneau_id
+      ORDER BY s.id`);
+    this.sessions = rows.map(row => new SeancePlanifieeEntity(camelCaseRow(row) as any));
+    this.capturePersistedIds();
   }
 }

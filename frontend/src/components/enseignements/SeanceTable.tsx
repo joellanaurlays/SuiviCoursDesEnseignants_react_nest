@@ -10,6 +10,13 @@ interface SeanceTableProps {
   emptyMessage?: string;
 }
 
+/**
+ * Tableau des séances d'un enseignement.
+ *
+ * Le rendu reste volontairement sobre : il est utilisé dans les pages de
+ * consultation (scolarité, responsable, administration) où l'objectif est de
+ * lire vite, pas d'agir.
+ */
 export function SeanceTable({
   seances,
   showMatiere = false,
@@ -18,43 +25,45 @@ export function SeanceTable({
 }: SeanceTableProps) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-left border-collapse">
-        <thead>
-          <tr className="text-gray-500 text-sm border-b border-gray-100">
-            <th className="px-6 py-4 font-medium">Date</th>
-            {showMatiere && <th className="px-6 py-4 font-medium">Matière</th>}
-            <th className="px-6 py-4 font-medium">Horaire</th>
-            <th className="px-6 py-4 font-medium">Durée</th>
-            <th className="px-6 py-4 font-medium">Statut</th>
-            <th className="px-6 py-4 font-medium">Contenu enseigné</th>
-            {actionColumn && <th className="px-6 py-4 font-medium">Actions</th>}
+      <table className="w-full border-collapse text-left">
+        <thead className="emit-table-head">
+          <tr>
+            <th scope="col" className="emit-table-th">Date</th>
+            {showMatiere && <th scope="col" className="emit-table-th">Matière</th>}
+            <th scope="col" className="emit-table-th">Horaire</th>
+            <th scope="col" className="emit-table-th">Durée</th>
+            <th scope="col" className="emit-table-th">Statut</th>
+            <th scope="col" className="emit-table-th">Contenu enseigné</th>
+            {actionColumn && <th scope="col" className="emit-table-th text-right">Actions</th>}
           </tr>
         </thead>
-        <tbody className="text-sm">
+        <tbody className="divide-y divide-slate-100">
           {seances.map((seance) => (
-            <tr key={seance.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-              <td className="px-6 py-4 text-gray-600 whitespace-nowrap">{formatDate(seance.dateSeance)}</td>
+            <tr key={seance.id} className="transition-colors hover:bg-[#CAF0F8]/40">
+              <td className="emit-table-td whitespace-nowrap font-medium text-slate-700">
+                {formatDate(seance.dateSeance)}
+              </td>
               {showMatiere && (
-                <td className="px-6 py-4 font-medium text-gray-800">
+                <td className="emit-table-td whitespace-nowrap font-bold text-[#03045E]">
                   {seance.enseignement?.matiereId ?? '—'}
                 </td>
               )}
-              <td className="px-6 py-4 text-gray-600 whitespace-nowrap">
+              <td className="emit-table-td whitespace-nowrap text-slate-500">
                 {formatHoraire(seance.heureDebut, seance.heureFin)}
               </td>
-              <td className="px-6 py-4 text-gray-600 whitespace-nowrap">{formatDuree(seance.duree)}</td>
-              <td className="px-6 py-4">
+              <td className="emit-table-td whitespace-nowrap text-slate-500">{formatDuree(seance.duree)}</td>
+              <td className="emit-table-td">
                 <SeanceStatutBadge statut={seance.statut} />
               </td>
-              <td className="px-6 py-4 text-gray-600">
-                {seance.contenuEnseigne || <span className="italic text-gray-400">Non renseigné</span>}
+              <td className="emit-table-td max-w-sm text-slate-500">
+                {seance.contenuEnseigne || <span className="italic text-slate-400">Non renseigné</span>}
               </td>
-              {actionColumn && <td className="px-6 py-4">{actionColumn(seance)}</td>}
+              {actionColumn && <td className="emit-table-td text-right">{actionColumn(seance)}</td>}
             </tr>
           ))}
           {seances.length === 0 && (
             <tr>
-              <td colSpan={showMatiere ? 7 : 6}>
+              <td colSpan={actionColumn ? (showMatiere ? 7 : 6) : showMatiere ? 6 : 5}>
                 <EmptyState message={emptyMessage} />
               </td>
             </tr>

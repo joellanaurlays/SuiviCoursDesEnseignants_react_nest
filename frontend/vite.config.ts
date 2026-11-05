@@ -1,18 +1,21 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  server: {
-    port: 5173,
-    proxy: {
-      // Le backend NestJS expose ses routes sous le préfixe /api
-      // (app.setGlobalPrefix('api')). Le proxy conserve ce préfixe.
-      '/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: true,
-      }
-    }
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+  const apiTarget = env.VITE_API_URL || `http://localhost:${process.env.BACKEND_PORT || env.BACKEND_PORT || env.PORT || 3000}`
+
+  return {
+    plugins: [react()],
+    server: {
+      port: 5173,
+      proxy: {
+        // Le backend expose ses routes sous /api ; le proxy conserve ce préfixe.
+        '/api': {
+          target: apiTarget,
+          changeOrigin: true,
+        },
+      },
+    },
   }
 })

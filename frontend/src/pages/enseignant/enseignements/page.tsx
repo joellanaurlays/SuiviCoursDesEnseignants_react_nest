@@ -20,7 +20,9 @@ import {
 } from '../../../types/enseignement';
 
 function tagClasses(cycle?: string) {
-  return cycle === 'MASTER' ? 'bg-[#0a0a32] text-white' : 'bg-gray-100 text-gray-700';
+  return cycle === 'MASTER'
+    ? 'bg-[#03045E] text-white'
+    : 'bg-[#CAF0F8] text-[#03045E]';
 }
 
 function distinct(options: string[]): { value: string; label: string }[] {
@@ -139,10 +141,13 @@ export default function EnseignantEnseignementsPage() {
 
   return (
     <Layout>
-      <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-6 border-b pb-4">
-          <h1 className="text-3xl font-bold text-[#0a0a32]">Mes enseignements</h1>
-          <span className="text-sm text-gray-500">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="emit-eyebrow">Espace enseignant</p>
+            <h1 className="emit-title mt-1">Mes enseignements</h1>
+          </div>
+          <span className="inline-flex w-fit items-center rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 shadow-sm">
             {enseignements.length} affiché(s) sur {fullData.length}
           </span>
         </div>
@@ -174,57 +179,57 @@ export default function EnseignantEnseignementsPage() {
             {loading ? (
               <LoadingState label="Chargement des enseignements..." />
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 {enseignements.map((ens) => (
                   <Link
                     to={`/enseignant/enseignements/${ens.id}`}
                     key={ens.id}
-                    className="block bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-6"
+                    className="block rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-[#90E0EF] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#00B4D8]"
                   >
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h2 className="text-xl font-bold text-[#0a0a32]">{ens.matiere}</h2>
-                        <p className="text-sm text-gray-500 mt-1">
+                    <div className="mb-4 flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h2 className="truncate text-xl font-bold text-[#03045E]">{ens.matiere}</h2>
+                        <p className="mt-1 text-sm text-slate-500">
                           {ens.mention} · {ens.parcours}
                         </p>
                       </div>
                       <EtatBadge etat={ens.etat} />
                     </div>
 
-                    <div className="flex flex-wrap gap-2 mb-6">
-                      <span className={`text-xs px-2 py-1 rounded font-medium ${tagClasses(ens.cycle)}`}>
+                    <div className="mb-6 flex flex-wrap gap-2">
+                      <span className={`rounded-lg px-2 py-1 text-xs font-bold ${tagClasses(ens.cycle)}`}>
                         {ens.cycle}
                       </span>
-                      <span className="text-xs px-2 py-1 rounded font-medium bg-gray-100 text-gray-700">
+                      <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-bold text-slate-600">
                         {ens.niveau}
                       </span>
-                      <span className="text-xs px-2 py-1 rounded font-medium bg-gray-100 text-gray-700">
+                      <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-bold text-slate-600">
                         {ens.semestre}
                       </span>
-                      <span className="text-xs px-2 py-1 rounded font-medium bg-gray-100 text-gray-700">
+                      <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-bold text-slate-600">
                         {ens.anneeUniversitaire}
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4 mb-6 text-center">
-                      <div>
-                        <p className="text-xs text-gray-500">Prévu</p>
-                        <p className="font-bold text-[#0a0a32]">{ens.volumePrevu}h</p>
+                    <div className="mb-6 grid grid-cols-3 gap-4 text-center">
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 px-2 py-3">
+                        <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Prévu</p>
+                        <p className="text-lg font-extrabold text-[#03045E]">{ens.volumePrevu}h</p>
                       </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Réalisé</p>
-                        <p className="font-bold text-[#0088aa]">{ens.heuresRealisees}h</p>
+                      <div className="rounded-xl border border-[#90E0EF] bg-[#CAF0F8] px-2 py-3">
+                        <p className="text-[11px] font-bold uppercase tracking-wide text-[#0077B6]">Réalisé</p>
+                        <p className="text-lg font-extrabold text-[#03045E]">{ens.heuresRealisees}h</p>
                       </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Reste</p>
-                        <p className="font-bold text-[#0a0a32]">{ens.heuresRestantes}h</p>
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 px-2 py-3">
+                        <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Reste</p>
+                        <p className="text-lg font-extrabold text-[#03045E]">{ens.heuresRestantes}h</p>
                       </div>
                     </div>
 
                     <div>
-                      <div className="flex justify-between items-end mb-2">
-                        <span className="text-sm text-gray-500">Progression</span>
-                        <span className="text-sm font-bold">{ens.progression}%</span>
+                      <div className="mb-2 flex items-end justify-between">
+                        <span className="text-sm text-slate-500">Progression</span>
+                        <span className="text-sm font-bold text-[#03045E]">{ens.progression}%</span>
                       </div>
                       <ProgressionBar progression={ens.progression} />
                     </div>

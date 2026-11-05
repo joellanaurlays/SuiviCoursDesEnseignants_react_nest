@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
-import { X, AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Flag, X } from 'lucide-react';
+import { ProgressionBar } from '../ui/ProgressionBar';
 
 interface ClotureModalProps {
-    open: boolean;
-    matiere: string;
-    volumePrevu: number;
-    heuresRealisees: number;
-    progression: number;
-    onCancel: () => void;
-    onConfirm: (motif: string) => Promise<void>;
+  open: boolean;
+  matiere: string;
+  volumePrevu: number;
+  heuresRealisees: number;
+  progression: number;
+  onCancel: () => void;
+  onConfirm: (motif: string) => Promise<void>;
 }
 
 const MOTIF_MIN = 5;
@@ -20,127 +21,154 @@ const MOTIF_MIN = 5;
  * la clôture ne la modifie pas.
  */
 export function ClotureModal({
-    open,
-    matiere,
-    volumePrevu,
-    heuresRealisees,
-    progression,
-    onCancel,
-    onConfirm,
+  open,
+  matiere,
+  volumePrevu,
+  heuresRealisees,
+  progression,
+  onCancel,
+  onConfirm,
 }: ClotureModalProps) {
-    const [motif, setMotif] = useState('');
-    const [submitting, setSubmitting] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+  const [motif, setMotif] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (open) {
-            setMotif('');
-            setError(null);
-            setSubmitting(false);
-        }
-    }, [open]);
-
-    if (!open) {
-        return null;
+  useEffect(() => {
+    if (open) {
+      setMotif('');
+      setError(null);
+      setSubmitting(false);
     }
+  }, [open]);
 
-    const motifValide = motif.trim().length >= MOTIF_MIN;
-
-    const handleConfirm = async () => {
-        if (!motifValide || submitting) {
-            return;
-        }
-        setSubmitting(true);
-        setError(null);
-        try {
-            await onConfirm(motif.trim());
-        } catch (e) {
-            setError((e as { message?: string }).message ?? "La clôture n'a pas pu être enregistrée.");
-            setSubmitting(false);
-        }
+  /** Fermeture au clavier (Échap) sauf pendant l'enregistrement. */
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !submitting) onCancel();
     };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [open, submitting, onCancel]);
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-[#0a0a32]/50" onClick={submitting ? undefined : onCancel} />
+  if (!open) {
+    return null;
+  }
 
-            <div
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="cloture-titre"
-                className="relative w-full max-w-lg bg-white rounded-xl border border-gray-200 shadow-xl"
-            >
-                <div className="flex items-start justify-between px-6 py-5 border-b border-gray-100">
-                    <h2 id="cloture-titre" className="text-xl font-bold text-[#0a0a32]">
-                        Clôture anticipée de l'enseignement
-                    </h2>
-                    <button
-                        onClick={onCancel}
-                        disabled={submitting}
-                        aria-label="Fermer"
-                        className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
-                    >
-                        <X size={20} />
-                    </button>
-                </div>
+  const motifValide = motif.trim().length >= MOTIF_MIN;
 
-                <div className="px-6 py-5 space-y-4">
-                    <div className="bg-cyan-50 border border-cyan-200 rounded-lg px-4 py-3">
-                        <p className="font-medium text-[#0a0a32]">{matiere}</p>
-                        <p className="text-sm text-gray-600 mt-1">
-                            {heuresRealisees}h réalisées sur {volumePrevu}h prévues — la progression reste à{' '}
-                            <span className="font-semibold">{progression}%</span> et ne sera pas modifiée.
-                        </p>
-                    </div>
+  const handleConfirm = async () => {
+    if (!motifValide || submitting) {
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    try {
+      await onConfirm(motif.trim());
+    } catch (e) {
+      setError((e as { message?: string }).message ?? "La clôture n'a pas pu être enregistrée.");
+      setSubmitting(false);
+    }
+  };
 
-                    <div className="flex items-start gap-2 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
-                        <AlertTriangle size={16} className="mt-0.5 shrink-0" />
-                        <p>
-                            L'enseignement passera à l'état <strong>Terminé</strong>. Cette action est
-                            définitive.
-                        </p>
-                    </div>
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
+      <div
+        className="absolute inset-0 bg-[#03045E]/40 backdrop-blur-sm"
+        onClick={submitting ? undefined : onCancel}
+        aria-hidden="true"
+      />
 
-                    <div>
-                        <label htmlFor="cloture-motif" className="block text-sm font-medium text-gray-700 mb-1">
-                            Motif <span className="text-red-600">*</span>
-                        </label>
-                        <textarea
-                            id="cloture-motif"
-                            value={motif}
-                            onChange={(e) => setMotif(e.target.value)}
-                            rows={4}
-                            autoFocus
-                            placeholder="Le contenu prévu dans le programme a été entièrement traité."
-                            className="block w-full px-3 py-2 text-base border border-gray-300 focus:outline-none focus:ring-[#00e5ff] focus:border-[#00e5ff] sm:text-sm rounded-md"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                            {motifValide
-                                ? 'Motif enregistré avec la clôture.'
-                                : `Le motif est obligatoire (${MOTIF_MIN} caractères minimum).`}
-                        </p>
-                    </div>
-
-                    {error && <p className="text-sm text-red-600 font-semibold">{error}</p>}
-                </div>
-
-                <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50">
-                    <button
-                        onClick={onCancel}
-                        disabled={submitting}
-                        className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-                    >
-                        Annuler
-                    </button>
-                    <button
-                        onClick={handleConfirm}
-                        disabled={!motifValide || submitting}
-                        className="px-4 py-2 bg-[#0088aa] text-white rounded-md text-sm font-medium hover:bg-[#007799] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {submitting ? 'Clôture en cours...' : 'Confirmer la clôture'}
-                    </button>
-                </div>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cloture-titre"
+        className="relative flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl border border-slate-200 bg-white shadow-2xl sm:rounded-2xl"
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-6">
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#CAF0F8] text-[#03045E]" aria-hidden="true">
+              <Flag size={18} />
+            </span>
+            <div>
+              <p className="emit-eyebrow">Enseignement</p>
+              <h2 id="cloture-titre" className="mt-0.5 text-lg font-extrabold text-[#03045E]">
+                Clôture anticipée
+              </h2>
             </div>
+          </div>
+          <button
+            onClick={onCancel}
+            disabled={submitting}
+            aria-label="Fermer"
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
+          >
+            <X size={18} />
+          </button>
         </div>
-    );
+
+        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5 sm:px-6">
+          <div className="rounded-2xl border border-[#90E0EF] bg-[#CAF0F8] px-4 py-3">
+            <p className="text-sm font-bold text-[#03045E]">{matiere}</p>
+            <p className="mt-1 text-sm text-slate-700">
+              {heuresRealisees}h réalisées sur {volumePrevu}h prévues — la progression reste à{' '}
+              <span className="font-bold text-[#03045E]">{progression}%</span> et ne sera pas modifiée.
+            </p>
+            <div className="mt-3">
+              <ProgressionBar progression={progression} showLabel size="md" />
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <AlertTriangle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+            <p>
+              L&apos;enseignement passera à l&apos;état <strong>Terminé</strong>. Cette action est
+              définitive.
+            </p>
+          </div>
+
+          <div>
+            <label htmlFor="cloture-motif" className="emit-label">
+              Motif <span className="text-rose-600">*</span>
+            </label>
+            <textarea
+              id="cloture-motif"
+              value={motif}
+              onChange={(e) => setMotif(e.target.value)}
+              rows={4}
+              autoFocus
+              placeholder="Le contenu prévu dans le programme a été entièrement traité."
+              className="emit-input min-h-[100px]"
+              aria-invalid={motif.length > 0 && !motifValide}
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              {motifValide
+                ? 'Motif enregistré avec la clôture.'
+                : `Le motif est obligatoire (${MOTIF_MIN} caractères minimum).`}
+            </p>
+          </div>
+
+          {error && (
+            <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700" role="alert">
+              {error}
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-col-reverse gap-2 border-t border-slate-100 bg-slate-50 px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
+          <button onClick={onCancel} disabled={submitting} className="emit-btn-ghost">
+            Annuler
+          </button>
+          <button
+            onClick={handleConfirm}
+            disabled={!motifValide || submitting}
+            className="emit-btn-primary"
+          >
+            <Flag size={15} aria-hidden="true" />
+            {submitting ? 'Clôture en cours...' : 'Confirmer la clôture'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }

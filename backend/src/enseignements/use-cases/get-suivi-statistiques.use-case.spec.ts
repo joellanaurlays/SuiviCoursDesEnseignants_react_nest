@@ -57,7 +57,7 @@ const DONNEES: Ligne[] = [
     cycle: 'MASTER',
     niveauId: 'M1',
     parcours: 'Informatique',
-    semestreId: 'S2',
+    semestreId: 'S7',
     anneeUniversitaireId: '2025-2026',
     volumePrevu: 20,
     etat: 'TERMINE',

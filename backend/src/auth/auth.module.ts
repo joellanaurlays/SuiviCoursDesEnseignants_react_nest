@@ -6,6 +6,7 @@ import { PassportModule } from '@nestjs/passport';
 import { UsersModule } from '../users/users.module.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
+import { resolveJwtSecret } from './jwt-secret.js';
 import { JwtStrategy } from './strategies/jwt.strategy.js';
 
 @Module({
@@ -22,7 +23,7 @@ import { JwtStrategy } from './strategies/jwt.strategy.js';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: config.getOrThrow<string>('JWT_SECRET'),
+        secret: resolveJwtSecret(config),
         signOptions: {
           expiresIn: config.get<string>('JWT_EXPIRATION') ?? '24h',
         } as JwtSignOptions,

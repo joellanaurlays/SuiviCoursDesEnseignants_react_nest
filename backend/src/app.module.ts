@@ -3,6 +3,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { createObserveModule } from '@nestjs/observe';
+import { AcademicStructureModule } from './academic-structure/academic-structure.module.js';
 import { AuthGuard } from './auth/auth.guard.js';
 import { AuthModule } from './auth/auth.module.js';
 import { EnseignementsModule } from './enseignements/enseignements.module.js';
@@ -35,6 +36,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     RolesModule,
     EnseignementsModule,
     ExamsModule,
+    AcademicStructureModule,
   ],
   providers: [
     {

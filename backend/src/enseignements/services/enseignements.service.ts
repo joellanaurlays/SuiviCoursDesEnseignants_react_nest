@@ -1,11 +1,13 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { Role } from '../../auth/roles.enum.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { CreateEnseignementDto } from '../dto/create-enseignement.dto.js';
 import { UpdateEnseignementDto } from '../dto/update-enseignement.dto.js';
 import { CreateSeanceDto } from '../dto/create-seance.dto.js';
 import { UpdateSeanceDto } from '../dto/update-seance.dto.js';
 import { SuiviQueryDto } from '../dto/suivi-query.dto.js';
+import { CreateEnseignementUseCase } from '../use-cases/create-enseignement.use-case.js';
 import { CreateSeanceUseCase } from '../use-cases/create-seance.use-case.js';
 import { GetSuiviUseCase } from '../use-cases/get-suivi.use-case.js';
 import {
@@ -34,13 +36,126 @@ export class EnseignementsService {
     private readonly getTeacherDashboardUseCase: GetTeacherDashboardUseCase,
     private readonly permissionsService: PermissionsService,
     private readonly auditSeanceService: AuditSeanceService,
+    private readonly createEnseignementUseCase: CreateEnseignementUseCase,
   ) {}
 
   // ---------------------------------------------------------------- Enseignements
 
-  async create(createDto: CreateEnseignementDto) {
-    return this.prisma.enseignement.create({
-      data: createDto,
+  async create(createDto: CreateEnseignementDto, context?: AuthContext) {
+    return this.createEnseignementUseCase.execute(createDto, context);
+  }
+
+  async assignTeacher(enseignementId: string, enseignantId: string, context: AuthContext) {
+    // Vérifier que l'utilisateur est RESPONSABLE_MENTION
+    if (context.role !== Role.RESPONSABLE_MENTION) {
+      throw new ForbiddenException('Seul un responsable de mention peut affecter un enseignant');
+    }
+
+    if (!enseignantId || typeof enseignantId !== 'string') {
+      throw new BadRequestException("L'identifiant de l'enseignant est requis");
+    }
+
+    // Vérifier que l'enseignement existe
+    const enseignement = await this.prisma.enseignement.findUnique({
+      where: { id: enseignementId },
+      select: {
+        matiereId: true,
+        mentionId: true,
+        cycle: true,
+        parcours: true,
+      },
+    });
+
+    if (!enseignement) {
+      throw new NotFoundException('Enseignement non trouvé');
+    }
+
+    // Périmètre du responsable : l'enseignement doit relever de SON
+    // (cycle, parcours). Déduit du contexte d'authentification uniquement.
+    if (
+      !this.permissionsService.canAccessEnseignement(context, {
+        enseignantId: null,
+        mentionId: enseignement.mentionId,
+        cycle: enseignement.cycle,
+        parcours: enseignement.parcours,
+      })
+    ) {
+      throw new ForbiddenException('Cet enseignement ne relève pas de votre périmètre');
+    }
+
+    // L'identifiant transmis est soit l'ID numérique du compte User, soit le
+    // nom affiché « Prénom Nom » (tel que la liste du référentiel le présente
+    // et tel que le module identifie un enseignant). Les deux formes sont
+    // résolues vers le même compte actif ; toute autre valeur reste rejetée.
+    const selectUser = {
+      id: true,
+      isActive: true,
+      firstName: true,
+      lastName: true,
+      role: { select: { name: true } },
+      cycles: true,
+      parcours: true,
+    } as const;
+    // Statut pédagogique d'enseignant : le rôle ENSEIGNANT, ou un responsable
+    // de mention qui enseigne également (il doit rester sélectionnable).
+    const rolesPedagogiques = ['ENSEIGNANT', 'RESPONSABLE_LICENCE', 'RESPONSABLE_MASTER'] as const;
+
+    const userId = Number.parseInt(enseignantId, 10);
+    const nomAfficheRecherche = enseignantId.trim();
+    const [prenom, ...resteNom] = nomAfficheRecherche.split(/\s+/);
+    const nom = resteNom.join(' ');
+
+    const user = Number.isNaN(userId)
+      ? await this.prisma.user.findFirst({
+          where: {
+            isActive: true,
+            role: { name: { in: [...rolesPedagogiques] } },
+            // Nom affiché exact : prénom et nom transmiss séparement côté SQL.
+            firstName: { equals: prenom },
+            lastName: { equals: nom },
+          },
+          select: selectUser,
+        })
+      : await this.prisma.user.findUnique({
+          where: { id: userId },
+          select: selectUser,
+        });
+
+    if (!user || !user.isActive) {
+      throw new NotFoundException("L'enseignant spécifié n'existe pas");
+    }
+
+    // L'enseignant peut intervenir dans une AUTRE mention / parcours / cycle
+    // que son rattachement administratif (User.parcours / User.mentionId ne
+    // sont JAMAIS modifiés par une affectation). La relation 1:N autorise
+    // plusieurs enseignements, éventuellement dans différents parcours : le
+    // cycle déclaré n'est plus un filtre bloquant, l'autorisation repose sur
+    // le périmètre du responsable de mention.
+
+    // L'affectation stocke le NOM AFFICHÉ (prénom + nom) : le module identifie
+    // un enseignant par cette chaîne (dashboards, filtres, périmètre).
+    const nomAffiche = `${user.firstName} ${user.lastName}`.trim();
+
+    const actuel = await this.prisma.enseignement.findUnique({
+      where: { id: enseignementId },
+      select: { enseignantId: true },
+    });
+
+    // Déjà affecté à ce même enseignant : retour idempotent, aucune mutation.
+    if (actuel?.enseignantId === nomAffiche) {
+      return;
+    }
+
+    // Un autre enseignant est déjà affecté : ne pas le remplacer silencieusement.
+    if (actuel?.enseignantId) {
+      throw new ConflictException(
+        `Un enseignant est déjà affecté à cet enseignement : ${actuel.enseignantId}`,
+      );
+    }
+
+    await this.prisma.enseignement.update({
+      where: { id: enseignementId },
+      data: { enseignantId: nomAffiche },
     });
   }
 
@@ -252,6 +367,8 @@ export class EnseignementsService {
         heureDebut: autresChamps.heureDebut,
         heureFin: autresChamps.heureFin,
         contenuEnseigne: autresChamps.contenuEnseigne,
+        salle: autresChamps.salle,
+        typeSeance: autresChamps.typeSeance,
         motif,
       });
     }

@@ -62,8 +62,10 @@ function overlapsInRoom(candidate, existing) {
 export default function ExamsModule() {
   const { session } = useAuth();
   const canManage = session.role === 'SCOLARITE';
+  const canReadAlerts = ['SCOLARITE', 'ADMINISTRATEUR'].includes(session.role);
   const [tab, setTab] = useState('sessions');
   const [sessions, setSessions] = useState([]);
+  const [enseignements, setEnseignements] = useState([]);
   const [examens, setExamens] = useState([]);
   const [alertes, setAlertes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -77,7 +79,7 @@ export default function ExamsModule() {
     libelle: 'Session Normale S1', anneeUniversitaire: '2025-2026', semestre: 'S1',
     dateDebut: today, dateFin: today,
   });
-  const [examForm, setExamForm] = useState({ sessionId: '', dateExamen: today, heureDebut: '08:00', heureFin: '10:00', salle: '' });
+  const [examForm, setExamForm] = useState({ sessionId: '', enseignementId: '', dateExamen: today, heureDebut: '08:00', heureFin: '10:00', salle: '' });
   const [alertForm, setAlertForm] = useState({ examenId: '', typeAlerte: 'NOTES_NON_REMISES', message: '' });
 
   const load = useCallback(async (showLoader = true) => {
@@ -101,7 +103,7 @@ export default function ExamsModule() {
     } finally {
       if (showLoader) setLoading(false);
     }
-  }, []);
+  }, [canManage, canReadAlerts]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -167,6 +169,10 @@ export default function ExamsModule() {
       setError('Choisissez une session ouverte avant de planifier un examen.');
       return;
     }
+    if (!enseignements.some((item) => item.id === examForm.enseignementId)) {
+      setError('Choisissez un enseignement existant avant de planifier un examen.');
+      return;
+    }
     if (examForm.heureDebut && examForm.heureFin && examForm.heureFin <= examForm.heureDebut) {
       setError('L’heure de fin doit être postérieure à l’heure de début.');
       return;
@@ -207,7 +213,7 @@ export default function ExamsModule() {
   const tabs = [
     { id: 'sessions', label: 'Sessions', task: 'T26', icon: CalendarDays, count: sessions.length },
     { id: 'examens', label: 'Examens & notes', task: 'T27–T29', icon: ClipboardList, count: examens.length },
-    { id: 'alertes', label: 'Alertes', task: 'T30', icon: Bell, count: unreadCount },
+    ...(canReadAlerts ? [{ id: 'alertes', label: 'Alertes', task: 'T30', icon: Bell, count: unreadCount }] : []),
   ];
 
   return (
@@ -235,7 +241,7 @@ export default function ExamsModule() {
             { label: 'Examens à venir', value: upcomingCount, note: 'Statut à venir, date du jour ou future', icon: ClipboardList, color: 'text-violet-700 bg-violet-50' },
             { label: 'Examens terminés', value: completedCount, note: 'Statut terminé', icon: Check, color: 'text-emerald-700 bg-emerald-50' },
             { label: 'Notes à remettre', value: notesPending, note: 'Examens sans notes remises', icon: BookOpenCheck, color: 'text-amber-700 bg-amber-50' },
-            { label: 'Alertes non lues', value: unreadCount, note: 'À consulter', icon: Bell, color: 'text-rose-700 bg-rose-50' },
+            ...(canReadAlerts ? [{ label: 'Alertes non lues', value: unreadCount, note: 'À consulter', icon: Bell, color: 'text-rose-700 bg-rose-50' }] : []),
           ].map(({ label, value, note, icon: Icon, color }) => (
             <div key={label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-start justify-between"><div><p className="text-sm font-medium text-slate-500">{label}</p><p className="mt-2 text-3xl font-bold text-[#0a0a32]">{loading ? '—' : value}</p></div><span className={`rounded-xl p-3 ${color}`}><Icon size={20} /></span></div>
@@ -329,7 +335,7 @@ export default function ExamsModule() {
                   </div>
                 </div>}
 
-                {tab === 'alertes' && <div className="space-y-6">
+                {canReadAlerts && tab === 'alertes' && <div className="space-y-6">
                   <div><h2 className="text-xl font-bold text-[#0a0a32]">Centre des alertes</h2><p className="mt-1 text-sm text-slate-500">Alertes enregistrées renvoyées par l’API. Leur affichage ne précise pas leur mode de création.</p></div>
                   {canManage && <form onSubmit={createAlert} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
                     <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-800"><Plus size={17} className="text-cyan-700" /> Nouvelle alerte</div>

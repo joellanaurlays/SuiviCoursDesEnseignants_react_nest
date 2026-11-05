@@ -64,3 +64,11 @@ Le filtrage des **enseignements par mention** pour `RESPONSABLE_LICENCE` /
 (propriété du module Structure académique, Membre 3). Ce lien n'est **pas encore
 implémenté** — à définir en concertation avec Membre 3 avant que son module ou celui
 des Enseignements (Membre 4) n'en ait besoin.
+
+## Module Structure académique (Membre 3)
+
+| Endpoint | Chef de scolarité | Administrateur | Resp. Licence | Resp. Master | Enseignant | Non connecté |
+|---|---|---|---|---|---|---|
+| `GET /mentions`, `/cycles`, `/niveaux`, `/annees-universitaires`, `/semestres`, `/matieres` (+ `/:id`) | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| `GET /structure/stats`, `GET /structure/tree` | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| `POST`, `PATCH`, `DELETE` sur ces mêmes ressources | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |

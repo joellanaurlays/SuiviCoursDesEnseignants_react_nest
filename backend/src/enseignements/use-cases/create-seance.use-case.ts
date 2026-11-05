@@ -22,7 +22,7 @@ export class CreateSeanceUseCase {
   ) {}
 
   async execute(createSeanceDto: CreateSeanceDto, context?: AuthContext): Promise<Seance> {
-    const { enseignementId, dateSeance, heureDebut, heureFin, contenuEnseigne, statut } = createSeanceDto;
+    const { enseignementId, dateSeance, heureDebut, heureFin, contenuEnseigne, salle, typeSeance, statut } = createSeanceDto;
 
     const enseignement = await this.prisma.enseignement.findUnique({
       where: { id: enseignementId },
@@ -71,6 +71,8 @@ export class CreateSeanceUseCase {
           heureFin,
           duree,
           contenuEnseigne,
+          salle: salle ?? null,
+          typeSeance: typeSeance ?? null,
           statut: statutFinal,
         },
       });

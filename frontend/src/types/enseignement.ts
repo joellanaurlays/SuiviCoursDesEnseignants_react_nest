@@ -94,6 +94,8 @@ export interface Seance {
   heureFin: string;
   duree: number;
   contenuEnseigne: string | null;
+  salle?: string | null;
+  typeSeance?: string | null;
   statut: StatutSeance;
   createdAt: string;
   updatedAt: string;
@@ -126,6 +128,8 @@ export interface ValeursSeanceAudit {
   heureFin?: string | null;
   duree?: number | null;
   contenuEnseigne?: string | null;
+  salle?: string | null;
+  typeSeance?: string | null;
   statut?: StatutSeance | null;
 }
 
@@ -186,6 +190,8 @@ export interface CreateSeancePayload {
   heureDebut: string;
   heureFin: string;
   contenuEnseigne?: string;
+  salle?: string;
+  typeSeance?: string;
   statut?: StatutSeance;
 }
 
@@ -195,6 +201,8 @@ export interface RealiserSeancePayload {
   heureDebut?: string;
   heureFin?: string;
   contenuEnseigne?: string;
+  salle?: string;
+  typeSeance?: string;
 }
 
 /** Justification facultative de l'annulation (conservée dans le journal d'audit). */
@@ -208,6 +216,8 @@ export interface CorrigerSeancePayload {
   heureDebut?: string;
   heureFin?: string;
   contenuEnseigne?: string;
+  salle?: string;
+  typeSeance?: string;
   motif?: string;
 }
 
@@ -240,6 +250,67 @@ export interface DashboardResponse {
 export interface ApiError {
   status: number;
   message: string;
+}
+
+/** Option de niveau avec son cycle associé. */
+export interface NiveauOption {
+  value: string;
+  cycle: Cycle;
+}
+
+/** Option de semestre avec son niveau associé. */
+export interface SemestreOption {
+  value: string;
+  niveau: string;
+}
+
+/** Champs verrouillés par le périmètre d'un responsable de parcours. */
+export interface VerrousCreationEnseignement {
+  cycle: Cycle | null;
+  parcours: string | null;
+  mention: string | null;
+}
+
+/** Référentiel complet alimentant le formulaire de création d'enseignement. */
+export interface ReferentielCreationEnseignement {
+  matieres: string[];
+  enseignants: string[];
+  mentions: string[];
+  parcours: string[];
+  cycles: Cycle[];
+  niveaux: NiveauOption[];
+  semestres: SemestreOption[];
+  anneesUniversitaires: string[];
+  verrous: VerrousCreationEnseignement;
+}
+
+/** Formulaire de création d'enseignement (champs saisis par l'utilisateur). */
+export interface FormulaireCreationEnseignement {
+  matiereId: string;
+  mentionId: string;
+  cycle: Cycle | '';
+  niveauId: string;
+  parcours: string;
+  semestreId: string;
+  anneeUniversitaireId: string;
+  volumePrevu: string;
+}
+
+/** Erreurs de validation du formulaire de création. */
+export type ErreursCreationEnseignement = Partial<
+  Record<keyof FormulaireCreationEnseignement, string>
+>;
+
+/** Payload envoyé à l'API lors de la création d'un enseignement (sans enseignant : l'affectation est une action distincte). */
+export interface CreateEnseignementPayload {
+  matiereId: string;
+  mentionId: string;
+  cycle: Cycle;
+  niveauId: string;
+  parcours: string;
+  semestreId: string;
+  anneeUniversitaireId: string;
+  volumePrevu: number;
 }
 
 /** Parcours officiels de l'EMIT (dimension de responsabilité du suivi). */

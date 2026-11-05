@@ -1,12 +1,14 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
-import PlanningWorkspace from './components/PlanningWorkspace';
 import LoginPage from './pages/LoginPage.jsx';
-import DashboardPlaceholder from './pages/DashboardPlaceholder.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 import UsersListPage from './pages/UsersListPage.jsx';
 import UserFormPage from './pages/UserFormPage.jsx';
 import ExamsModule from './exams/ExamsModule.jsx';
+import PlanningWorkspace from './components/PlanningWorkspace';
+import { Layout } from './components/Layout';
+import RoleHomeRedirect from './routing/RoleHomeRedirect.jsx';
+import StructureApp from './structure/StructureApp.jsx';
 
 // Pont identité JWT -> en-têtes x-user-* pour le module suivi (Membres 2/4).
 import { AuthProvider as SuiviAuthProvider } from './auth/AuthContext';
@@ -34,9 +36,11 @@ import AdminSeancesPage from './pages/admin/seances/page';
 import ResponsableLicenceSuiviPage from './pages/responsable/licence/suivi-enseignements/page';
 import ResponsableLicenceSuiviDetailPage from './pages/responsable/licence/suivi-enseignements/[id]/page';
 import ResponsableLicenceSeancesPage from './pages/responsable/licence/seances/page';
+import ResponsableLicenceEnseignementNouveauPage from './pages/responsable/licence/enseignement/nouveau/page';
 import ResponsableMasterSuiviPage from './pages/responsable/master/suivi-enseignements/page';
 import ResponsableMasterSuiviDetailPage from './pages/responsable/master/suivi-enseignements/[id]/page';
 import ResponsableMasterSeancesPage from './pages/responsable/master/seances/page';
+import ResponsableMasterEnseignementNouveauPage from './pages/responsable/master/enseignement/nouveau/page';
 
 // Rôles autorisés à gérer les comptes (RoleName côté Prisma/JWT).
 const MANAGE_USERS_ROLES = ['CHEF_SCOLARITE', 'ADMINISTRATEUR'];
@@ -47,20 +51,18 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
 
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <PlanningWorkspace />
-            </ProtectedRoute>
-          }
-        />
+        {/* Une seule règle choisit le tableau de bord selon le rôle connecté. */}
+        <Route path="/" element={<RoleHomeRedirect />} />
+        <Route path="/dashboard" element={<RoleHomeRedirect />} />
 
+        {/* Espace membre 5, disponible à cette URL pour tous les comptes connectés. */}
         <Route
-          path="/dashboard"
+          path="/planning"
           element={
             <ProtectedRoute>
-              <DashboardPlaceholder />
+              <Layout>
+                <PlanningWorkspace />
+              </Layout>
             </ProtectedRoute>
           }
         />
@@ -69,7 +71,7 @@ export default function App() {
           path="/users"
           element={
             <ProtectedRoute allowedRoles={MANAGE_USERS_ROLES}>
-              <UsersListPage />
+              <Layout><UsersListPage /></Layout>
             </ProtectedRoute>
           }
         />
@@ -77,16 +79,7 @@ export default function App() {
           path="/users/new"
           element={
             <ProtectedRoute allowedRoles={MANAGE_USERS_ROLES}>
-              <UserFormPage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/exams"
-          element={
-            <ProtectedRoute allowedRoles={['SCOLARITE']}>
-              <ExamsModule />
+              <Layout><UserFormPage /></Layout>
             </ProtectedRoute>
           }
         />
@@ -94,7 +87,17 @@ export default function App() {
           path="/users/:id/edit"
           element={
             <ProtectedRoute allowedRoles={MANAGE_USERS_ROLES}>
-              <UserFormPage />
+              <Layout><UserFormPage /></Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Module 3 : structure académique (lecture pour tous, écriture : chef de scolarité). */}
+        <Route
+          path="/structure-academique/*"
+          element={
+            <ProtectedRoute>
+              <Layout><StructureApp /></Layout>
             </ProtectedRoute>
           }
         />
@@ -102,7 +105,7 @@ export default function App() {
         <Route
           path="/exams"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['SCOLARITE', 'ADMINISTRATEUR', 'RESPONSABLE_MENTION', 'ENSEIGNANT']}>
               <ExamsModule />
             </ProtectedRoute>
           }
@@ -112,7 +115,7 @@ export default function App() {
           path="/profile"
           element={
             <ProtectedRoute>
-              <ProfilePage />
+              <Layout><ProfilePage /></Layout>
             </ProtectedRoute>
           }
         />
@@ -305,6 +308,16 @@ export default function App() {
           }
         />
         <Route
+          path="/responsable/licence/enseignement/nouveau"
+          element={
+            <ProtectedRoute>
+              <RequireResponsable cycle="LICENCE">
+                <ResponsableLicenceEnseignementNouveauPage />
+              </RequireResponsable>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/responsable/licence/seances"
           element={
             <ProtectedRoute>
@@ -345,6 +358,16 @@ export default function App() {
           }
         />
         <Route
+          path="/responsable/master/enseignement/nouveau"
+          element={
+            <ProtectedRoute>
+              <RequireResponsable cycle="MASTER">
+                <ResponsableMasterEnseignementNouveauPage />
+              </RequireResponsable>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/responsable/master/seances"
           element={
             <ProtectedRoute>
@@ -365,7 +388,7 @@ export default function App() {
           }
         />
 
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<RoleHomeRedirect />} />
       </Routes>
     </SuiviAuthProvider>
   );

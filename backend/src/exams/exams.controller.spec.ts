@@ -52,7 +52,7 @@ describe('ExamsController permissions (HTTP)', () => {
         { provide: ExamsService, useValue: service },
         {
           provide: ConfigService,
-          useValue: { getOrThrow: (key: string) => (key === 'JWT_SECRET' ? JWT_SECRET : undefined) },
+          useValue: { get: (key: string) => (key === 'JWT_SECRET' ? JWT_SECRET : undefined), getOrThrow: (key: string) => (key === 'JWT_SECRET' ? JWT_SECRET : undefined) },
         },
         {
           provide: UsersService,
@@ -84,7 +84,7 @@ describe('ExamsController permissions (HTTP)', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    if (app) await app.close();
   });
 
   const authenticated = (token: string) => `Bearer ${token}`;

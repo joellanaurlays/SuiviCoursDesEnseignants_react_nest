@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { validate } from 'class-validator';
 import { Repository, UpdateResult } from 'typeorm';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -7,6 +7,7 @@ import { Alerte } from './entities/alerte.entity.js';
 import { Examen } from './entities/examen.entity.js';
 import { SessionExamen } from './entities/session-examen.entity.js';
 import { ExamsService } from './exams.service.js';
+import { Role } from '../auth/roles.enum.js';
 
 const validSession = {
   libelle: 'Session Normale S1',
@@ -17,7 +18,8 @@ const validSession = {
 };
 
 const validExam = {
-  sessionId: 'bf2c8348-d886-4bd2-a5bb-73b38fb7f1f1',
+    enseignementId: 'ens-1',
+sessionId: 'bf2c8348-d886-4bd2-a5bb-73b38fb7f1f1',
   dateExamen: '2026-01-15',
   heureDebut: '08:00',
   heureFin: '10:00',
@@ -42,10 +44,18 @@ describe('ExamsService session validations', () => {
     save: vi.fn(async (value: Alerte) => value),
     findOneBy: vi.fn<Repository<Alerte>['findOneBy']>(),
   };
+  const prisma = {
+    enseignement: {
+      findMany: vi.fn(async () => [{ id: 'ens-1' }]),
+      findUnique: vi.fn(async () => ({ id: 'ens-1' })),
+    },
+  };
+
   const service = new ExamsService(
     sessions as unknown as Repository<SessionExamen>,
     examens as unknown as Repository<Examen>,
     alertes as unknown as Repository<Alerte>,
+    prisma as never,
   );
 
   beforeEach(() => {
@@ -203,7 +213,7 @@ describe('ExamsService session validations', () => {
     const dto = { ...validExam, dateExamen: date, heureDebut: start, heureFin: end, salle };
 
     if (conflict) {
-      await expect(service.createExamen(dto)).rejects.toBeInstanceOf(BadRequestException);
+      await expect(service.createExamen(dto)).rejects.toBeInstanceOf(ConflictException);
       expect(examens.save).not.toHaveBeenCalled();
     } else {
       await expect(service.createExamen(dto)).resolves.toMatchObject(dto);
@@ -228,14 +238,22 @@ describe('ExamsService session validations', () => {
   it('remet les notes d’un examen terminé et enregistre la date de la remise', async () => {
     const exam = { id: 'exam-id', statut: 'TERMINE', notesRemises: false } as Examen;
     const submittedAt = new Date('2026-10-22T10:00:00.000Z');
-    examens.findOneBy.mockResolvedValue(exam);
+    examens.findOneBy
+      .mockResolvedValueOnce(exam)
+      .mockResolvedValueOnce({
+        ...exam,
+        notesRemises: true,
+        dateRemiseNotes: submittedAt,
+      } as Examen);
     vi.useFakeTimers();
     vi.setSystemTime(submittedAt);
 
     try {
-      await expect(service.marquerNotesRemises(exam.id)).resolves.toBe(exam);
-      expect(exam.notesRemises).toBe(true);
-      expect(exam.dateRemiseNotes).toEqual(submittedAt);
+      await expect(service.marquerNotesRemises(exam.id)).resolves.toMatchObject({
+        id: exam.id,
+        notesRemises: true,
+        dateRemiseNotes: submittedAt,
+      });
       expect(examens.update).toHaveBeenCalledOnce();
       expect(examens.update).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -465,5 +483,107 @@ describe('ExamsService session validations', () => {
     expect(alertes.save).toHaveBeenCalledTimes(2);
     expect(readAlert).not.toHaveProperty('dateLecture');
     expect(treatedAlert).not.toHaveProperty('dateTraitement');
+  });
+});
+
+const responsable = {
+  userId: '3',
+  role: Role.RESPONSABLE_MENTION,
+  mentionId: 'INFORMATIQUE',
+  cycles: ['LICENCE'],
+  parcours: 'Informatique',
+};
+
+describe('ExamsService — périmètre et permissions Prisma', () => {
+  const sessions = {
+    find: vi.fn().mockResolvedValue([] as SessionExamen[]),
+  };
+  const examens = {
+    find: vi.fn().mockResolvedValue([] as Examen[]),
+  };
+  const alertes = {};
+
+  const prisma = {
+    enseignement: {
+      findMany: vi.fn(async () => [{ id: 'ens-1' }]),
+      findUnique: vi.fn(async () => ({ id: 'ens-1' })),
+    },
+  };
+
+  const service = new ExamsService(
+    sessions as never,
+    examens as never,
+    alertes as never,
+    prisma as never,
+  );
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('filtre les examens par mention, cycle et parcours du responsable', async () => {
+    await service.findExamens(undefined, responsable);
+
+    expect(prisma.enseignement.findMany).toHaveBeenCalledWith({
+      where: {
+        mentionId: 'INFORMATIQUE',
+        parcours: 'Informatique',
+        cycle: { in: ['LICENCE'] },
+      },
+      select: { id: true },
+    });
+
+    expect(examens.find).toHaveBeenCalledOnce();
+    expect(examens.find.mock.calls[0][0].where.enseignementId).toBeDefined();
+  });
+
+  it('refuse un responsable sans mention', async () => {
+    await expect(
+      service.findExamens(undefined, { ...responsable, mentionId: undefined }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(prisma.enseignement.findMany).not.toHaveBeenCalled();
+  });
+
+  it('ne retourne aucun examen si aucun enseignement ne correspond', async () => {
+    prisma.enseignement.findMany.mockResolvedValueOnce([]);
+
+    const result = await service.findExamens(undefined, responsable);
+
+    expect(result).toEqual([]);
+    expect(examens.find).not.toHaveBeenCalled();
+  });
+
+  it('ne filtre pas les données globales de la scolarité par Prisma', async () => {
+    await service.findExamens(undefined, {
+      userId: '1',
+      role: Role.SCOLARITE,
+    });
+
+    expect(prisma.enseignement.findMany).not.toHaveBeenCalled();
+    expect(examens.find.mock.calls[0][0].where).toEqual({});
+  });
+
+  it('limite les sessions aux examens autorisés du responsable', async () => {
+    examens.find.mockResolvedValueOnce([
+      { sessionId: 'session-1' } as Examen,
+    ]);
+
+    await service.findSessions(responsable);
+
+    expect(sessions.find).toHaveBeenCalledOnce();
+    expect(sessions.find.mock.calls[0][0].where.id).toBeDefined();
+  });
+
+  it('filtre les enseignements d’un enseignant par son identité', async () => {
+    await service.findExamens(undefined, {
+      userId: '12',
+      role: Role.ENSEIGNANT,
+    });
+
+    expect(prisma.enseignement.findMany).toHaveBeenCalledWith({
+      where: { enseignantId: '12' },
+      select: { id: true },
+    });
   });
 });

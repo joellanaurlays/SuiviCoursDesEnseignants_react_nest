@@ -26,25 +26,32 @@ function LienCarte({ to, titre, description }) {
 
 function DashboardHub() {
   const { user, logout } = useAuth()
-  const canManageUsers = MANAGE_USERS_ROLES.includes(user.role)
-  const espace = ESPACE_PAR_ROLE[user.role]
+  const displayUser = user ?? {
+    firstName: 'Mode',
+    lastName: 'aperçu',
+    role: 'ADMINISTRATEUR',
+  }
+  const canManageUsers = MANAGE_USERS_ROLES.includes(displayUser.role)
+  const espace = ESPACE_PAR_ROLE[displayUser.role]
 
   return (
     <div className="min-h-screen bg-bg px-6 py-8">
       <header className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-xl font-bold text-text">EMIT — Espace connecté</h1>
+          <h1 className="text-xl font-bold text-text">EMIT — Tableau de bord</h1>
           <p className="text-sm text-slate-500">
-            {user.firstName} {user.lastName} — {user.role}
+            {displayUser.firstName} {displayUser.lastName} — {displayUser.role}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={logout}
-          className="text-sm font-medium text-error border border-error rounded-lg px-3 py-1.5 hover:bg-red-50"
-        >
-          Déconnexion
-        </button>
+        {user && (
+          <button
+            type="button"
+            onClick={logout}
+            className="text-sm font-medium text-error border border-error rounded-lg px-3 py-1.5 hover:bg-red-50"
+          >
+            Déconnexion
+          </button>
+        )}
       </header>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 max-w-5xl">
