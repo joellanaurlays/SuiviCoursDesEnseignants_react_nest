@@ -3,11 +3,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { SessionExamen } from './entities/session-examen.entity.js';
 import { Examen } from './entities/examen.entity.js';
 import { Alerte } from './entities/alerte.entity.js';
+import { Message } from './entities/message.entity.js';
 import { ExamsService } from './exams.service.js';
 import { ExamsController } from './exams.controller.js';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([SessionExamen, Examen, Alerte])],
+  imports: [TypeOrmModule.forFeature([SessionExamen, Examen, Alerte, Message])],
   controllers: [ExamsController],
   providers: [ExamsService],
   exports: [ExamsService],

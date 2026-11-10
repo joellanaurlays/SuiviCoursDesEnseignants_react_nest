@@ -1,4 +1,4 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { describe, expect, it, vi } from 'vitest';
 import { ExamsService } from './exams.service.js';
 import { Role } from '../auth/roles.enum.js';
@@ -6,20 +6,31 @@ import { CreateExamenDto } from './dto/exams.dto.js';
 
 function setup(ids: string[] = ['ens-1']) {
   const sessionsFind = vi.fn().mockResolvedValue([]);
+  const sessionsFindOneBy = vi.fn().mockResolvedValue({ id: 'session-1', estCloturee: false, dateDebut: '2026-01-01', dateFin: '2026-12-31' });
   const examensFind = vi.fn().mockResolvedValue([{ id: 'exam-1' }]);
+  const examensFindOneBy = vi.fn().mockResolvedValue({ id: 'exam-1', enseignementId: 'ens-1', dateExamen: '2026-10-30', salle: 'A1' });
   const examensCreate = vi.fn((value) => value);
   const examensSave = vi.fn().mockImplementation(async (value) => value);
   const enseignementsFind = vi.fn().mockResolvedValue(ids.map(id => ({ id })));
   const enseignementsFindUnique = vi.fn().mockResolvedValue({ id: 'ens-1' });
+  const messagesFind = vi.fn().mockResolvedValue([]);
+  const messagesFindOne = vi.fn().mockResolvedValue(null);
+  const messagesFindOneBy = vi.fn().mockResolvedValue(null);
+  const messagesCreate = vi.fn((value) => value);
+  const messagesSave = vi.fn().mockImplementation(async (value) => value);
+  const messagesCount = vi.fn().mockResolvedValue(0);
+  const usersFindMany = vi.fn().mockResolvedValue([{ id: 2 }]);
+  const usersFindFirst = vi.fn().mockResolvedValue({ id: 5 });
 
   const service = new ExamsService(
-    { find: sessionsFind } as never,
-    { find: examensFind, create: examensCreate, save: examensSave } as never,
+    { find: sessionsFind, findOneBy: sessionsFindOneBy } as never,
+    { find: examensFind, findOneBy: examensFindOneBy, create: examensCreate, save: examensSave } as never,
     {} as never,
-    { enseignement: { findMany: enseignementsFind, findUnique: enseignementsFindUnique } } as never,
+    { find: messagesFind, findOne: messagesFindOne, findOneBy: messagesFindOneBy, create: messagesCreate, save: messagesSave, count: messagesCount } as never,
+    { enseignement: { findMany: enseignementsFind, findUnique: enseignementsFindUnique }, user: { findFirst: usersFindFirst, findMany: usersFindMany } } as never,
   );
 
-  return { service, sessionsFind, examensFind, enseignementsFind, enseignementsFindUnique, examensCreate, examensSave };
+  return { service, sessionsFind, sessionsFindOneBy, examensFind, examensFindOneBy, enseignementsFind, enseignementsFindUnique, examensCreate, examensSave, messagesFind, messagesFindOne, messagesFindOneBy, messagesCreate, messagesSave, messagesCount, usersFindMany, usersFindFirst };
 }
 
 describe('ExamsService - createExamen', () => {
@@ -36,7 +47,7 @@ describe('ExamsService - createExamen', () => {
 
     expect(enseignementsFindUnique).toHaveBeenCalledWith({
       where: { id: 'ens-1' },
-      select: { id: true },
+      select: { id: true, matiereId: true, enseignantId: true },
     });
     expect(examensCreate).toHaveBeenCalledWith(dto);
     expect(examensSave).toHaveBeenCalledOnce();
@@ -116,5 +127,105 @@ describe('ExamsService — périmètre responsable', () => {
 
     expect(sessionsFind).toHaveBeenCalledOnce();
     expect(sessionsFind.mock.calls[0][0].where.id).toBeDefined();
+  });
+});
+
+const scolariteContext = { userId: '5', role: Role.ENSEIGNANT } as const;
+
+describe('ExamsService - messagerie', () => {
+  const dtoExamen = 'exam-1';
+  const enseignementRakoto = { id: 'ens-1', enseignantId: 'Professeur Rakoto', matiereId: 'Algebre' };
+
+  function setupMsg(scolariteUsers: { id: number }[] = [{ id: 2 }]) {
+    const ctx = setup();
+    ctx.enseignementsFindUnique.mockResolvedValue(enseignementRakoto);
+    ctx.usersFindMany.mockResolvedValue(scolariteUsers);
+    ctx.usersFindFirst.mockResolvedValue({ id: 5 });
+    return ctx;
+  }
+
+  it('1. une réponse enseignant est adressée à l\'expéditeur réel du dernier rappel Scolarité', async () => {
+    const { service, messagesFindOne, messagesCreate } = setupMsg();
+    messagesFindOne.mockResolvedValue({ id: 'msg-1', examenId: dtoExamen, expediteurId: 2, contenu: 'rappel', createdAt: new Date() });
+
+    const created = await service.creerMessage(dtoExamen, 'Merci', { userId: '5', role: Role.ENSEIGNANT } as any);
+
+    expect(messagesFindOne).toHaveBeenCalled();
+    expect(messagesCreate).toHaveBeenCalled();
+    expect((created as any).destinataireId).toBe(2);
+  });
+
+  it('2. plusieurs comptes Scolarité : la réponse revient au bon expéditeur', async () => {
+    const { service, messagesFindOne, messagesCreate } = setupMsg([{ id: 2 }, { id: 99 }]);
+    messagesFindOne.mockResolvedValue({ id: 'msg-2', examenId: dtoExamen, expediteurId: 99, contenu: 'rappel', createdAt: new Date() });
+
+    const created = await service.creerMessage(dtoExamen, 'Merci', { userId: '5', role: Role.ENSEIGNANT } as any);
+
+    expect((created as any).destinataireId).toBe(99);
+  });
+
+  it('3. absence de rappel Scolarité : réponse refusée', async () => {
+    const { service, messagesFindOne, messagesSave } = setupMsg();
+    messagesFindOne.mockResolvedValue(null);
+
+    await expect(service.creerMessage(dtoExamen, 'Merci', { userId: '5', role: Role.ENSEIGNANT } as any)).rejects.toBeInstanceOf(BadRequestException);
+    expect(messagesSave).not.toHaveBeenCalled();
+  });
+
+  it('4. un enseignant ne peut pas consulter la conversation d\'un autre', async () => {
+    const { service, usersFindFirst } = setupMsg();
+    usersFindFirst.mockResolvedValue({ id: 5 });
+
+    await expect(service.listerMessages(dtoExamen, { userId: '999', role: Role.ENSEIGNANT } as any)).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('5. seul le destinataire peut marquer un message comme lu', async () => {
+    const { service, messagesFindOneBy } = setupMsg();
+    messagesFindOneBy.mockResolvedValue({ id: 'm1', destinataireId: 5, estLu: false });
+
+    const res = await service.marquerLu('m1', { userId: '5', role: Role.ENSEIGNANT } as any);
+    expect((res as any).estLu).toBe(true);
+
+    messagesFindOneBy.mockResolvedValue({ id: 'm1', destinataireId: 5, estLu: false });
+    await expect(service.marquerLu('m1', { userId: '2', role: Role.SCOLARITE } as any)).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('6. l\'historique conserve l\'ordre chronologique', async () => {
+    const { service, messagesFind } = setupMsg();
+    const ordered = [
+      { id: 'a', createdAt: new Date('2026-01-01T10:00:00Z') },
+      { id: 'b', createdAt: new Date('2026-01-01T11:00:00Z') },
+    ];
+    messagesFind.mockResolvedValue(ordered);
+
+    const result = await service.listerMessages(dtoExamen, { userId: '2', role: Role.SCOLARITE } as any);
+    expect(result).toEqual(ordered);
+    expect(messagesFind).toHaveBeenCalledWith(expect.objectContaining({ order: { createdAt: 'ASC' } }));
+  });
+
+  it('7. envoi Scolarité → enseignant : destinataire résolu côté serveur', async () => {
+    const { service, messagesCreate } = setupMsg();
+    const created = await service.creerMessage(dtoExamen, 'Rappel notes', { userId: '2', role: Role.SCOLARITE } as any);
+    expect(messagesCreate).toHaveBeenCalled();
+    expect((created as any).destinataireId).toBe(5);
+  });
+
+  it('8. examen orphelin (sans enseignement) : erreur explicite', async () => {
+    const { service, examensFindOneBy } = setupMsg();
+    examensFindOneBy.mockResolvedValue({ id: 'exam-1', enseignementId: null, dateExamen: '2026-10-30', salle: 'A1' });
+    await expect(service.creerMessage(dtoExamen, 'Rappel', { userId: '2', role: Role.SCOLARITE } as any)).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('9. enseignant sans compte : erreur explicite', async () => {
+    const { service, usersFindFirst } = setupMsg();
+    usersFindFirst.mockResolvedValue(null);
+    await expect(service.creerMessage(dtoExamen, 'Rappel', { userId: '2', role: Role.SCOLARITE } as any)).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('10. accès non autorisé à l\'examen d\'un enseignant sans compte : 403 générique', async () => {
+    const { service, enseignementsFindUnique, usersFindFirst } = setupMsg();
+    enseignementsFindUnique.mockResolvedValue({ id: 'ens-andry', enseignantId: 'Professeur Andry', matiereId: 'Probabilites' });
+    usersFindFirst.mockResolvedValue(null);
+    await expect(service.listerMessages(dtoExamen, { userId: '5', role: Role.ENSEIGNANT } as any)).rejects.toBeInstanceOf(ForbiddenException);
   });
 });

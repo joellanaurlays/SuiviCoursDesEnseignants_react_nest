@@ -1,12 +1,27 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bell, BookOpenCheck, CalendarDays, Check, CheckCircle, ClipboardList, Plus, RefreshCw, Search, X } from 'lucide-react';
+import { ArrowLeft, Bell, BookOpenCheck, CalendarDays, Check, CheckCircle, ClipboardList, MessageSquare, Plus, RefreshCw, Search, X } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { useAuth } from '../auth/AuthContext';
 import { getRoleHomePath } from '../routing/roleRoutes.js';
 
 // Le backend Nest expose les routes du module sous le préfixe global /api.
 const API = `${import.meta.env.VITE_API_URL || ''}/api`;
+
+// Extrait un message clair en français de la réponse d'erreur du backend (jamais de JSON brut ni de code HTTP).
+async function extraireMessageErreur(response) {
+  try {
+    const data = await response.json();
+    if (typeof data?.message === 'string' && data.message.trim()) return data.message.trim();
+    if (Array.isArray(data?.message)) {
+      const messages = data.message.filter((item) => typeof item === 'string' && item.trim());
+      if (messages.length) return messages.join(' ; ');
+    }
+  } catch {
+    // Corps non JSON (ex. page d'erreur du serveur) : message générique.
+  }
+  return 'Une erreur inattendue est survenue. Veuillez réessayer.';
+}
 
 async function api(path, options = {}) {
   const token = localStorage.getItem('emit_access_token');
@@ -19,8 +34,7 @@ async function api(path, options = {}) {
     },
   });
   if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(detail || `Erreur HTTP ${response.status}`);
+    throw new Error(await extraireMessageErreur(response));
   }
   return response.json();
 }
@@ -59,12 +73,18 @@ export default function ExamsModule() {
   const [notice, setNotice] = useState('');
   const [query, setQuery] = useState('');
   const [sessionFilter, setSessionFilter] = useState('');
-  const [sessionForm, setSessionForm] = useState({
-    libelle: 'Session Normale S1', anneeUniversitaire: '2025-2026', semestre: 'S1',
-    dateDebut: today, dateFin: today,
-  });
+  const [sessionForm, setSessionForm] = useState({ libelle: '', anneeUniversitaire: '', semestre: '', dateDebut: '', dateFin: '' });
+  const [editingSessionId, setEditingSessionId] = useState('');
   const [examForm, setExamForm] = useState({ sessionId: '', enseignementId: '', dateExamen: today, heureDebut: '08:00', heureFin: '10:00', salle: '' });
   const [alertForm, setAlertForm] = useState({ examenId: '', typeAlerte: 'NOTES_NON_REMISES', message: '' });
+  const [referentiel, setReferentiel] = useState(null);
+  const [newConvSelection, setNewConvSelection] = useState({});
+  const [messages, setMessages] = useState([]);
+  const [messagesExamenId, setMessagesExamenId] = useState('');
+  const [messageDraft, setMessageDraft] = useState('');
+  const [unreadMessages, setUnreadMessages] = useState(0);
+  const [conversations, setConversations] = useState([]);
+  const prevUnreadRef = useRef(0);
 
   const navigate = useNavigate();
   const { session, displayName } = useAuth();
@@ -78,16 +98,22 @@ export default function ExamsModule() {
     if (showLoader) setLoading(true);
     setError('');
     try {
-      const [sessionData, examData, enseignementData, alertData] = await Promise.all([
+      const [sessionData, examData, enseignementData, alertData, referentielData, messagesNonLusData, conversationsData] = await Promise.all([
         api('/exams/sessions'),
         api('/exams'),
         isScolarite ? api('/suivi/enseignements') : Promise.resolve([]),
         isScolarite ? api('/exams/alertes/all') : Promise.resolve([]),
+        isScolarite ? api('/enseignements/referentiels') : Promise.resolve(null),
+        api('/exams/messages/non-lus').catch(() => ({ count: 0 })),
+        api('/exams/conversations').catch(() => []),
       ]);
       setSessions(sessionData);
       setEnseignements(enseignementData);
       setExamens(examData);
       setAlertes(alertData);
+      setReferentiel(referentielData);
+      setUnreadMessages(messagesNonLusData?.count ?? 0);
+      setConversations(conversationsData ?? []);
       setExamForm((current) => ({ ...current, sessionId: current.sessionId || sessionData[0]?.id || '', enseignementId: current.enseignementId || enseignementData[0]?.id || '' }));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Impossible de charger les données du module.');
@@ -98,7 +124,21 @@ export default function ExamsModule() {
 
   useEffect(() => { void load(); }, [load]);
 
+  // Actualisation automatique (30 s) + au retour sur l'onglet.
+  useEffect(() => {
+    prevUnreadRef.current = unreadMessages;
+  }, [unreadMessages]);
+
+  useEffect(() => {
+    const interval = setInterval(() => { if (!busy) void refreshMessages(); }, 30000);
+    const onVisibility = () => { if (document.visibilityState === 'visible') void refreshMessages(); };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => { clearInterval(interval); document.removeEventListener('visibilitychange', onVisibility); };
+  }, [busy, messagesExamenId]);
+
   const unreadCount = alertes.filter((item) => !item.estLue).length;
+  const anneesUniversitaires = referentiel?.anneesUniversitaires || [];
+  const semestresAutorises = [...new Set((referentiel?.semestres || []).map((item) => item.value))];
   const notesPending = examens.filter((item) => !item.notesRemises).length;
   const filteredExams = useMemo(() => examens.filter((item) => {
     const matchesSession = !sessionFilter || item.sessionId === sessionFilter;
@@ -108,8 +148,47 @@ export default function ExamsModule() {
       .some((value) => String(value || '').toLocaleLowerCase('fr').includes(search));
     return matchesSession && matchesQuery;
   }), [examens, query, sessionFilter, sessions]);
+  const teacherConversations = useMemo(() => {
+    if (!isScolarite) return [];
+    const ensById = new Map(enseignements.map((item) => [item.id, item]));
+    const map = new Map();
+    for (const ens of enseignements) {
+      if (!map.has(ens.enseignant)) {
+        map.set(ens.enseignant, { enseignant: ens.enseignant, exams: [], lastMessageAt: null, unreadCount: 0, lastExamenId: null });
+      }
+    }
+    for (const exam of examens) {
+      const ens = ensById.get(exam.enseignementId);
+      if (!ens) continue;
+      const teacher = ens.enseignant;
+      if (!map.has(teacher)) {
+        map.set(teacher, { enseignant: teacher, exams: [], lastMessageAt: null, unreadCount: 0, lastExamenId: null });
+      }
+      map.get(teacher).exams.push({ ...exam, matiere: ens.matiere });
+    }
+    for (const conv of conversations) {
+      const exam = examens.find((item) => item.id === conv.examenId);
+      const ens = exam ? ensById.get(exam.enseignementId) : null;
+      const teacher = ens?.enseignant;
+      if (!teacher || !map.has(teacher)) continue;
+      const entry = map.get(teacher);
+      if (!entry.lastMessageAt || new Date(conv.lastMessageAt) > new Date(entry.lastMessageAt)) {
+        entry.lastMessageAt = conv.lastMessageAt;
+        entry.lastExamenId = conv.examenId;
+      }
+      entry.unreadCount += conv.unreadCount || 0;
+    }
+    const list = [...map.values()];
+    list.sort((a, b) => {
+      if (a.lastMessageAt && b.lastMessageAt) return new Date(b.lastMessageAt) - new Date(a.lastMessageAt);
+      if (a.lastMessageAt) return -1;
+      if (b.lastMessageAt) return 1;
+      return a.enseignant.localeCompare(b.enseignant);
+    });
+    return list;
+  }, [isScolarite, enseignements, examens, conversations]);
 
-  const runAction = async (action, successMessage) => {
+  const runAction = async (action, successMessage, onSuccess) => {
     setBusy(true);
     setError('');
     setNotice('');
@@ -117,6 +196,7 @@ export default function ExamsModule() {
       await action();
       setNotice(successMessage);
       await load(false);
+      if (onSuccess) onSuccess();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'L’action a échoué.');
     } finally {
@@ -124,19 +204,119 @@ export default function ExamsModule() {
     }
   };
 
-  const createSession = (event) => {
+  const sessionVide = { libelle: '', anneeUniversitaire: '', semestre: '', dateDebut: '', dateFin: '' };
+  const submitSession = (event) => {
     event.preventDefault();
-    return runAction(() => api('/exams/sessions', { method: 'POST', body: JSON.stringify(sessionForm) }), 'La session a été créée.');
+    if (editingSessionId) {
+      // Modification : réinitialisation uniquement après succès ; en cas d'erreur les champs et le mode édition sont conservés.
+      return runAction(
+        () => api(`/exams/sessions/${editingSessionId}`, { method: 'PATCH', body: JSON.stringify(sessionForm) }),
+        'La session a été mise à jour.',
+        () => { setSessionForm(sessionVide); setEditingSessionId(''); },
+      );
+    }
+    return runAction(() => api('/exams/sessions', { method: 'POST', body: JSON.stringify(sessionForm) }), 'La session a été créée.', () => setSessionForm(sessionVide));
+  };
+  const startEditSession = (item) => {
+    setEditingSessionId(item.id);
+    setSessionForm({ libelle: item.libelle, anneeUniversitaire: item.anneeUniversitaire, semestre: item.semestre, dateDebut: String(item.dateDebut).slice(0, 10), dateFin: String(item.dateFin).slice(0, 10) });
+  };
+  const cancelEditSession = () => {
+    setEditingSessionId('');
+    setSessionForm(sessionVide);
+  };
+
+  const defaultReminderFor = (examen) => examen && !examen.notesRemises
+    ? `Rappel : vos notes pour l'examen du ${examen.dateExamen} (salle ${examen.salle || '—'}) ne sont pas encore remises. Merci de les transmettre.`
+    : '';
+
+  const openThread = async (examenId) => {
+    setMessagesExamenId(examenId);
+    setMessages([]);
+    const examen = examens.find((item) => item.id === examenId);
+    setMessageDraft(isScolarite ? defaultReminderFor(examen) : '');
+    setBusy(true);
+    setError('');
+    try {
+      const data = await api(`/exams/${examenId}/messages`);
+      setMessages(data);
+      const myId = session?.userId;
+      const toMark = data.filter((item) => String(item.destinataireId) === String(myId) && !item.estLu);
+      await Promise.all(toMark.map((item) => api(`/exams/messages/${item.id}/lue`, { method: 'PATCH' }).catch(() => null)));
+      if (toMark.length) {
+        const refreshed = await api(`/exams/${examenId}/messages`).catch(() => data);
+        setMessages(refreshed);
+      }
+      const nl = await api('/exams/messages/non-lus').catch(() => ({ count: 0 }));
+      setUnreadMessages(nl?.count ?? 0);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Impossible de charger les messages.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const closeThread = () => {
+    setMessagesExamenId('');
+    setMessages([]);
+    setMessageDraft('');
+  };
+
+  const sendMessage = (event) => {
+    event.preventDefault();
+    if (!messagesExamenId) return;
+    const contenu = messageDraft.trim();
+    if (!contenu) {
+      setError('Le message ne peut pas être vide.');
+      return;
+    }
+    return runAction(
+      () => api(`/exams/${messagesExamenId}/messages`, { method: 'POST', body: JSON.stringify({ contenu }) }),
+      'Le message a été envoyé.',
+      async () => {
+        const data = await api(`/exams/${messagesExamenId}/messages`).catch(() => messages);
+        setMessages(data);
+        setMessageDraft('');
+        const nl = await api('/exams/messages/non-lus').catch(() => ({ count: 0 }));
+        setUnreadMessages(nl?.count ?? 0);
+      },
+    );
+  };
+
+  const refreshMessages = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      const nl = await api('/exams/messages/non-lus').catch(() => ({ count: 0 }));
+      const newCount = nl?.count ?? 0;
+      if (newCount > prevUnreadRef.current && document.hidden && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        try { new Notification('Nouveau message', { body: `${newCount} message(s) non lu(s) dans M6.` }); } catch { /* ignore */ }
+      } else if (newCount > prevUnreadRef.current && (typeof Notification === 'undefined' || Notification.permission !== 'granted')) {
+        setNotice('Nouveau message reçu.');
+      }
+      prevUnreadRef.current = newCount;
+      setUnreadMessages(newCount);
+      const conv = await api('/exams/conversations').catch(() => []);
+      setConversations(conv ?? []);
+      if (messagesExamenId) {
+        const data = await api(`/exams/${messagesExamenId}/messages`);
+        setMessages(data);
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Impossible d’actualiser les messages.');
+    } finally {
+      setBusy(false);
+    }
   };
   const createExam = (event) => {
     event.preventDefault();
-    return runAction(() => api('/exams', { method: 'POST', body: JSON.stringify(examForm) }), "L’examen a été créé.");
+    return runAction(() => api('/exams', { method: 'POST', body: JSON.stringify(examForm) }), "L’examen a été créé.", () => setExamForm({ sessionId: sessions[0]?.id || '', enseignementId: enseignements[0]?.id || '', dateExamen: today, heureDebut: '08:00', heureFin: '10:00', salle: '' }));
   };
   const createAlert = (event) => {
     event.preventDefault();
     const payload = { ...alertForm };
     if (!payload.examenId) delete payload.examenId;
-    return runAction(() => api('/exams/alertes', { method: 'POST', body: JSON.stringify(payload) }), 'L’alerte a été créée.');
+    return runAction(() => api('/exams/alertes', { method: 'POST', body: JSON.stringify(payload) }), 'L’alerte a été créée.', () => setAlertForm({ examenId: '', typeAlerte: 'NOTES_NON_REMISES', message: '' }));
   };
   const changeStatus = (id, statut) => runAction(
     () => api(`/exams/${id}/statut`, { method: 'PATCH', body: JSON.stringify({ statut }) }),
@@ -158,6 +338,7 @@ export default function ExamsModule() {
   const tabs = [
     { id: 'sessions', label: 'Sessions', task: '', icon: CalendarDays, count: sessions.length },
     { id: 'examens', label: 'Examens & notes', task: '', icon: ClipboardList, count: examens.length },
+    { id: 'messages', label: 'Messages', task: '', icon: MessageSquare, count: unreadMessages },
     ...(isScolarite ? [{ id: 'alertes', label: 'Alertes', task: '', icon: Bell, count: unreadCount }] : []),
   ];
 
@@ -230,16 +411,16 @@ export default function ExamsModule() {
               <>
                 {tab === 'sessions' && <div className="space-y-6">
                   <div><h2 className="text-xl font-bold text-[#0a0a32]">Sessions d’examen</h2><p className="mt-1 text-sm text-slate-500">Créez et consultez les périodes d’examen.</p></div>
-                  {isScolarite && (<form onSubmit={createSession} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
-                    <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-800"><Plus size={17} className="text-cyan-700" /> Nouvelle session</div>
+                  {isScolarite && (<form onSubmit={submitSession} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
+                    <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-800"><Plus size={17} className="text-cyan-700" /> {editingSessionId ? 'Modifier la session' : 'Nouvelle session'}</div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
                       <label className="text-xs font-medium text-slate-600">Libellé<input className={`${inputClass} mt-1.5`} value={sessionForm.libelle} onChange={(e) => setSessionForm({ ...sessionForm, libelle: e.target.value })} required /></label>
-                      <label className="text-xs font-medium text-slate-600">Année universitaire<input className={`${inputClass} mt-1.5`} value={sessionForm.anneeUniversitaire} onChange={(e) => setSessionForm({ ...sessionForm, anneeUniversitaire: e.target.value })} required /></label>
-                      <label className="text-xs font-medium text-slate-600">Semestre<input className={`${inputClass} mt-1.5`} value={sessionForm.semestre} onChange={(e) => setSessionForm({ ...sessionForm, semestre: e.target.value })} required /></label>
+                      <label className="text-xs font-medium text-slate-600">Année universitaire<select className={`${inputClass} mt-1.5`} value={sessionForm.anneeUniversitaire} onChange={(e) => setSessionForm({ ...sessionForm, anneeUniversitaire: e.target.value })} required><option value="">Choisir une année</option>{anneesUniversitaires.map((annee) => <option key={annee} value={annee}>{annee}</option>)}</select></label>
+                      <label className="text-xs font-medium text-slate-600">Semestre<select className={`${inputClass} mt-1.5`} value={sessionForm.semestre} onChange={(e) => setSessionForm({ ...sessionForm, semestre: e.target.value })} required><option value="">Choisir un semestre</option>{semestresAutorises.map((semestre) => <option key={semestre} value={semestre}>{semestre}</option>)}</select></label>
                       <label className="text-xs font-medium text-slate-600">Date de début<input type="date" className={`${inputClass} mt-1.5`} value={sessionForm.dateDebut} onChange={(e) => setSessionForm({ ...sessionForm, dateDebut: e.target.value })} required /></label>
                       <label className="text-xs font-medium text-slate-600">Date de fin<input type="date" className={`${inputClass} mt-1.5`} value={sessionForm.dateFin} onChange={(e) => setSessionForm({ ...sessionForm, dateFin: e.target.value })} required /></label>
                     </div>
-                    <div className="mt-4 flex justify-end"><button className={buttonClass} type="submit" disabled={busy}><Plus size={16} /> Créer la session</button></div>
+                    <div className="mt-4 flex justify-end gap-2">{editingSessionId && <button type="button" className={outlineButtonClass} onClick={cancelEditSession} disabled={busy}>Annuler</button>}<button className={buttonClass} type="submit" disabled={busy}>{editingSessionId ? <><Check size={16} /> Enregistrer les modifications</> : <><Plus size={16} /> Créer la session</>}</button></div>
                   </form>)}
                   <div className="overflow-x-auto rounded-xl border border-slate-200">
                     <table className="w-full min-w-[760px] text-left text-sm">
@@ -248,7 +429,7 @@ export default function ExamsModule() {
                         {sessions.map((session) => <tr key={session.id} className="transition hover:bg-cyan-50/30">
                           <td className="px-4 py-4 font-semibold text-slate-800">{session.libelle}</td><td className="px-4 py-4 text-slate-600">{session.anneeUniversitaire}</td><td className="px-4 py-4 text-slate-600">{session.semestre}</td><td className="px-4 py-4 text-slate-600">{dateLabel(session.dateDebut)} – {dateLabel(session.dateFin)}</td>
                           <td className="px-4 py-4"><StatusBadge tone={session.estCloturee ? 'slate' : 'green'}>{session.estCloturee ? 'Clôturée' : 'Ouverte'}</StatusBadge></td>
-                          {isScolarite && <td className="px-4 py-4 text-right">{!session.estCloturee && <button type="button" className="rounded-lg px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 hover:text-[#0a0a32] disabled:opacity-50" disabled={busy} onClick={() => closeSession(session.id)}>Clôturer</button>}</td>}
+                          {isScolarite && <td className="px-4 py-4 text-right"><div className="flex justify-end gap-2">{!session.estCloturee && <button type="button" className="rounded-lg px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-50" disabled={busy} onClick={() => startEditSession(session)}>Modifier</button>}{!session.estCloturee && <button type="button" className="rounded-lg px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 hover:text-[#0a0a32] disabled:opacity-50" disabled={busy} onClick={() => closeSession(session.id)}>Clôturer</button>}</div></td>}
                         </tr>)}
                         {!sessions.length && <tr><td colSpan={isScolarite ? 6 : 5} className="px-4 py-12 text-center text-slate-500">Aucune session enregistrée. Créez votre première session ci-dessus.</td></tr>}
                       </tbody>
@@ -289,26 +470,107 @@ export default function ExamsModule() {
                   </div>
                   <div className="overflow-x-auto rounded-xl border border-slate-200">
                     <table className="w-full min-w-[850px] text-left text-sm">
-                      <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">Date & heure</th><th className="px-4 py-3">Session</th><th className="px-4 py-3">Salle</th><th className="px-4 py-3">Statut</th><th className="px-4 py-3">Notes</th>{isScolarite && <th className="px-4 py-3 text-right">Actions</th>}</tr></thead>
+                      <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">Date & heure</th><th className="px-4 py-3">Session</th>{isScolarite && <th className="px-4 py-3">Matière</th>}{isScolarite && <th className="px-4 py-3">Enseignant</th>}<th className="px-4 py-3">Salle</th><th className="px-4 py-3">Statut</th><th className="px-4 py-3">Notes</th>{isScolarite && <th className="px-4 py-3 text-right">Actions</th>}</tr></thead>
                       <tbody className="divide-y divide-slate-100">
                         {filteredExams.map((exam) => <tr key={exam.id} className="transition hover:bg-cyan-50/30">
                           <td className="px-4 py-4 font-medium text-slate-800">{dateLabel(exam.dateExamen)}<span className="mt-1 block text-xs font-normal text-slate-500">{[exam.heureDebut, exam.heureFin].filter(Boolean).join(' – ') || 'Horaire à définir'}</span></td>
-                          <td className="px-4 py-4 text-slate-600">{sessions.find((item) => item.id === exam.sessionId)?.libelle || '—'}</td><td className="px-4 py-4 text-slate-600">{exam.salle || '—'}</td>
+                          <td className="px-4 py-4 text-slate-600">{sessions.find((item) => item.id === exam.sessionId)?.libelle || '—'}</td>{isScolarite && <td className="px-4 py-4 text-slate-600">{enseignements.find((item) => item.id === exam.enseignementId)?.matiere || 'Non rattaché'}</td>}{isScolarite && <td className="px-4 py-4 text-slate-600">{enseignements.find((item) => item.id === exam.enseignementId)?.enseignant || 'Non rattaché'}</td>}<td className="px-4 py-4 text-slate-600">{exam.salle || '—'}</td>
                           <td className="px-4 py-4"><StatusBadge tone={exam.statut === 'TERMINE' ? 'green' : exam.statut === 'EN_COURS' ? 'blue' : 'amber'}>{exam.statut === 'TERMINE' ? 'Terminé' : exam.statut === 'EN_COURS' ? 'En cours' : 'À venir'}</StatusBadge></td>
                           <td className="px-4 py-4"><StatusBadge tone={exam.notesRemises ? 'green' : 'red'}>{exam.notesRemises ? 'Remises' : 'En attente'}</StatusBadge></td>
                           {isScolarite && (<td className="px-4 py-4"><div className="flex justify-end gap-2">
                             {exam.statut === 'A_VENIR' && <button type="button" className="rounded-lg px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-50" disabled={busy} onClick={() => changeStatus(exam.id, 'EN_COURS')}>Démarrer</button>}
                             {exam.statut !== 'TERMINE' && <button type="button" className="rounded-lg px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50" disabled={busy} onClick={() => changeStatus(exam.id, 'TERMINE')}>Terminer</button>}
                             {exam.statut === 'TERMINE' && !exam.notesRemises && <button type="button" className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold text-[#0a0a32] hover:bg-slate-100 disabled:opacity-50" disabled={busy} onClick={() => markNotesSubmitted(exam.id)}><Check size={14} /> Notes remises</button>}
+                             <button type="button" className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold text-cyan-700 hover:bg-cyan-50 disabled:opacity-50" disabled={busy} onClick={() => { setTab('messages'); openThread(exam.id); }}><MessageSquare size={14} /> Messages</button>
                           </div></td>)}
                         </tr>)}
-                        {!filteredExams.length && <tr><td colSpan={isScolarite ? 6 : 5} className="px-4 py-12 text-center text-slate-500">Aucun examen ne correspond aux filtres sélectionnés.</td></tr>}
+                        {!filteredExams.length && <tr><td colSpan={isScolarite ? 8 : 5} className="px-4 py-12 text-center text-slate-500">Aucun examen ne correspond aux filtres sélectionnés.</td></tr>}
                       </tbody>
                     </table>
                   </div>
                 </div>}
 
-                {isScolarite && tab === 'alertes' && <div className="space-y-6">
+                {tab === 'messages' && <div className="space-y-6">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div><h2 className="text-xl font-bold text-[#0a0a32]">Messagerie</h2><p className="mt-1 text-sm text-slate-500">Échanges entre la Scolarité et les enseignants, liés à un examen. {unreadMessages} message(s) non lu(s).</p></div>
+                      <button type="button" className={outlineButtonClass} onClick={() => void refreshMessages()} disabled={busy}><RefreshCw size={16} /> Actualiser</button>
+                      {typeof Notification !== 'undefined' && Notification.permission !== 'granted' && <button type="button" className={outlineButtonClass} onClick={async () => { try { await Notification.requestPermission(); } catch { /* ignore */ } }}>Activer les notifications</button>}
+                    </div>
+                    {messagesExamenId ? (
+                      <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <h3 className="text-sm font-semibold text-slate-800">{dateLabel(examens.find((item) => item.id === messagesExamenId)?.dateExamen)} · {examens.find((item) => item.id === messagesExamenId)?.salle || 'Sans salle'}</h3>
+                            <p className="text-xs text-slate-500">{sessions.find((item) => item.id === examens.find((e) => e.id === messagesExamenId)?.sessionId)?.libelle || '—'}{isScolarite ? ` · ${enseignements.find((item) => item.id === examens.find((e) => e.id === messagesExamenId)?.enseignementId)?.matiere || 'Non rattaché'} · ${enseignements.find((item) => item.id === examens.find((e) => e.id === messagesExamenId)?.enseignementId)?.enseignant || 'Non rattaché'}` : ''}</p>
+                          </div>
+                          <button type="button" className={outlineButtonClass} onClick={closeThread} disabled={busy}>Fermer</button>
+                        </div>
+                        <div className="max-h-80 overflow-y-auto space-y-3 rounded-lg border border-slate-100 bg-slate-50/50 p-3">
+                          {messages.map((item) => {
+                            const isMine = String(item.expediteurId) === String(session?.userId);
+                            return (
+                              <div key={item.id} className={`rounded-lg border p-3 text-sm ${isMine ? 'bg-cyan-50 border-cyan-200 ml-6' : 'bg-white border-slate-200 mr-6'}`}>
+                                <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+                                  <span className="font-semibold">{isMine ? 'Vous' : (isScolarite ? 'Enseignant' : 'Scolarité')}</span>
+                                  <span>{new Date(item.createdAt).toLocaleString('fr-FR')}</span>
+                                </div>
+                                <p className="text-slate-800 whitespace-pre-wrap">{item.contenu}</p>
+                                <div className="mt-1 text-xs text-slate-400">{item.estLu ? 'Lu' : 'Non lu'}</div>
+                              </div>
+                            );
+                          })}
+                          {!messages.length && <p className="text-sm text-slate-500">Aucun message pour cet examen.</p>}
+                        </div>
+                        <form onSubmit={sendMessage} className="space-y-2">
+                          <textarea className={`${inputClass} min-h-[80px]`} value={messageDraft} onChange={(e) => setMessageDraft(e.target.value)} placeholder="Votre message..." />
+                          <div className="flex justify-end"><button className={buttonClass} type="submit" disabled={busy}><MessageSquare size={16} /> Envoyer</button></div>
+                        </form>
+                      </div>
+                    ) : isScolarite ? (
+                      <div className="space-y-3">
+                        {teacherConversations.map((teacher) => (
+                          <div key={teacher.enseignant} className="rounded-xl border border-slate-200 bg-white p-4 space-y-2">
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <p className="font-semibold text-slate-800">{teacher.enseignant}</p>
+                                <p className="text-xs text-slate-500">{teacher.exams.length} examen(s) rattaché(s){teacher.lastMessageAt ? ` · dernier message : ${new Date(teacher.lastMessageAt).toLocaleString('fr-FR')}` : ' · Aucune conversation'}</p>
+                                {teacher.unreadCount > 0 && <span className="mt-1 inline-flex rounded-full bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-700">{teacher.unreadCount} non lu(s)</span>}
+                              </div>
+                              {teacher.lastExamenId ? (
+                                <button type="button" className={buttonClass} disabled={busy} onClick={() => openThread(teacher.lastExamenId)}><MessageSquare size={16} /> Ouvrir</button>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <select className={inputClass} value={newConvSelection[teacher.enseignant] || teacher.exams[0]?.id || ''} onChange={(e) => setNewConvSelection((prev) => ({ ...prev, [teacher.enseignant]: e.target.value }))}>
+                                    {teacher.exams.map((exam) => (
+                                      <option key={exam.id} value={exam.id}>{dateLabel(exam.dateExamen)} · {exam.salle || 'Sans salle'} · {exam.matiere}</option>
+                                    ))}
+                                  </select>
+                                  <button type="button" className={buttonClass} disabled={busy || !teacher.exams.length} onClick={() => openThread(newConvSelection[teacher.enseignant] || teacher.exams[0]?.id)}><MessageSquare size={16} /> Démarrer</button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                        {!teacherConversations.length && <p className="text-sm text-slate-500">Aucun enseignant rattaché.</p>}
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {conversations.length ? conversations.map((conv) => (
+                          <div key={conv.examenId} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4">
+                            <div>
+                              <p className="font-semibold text-slate-800">{dateLabel(conv.dateExamen)} · {conv.salle || 'Sans salle'}{conv.unreadCount ? <span className="ml-2 inline-flex rounded-full bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-700">{conv.unreadCount} non lu(s)</span> : null}</p>
+                              <p className="text-xs text-slate-500">{conv.session || '—'}{isScolarite ? ` · ${conv.matiere || 'Non rattaché'} · ${conv.enseignant || 'Non rattaché'}` : ''} · dernier message : {new Date(conv.lastMessageAt).toLocaleString('fr-FR')}</p>
+                            </div>
+                            <button type="button" className={buttonClass} disabled={busy} onClick={() => openThread(conv.examenId)}><MessageSquare size={16} /> Ouvrir</button>
+                          </div>
+                        )) : (
+                          <p className="text-sm text-slate-500">Aucune conversation.</p>
+                        )}
+                      </div>
+                    )}
+                  </div>}
+
+                  {isScolarite && tab === 'alertes' && <div className="space-y-6">
                   <div><h2 className="text-xl font-bold text-[#0a0a32]">Centre des alertes</h2><p className="mt-1 text-sm text-slate-500">Consultez les alertes et marquez celles que vous avez traitées.</p></div>
                   {isScolarite && (<form onSubmit={createAlert} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
                     <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-800"><Plus size={17} className="text-cyan-700" /> Nouvelle alerte</div>

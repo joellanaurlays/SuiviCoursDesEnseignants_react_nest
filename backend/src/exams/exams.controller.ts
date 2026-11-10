@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Patch, Body, Param, Query } from '@nestjs/common';
 import { ExamsService } from './exams.service.js';
-import { CreateSessionDto, CreateExamenDto, UpdateStatutDto, CreateAlerteDto } from './dto/exams.dto.js';
+import { CreateSessionDto, UpdateSessionDto, CreateExamenDto, UpdateStatutDto, CreateAlerteDto, CreateMessageDto } from './dto/exams.dto.js';
 import { Role } from '../auth/roles.enum.js';
 import { Roles } from '../auth/roles.decorator.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
@@ -11,7 +11,7 @@ export class ExamsController {
   constructor(private readonly service: ExamsService) {}
 
   // T26
-  @Roles(Role.SCOLARITE, Role.RESPONSABLE_MENTION)
+  @Roles(Role.ENSEIGNANT, Role.SCOLARITE, Role.RESPONSABLE_MENTION, Role.ADMINISTRATEUR)
   @Get('sessions')
   getSessions(@CurrentUser() authContext: AuthContext) {
     return this.service.findSessions(authContext);
@@ -25,8 +25,34 @@ export class ExamsController {
   @Patch('sessions/:id/cloturer')
   cloturer(@Param('id') id: string) { return this.service.cloturerSession(id); }
 
+  // Messagerie Scolarité ↔ Enseignant (associée à un examen).
+  @Roles(Role.SCOLARITE, Role.ENSEIGNANT, Role.ADMINISTRATEUR)
+  @Get('messages/non-lus')
+  messagesNonLus(@CurrentUser() context: AuthContext) { return this.service.compterNonLus(context); }
+
+  @Roles(Role.SCOLARITE, Role.ENSEIGNANT, Role.ADMINISTRATEUR)
+  @Get('conversations')
+  getConversations(@CurrentUser() context: AuthContext) { return this.service.listerConversations(context); }
+
+  @Roles(Role.SCOLARITE, Role.ENSEIGNANT, Role.ADMINISTRATEUR)
+  @Get(':id/messages')
+  getMessages(@Param('id') id: string, @CurrentUser() context: AuthContext) { return this.service.listerMessages(id, context); }
+
+  @Roles(Role.SCOLARITE, Role.ENSEIGNANT, Role.ADMINISTRATEUR)
+  @Post(':id/messages')
+  postMessage(@Param('id') id: string, @Body() dto: CreateMessageDto, @CurrentUser() context: AuthContext) { return this.service.creerMessage(id, dto.contenu, context); }
+
+  @Roles(Role.SCOLARITE, Role.ENSEIGNANT, Role.ADMINISTRATEUR)
+  @Patch('messages/:id/lue')
+  patchMessageLu(@Param('id') id: string, @CurrentUser() context: AuthContext) { return this.service.marquerLu(id, context); }
+
+  // Modification d'une session ouverte (rattachements des examens préservés).
+  @Roles(Role.SCOLARITE)
+  @Patch('sessions/:id')
+  patchSession(@Param('id') id: string, @Body() dto: UpdateSessionDto) { return this.service.updateSession(id, dto); }
+
   // T27/T28
-  @Roles(Role.SCOLARITE, Role.RESPONSABLE_MENTION)
+  @Roles(Role.ENSEIGNANT, Role.SCOLARITE, Role.RESPONSABLE_MENTION, Role.ADMINISTRATEUR)
   @Get()
   getExamens(
     @CurrentUser() authContext: AuthContext,

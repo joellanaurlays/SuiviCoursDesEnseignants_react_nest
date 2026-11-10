@@ -19,6 +19,7 @@ import { useAuth } from '../auth/AuthContext';
 import { useAuth as useJwtAuth } from '../context/AuthContext.jsx';
 import { roleLabel } from '../auth/identities';
 import { UserSession } from '../types/enseignement';
+import MessagesBubble from '../components/MessagesBubble';
 
 interface NavItem {
   name: string;
@@ -180,6 +181,7 @@ export function Layout({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
+      <MessagesBubble />
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         <header className="bg-white border-b border-gray-200 px-8 py-3 flex items-center justify-end gap-4 shrink-0">
           <p className="text-sm text-gray-600">
