@@ -13,6 +13,7 @@ function setup(ids: string[] = ['ens-1']) {
   const examensSave = vi.fn().mockImplementation(async (value) => value);
   const enseignementsFind = vi.fn().mockResolvedValue(ids.map(id => ({ id })));
   const enseignementsFindUnique = vi.fn().mockResolvedValue({ id: 'ens-1' });
+  const alertesFind = vi.fn().mockResolvedValue([]);
   const messagesFind = vi.fn().mockResolvedValue([]);
   const messagesFindOne = vi.fn().mockResolvedValue(null);
   const messagesFindOneBy = vi.fn().mockResolvedValue(null);
@@ -25,12 +26,12 @@ function setup(ids: string[] = ['ens-1']) {
   const service = new ExamsService(
     { find: sessionsFind, findOneBy: sessionsFindOneBy } as never,
     { find: examensFind, findOneBy: examensFindOneBy, create: examensCreate, save: examensSave } as never,
-    {} as never,
+    { find: alertesFind } as never,
     { find: messagesFind, findOne: messagesFindOne, findOneBy: messagesFindOneBy, create: messagesCreate, save: messagesSave, count: messagesCount } as never,
     { enseignement: { findMany: enseignementsFind, findUnique: enseignementsFindUnique }, user: { findFirst: usersFindFirst, findMany: usersFindMany } } as never,
   );
 
-  return { service, sessionsFind, sessionsFindOneBy, examensFind, examensFindOneBy, enseignementsFind, enseignementsFindUnique, examensCreate, examensSave, messagesFind, messagesFindOne, messagesFindOneBy, messagesCreate, messagesSave, messagesCount, usersFindMany, usersFindFirst };
+  return { service, sessionsFind, sessionsFindOneBy, examensFind, examensFindOneBy, enseignementsFind, enseignementsFindUnique, examensCreate, examensSave, alertesFind, messagesFind, messagesFindOne, messagesFindOneBy, messagesCreate, messagesSave, messagesCount, usersFindMany, usersFindFirst };
 }
 
 describe('ExamsService - createExamen', () => {
@@ -227,5 +228,95 @@ describe('ExamsService - messagerie', () => {
     enseignementsFindUnique.mockResolvedValue({ id: 'ens-andry', enseignantId: 'Professeur Andry', matiereId: 'Probabilites' });
     usersFindFirst.mockResolvedValue(null);
     await expect(service.listerMessages(dtoExamen, { userId: '5', role: Role.ENSEIGNANT } as any)).rejects.toBeInstanceOf(ForbiddenException);
+  });
+});
+
+const responsableMention = {
+  userId: '3',
+  role: Role.RESPONSABLE_MENTION,
+  mentionId: 'INFORMATIQUE',
+  cycles: ['LICENCE'],
+  parcours: 'Informatique',
+};
+
+describe('ExamsService - alertes périmètre RESPONSABLE_MENTION', () => {
+  it('filtre les alertes par mention/cycle/parcours (uniquement les examens du périmètre)', async () => {
+    const { service, examensFind, alertesFind, enseignementsFind } = setup();
+    enseignementsFind.mockResolvedValue([{ id: 'ens-info' }]);
+    examensFind.mockResolvedValue([{ id: 'exam-info' }]);
+    alertesFind.mockResolvedValue([{ id: 'alert-info', examenId: 'exam-info' }]);
+
+    const result = await service.findAlertes(false, responsableMention as any);
+
+    expect(result).toHaveLength(1);
+    expect(alertesFind).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ examenId: expect.anything() }),
+    }));
+  });
+
+  it('un Responsable de Mention ne voit jamais les alertes d\'une autre mention', async () => {
+    const { service, examensFind, alertesFind, enseignementsFind } = setup();
+    enseignementsFind.mockResolvedValue([]);
+    examensFind.mockResolvedValue([]);
+    alertesFind.mockResolvedValue([{ id: 'alert-autre', examenId: 'exam-autre' }]);
+
+    const result = await service.findAlertes(false, responsableMention as any);
+
+    expect(result).toEqual([]);
+  });
+
+  it('le Chef de Scolarité conserve l\'accès global aux alertes', async () => {
+    const { service, alertesFind } = setup();
+    alertesFind.mockResolvedValue([{ id: 'a1' }, { id: 'a2' }]);
+
+    const result = await service.findAlertes(false, { userId: '2', role: Role.SCOLARITE } as any);
+
+    expect(result).toHaveLength(2);
+    expect(alertesFind).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.not.objectContaining({ examenId: expect.anything() }),
+    }));
+  });
+});
+
+describe('ExamsService - messagerie périmètre RESPONSABLE_MENTION', () => {
+  const dtoExamen = 'exam-1';
+  const enseignementInfo = { id: 'ens-info', enseignantId: 'Professeur X', matiereId: 'M' };
+
+  it('consulte les messages d\'un examen de son périmètre', async () => {
+    const { service, enseignementsFind, enseignementsFindUnique, examensFindOneBy, messagesFind } = setup();
+    enseignementsFind.mockResolvedValue([{ id: 'ens-info' }]);
+    enseignementsFindUnique.mockResolvedValue(enseignementInfo);
+    examensFindOneBy.mockResolvedValue({ id: dtoExamen, enseignementId: 'ens-info', dateExamen: '2026-10-30', salle: 'A1' });
+    messagesFind.mockResolvedValue([{ id: 'm1', contenu: 'hi', createdAt: new Date() }]);
+
+    const result = await service.listerMessages(dtoExamen, { userId: '3', role: Role.RESPONSABLE_MENTION, mentionId: 'INFORMATIQUE', cycles: ['LICENCE'], parcours: 'Informatique' } as any);
+
+    expect(result).toHaveLength(1);
+  });
+
+  it('ne peut pas consulter les messages d\'un examen hors périmètre', async () => {
+    const { service, enseignementsFind, enseignementsFindUnique, examensFindOneBy } = setup();
+    enseignementsFind.mockResolvedValue([{ id: 'ens-info' }]);
+    enseignementsFindUnique.mockResolvedValue({ id: 'ens-other', enseignantId: 'Professeur Y', matiereId: 'M2' });
+    examensFindOneBy.mockResolvedValue({ id: dtoExamen, enseignementId: 'ens-other', dateExamen: '2026-10-30', salle: 'A1' });
+
+    await expect(service.listerMessages(dtoExamen, { userId: '3', role: Role.RESPONSABLE_MENTION, mentionId: 'INFORMATIQUE', cycles: ['LICENCE'], parcours: 'Informatique' } as any)).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('peut marquer comme lu un message d\'une conversation accessible', async () => {
+    const { service, messagesFindOneBy, enseignementsFind, enseignementsFindUnique, examensFindOneBy } = setup();
+    enseignementsFind.mockResolvedValue([{ id: 'ens-info' }]);
+    enseignementsFindUnique.mockResolvedValue(enseignementInfo);
+    examensFindOneBy.mockResolvedValue({ id: dtoExamen, enseignementId: 'ens-info', dateExamen: '2026-10-30', salle: 'A1' });
+    messagesFindOneBy.mockResolvedValue({ id: 'm1', examenId: dtoExamen, destinataireId: 5, estLu: false });
+
+    const res = await service.marquerLu('m1', { userId: '3', role: Role.RESPONSABLE_MENTION, mentionId: 'INFORMATIQUE', cycles: ['LICENCE'], parcours: 'Informatique' } as any);
+
+    expect((res as any).estLu).toBe(true);
+  });
+
+  it('ne peut pas envoyer de message (écriture réservée)', async () => {
+    const { service } = setup();
+    await expect(service.creerMessage(dtoExamen, 'Bonjour', { userId: '3', role: Role.RESPONSABLE_MENTION, mentionId: 'INFORMATIQUE', cycles: ['LICENCE'], parcours: 'Informatique' } as any)).rejects.toBeInstanceOf(ForbiddenException);
   });
 });

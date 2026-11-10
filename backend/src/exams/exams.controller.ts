@@ -26,15 +26,15 @@ export class ExamsController {
   cloturer(@Param('id') id: string) { return this.service.cloturerSession(id); }
 
   // Messagerie Scolarité ↔ Enseignant (associée à un examen).
-  @Roles(Role.SCOLARITE, Role.ENSEIGNANT, Role.ADMINISTRATEUR)
+  @Roles(Role.SCOLARITE, Role.RESPONSABLE_MENTION, Role.ENSEIGNANT, Role.ADMINISTRATEUR)
   @Get('messages/non-lus')
   messagesNonLus(@CurrentUser() context: AuthContext) { return this.service.compterNonLus(context); }
 
-  @Roles(Role.SCOLARITE, Role.ENSEIGNANT, Role.ADMINISTRATEUR)
+  @Roles(Role.SCOLARITE, Role.RESPONSABLE_MENTION, Role.ENSEIGNANT, Role.ADMINISTRATEUR)
   @Get('conversations')
   getConversations(@CurrentUser() context: AuthContext) { return this.service.listerConversations(context); }
 
-  @Roles(Role.SCOLARITE, Role.ENSEIGNANT, Role.ADMINISTRATEUR)
+  @Roles(Role.SCOLARITE, Role.RESPONSABLE_MENTION, Role.ENSEIGNANT, Role.ADMINISTRATEUR)
   @Get(':id/messages')
   getMessages(@Param('id') id: string, @CurrentUser() context: AuthContext) { return this.service.listerMessages(id, context); }
 
@@ -42,7 +42,7 @@ export class ExamsController {
   @Post(':id/messages')
   postMessage(@Param('id') id: string, @Body() dto: CreateMessageDto, @CurrentUser() context: AuthContext) { return this.service.creerMessage(id, dto.contenu, context); }
 
-  @Roles(Role.SCOLARITE, Role.ENSEIGNANT, Role.ADMINISTRATEUR)
+  @Roles(Role.SCOLARITE, Role.RESPONSABLE_MENTION, Role.ENSEIGNANT, Role.ADMINISTRATEUR)
   @Patch('messages/:id/lue')
   patchMessageLu(@Param('id') id: string, @CurrentUser() context: AuthContext) { return this.service.marquerLu(id, context); }
 
@@ -77,10 +77,10 @@ export class ExamsController {
   patchNotes(@Param('id') id: string) { return this.service.marquerNotesRemises(id); }
 
   // T30
-  @Roles(Role.SCOLARITE)
+  @Roles(Role.SCOLARITE, Role.RESPONSABLE_MENTION)
   @Get('alertes/all')
-  getAlertes(@Query('nonLues') nonLues?: string) {
-    return this.service.findAlertes(nonLues === 'true');
+  getAlertes(@Query('nonLues') nonLues?: string, @CurrentUser() context?: AuthContext) {
+    return this.service.findAlertes(nonLues === 'true', context);
   }
 
   @Roles(Role.SCOLARITE)

@@ -314,9 +314,20 @@ export class ExamsService {
 
   // Alertes
 
-  findAlertes(nonLues = false) {
+  async findAlertes(nonLues = false, context?: AuthContext) {
+    const ids = context ? await this.getEnseignementIdsForRead(context) : null;
+    const where: any = nonLues ? { estLue: false } : {};
+
+    if (ids !== null) {
+      if (!ids.length) return [];
+      const examens = await this.examens.find({ select: { id: true }, where: { enseignementId: In(ids) } });
+      const examenIds = examens.map((examen) => examen.id);
+      if (!examenIds.length) return [];
+      where.examenId = In(examenIds);
+    }
+
     return this.alertes.find({
-      where: nonLues ? { estLue: false } : {},
+      where,
       relations: { examen: true },
       order: { createdAt: 'DESC' },
     });
@@ -375,6 +386,39 @@ export class ExamsService {
   }
 
   // ---------- Messagerie Scolarité ↔ Enseignant ----------
+
+  private async verifierAccesExamen(examen: Examen, enseignement: { id: string; enseignantId: string | null } | null, context: AuthContext): Promise<void> {
+    const isScolarite = context.role === Role.SCOLARITE || context.role === Role.ADMINISTRATEUR;
+    if (isScolarite) return;
+
+    const userId = parseInt(context.userId, 10);
+
+    if (context.role === Role.ENSEIGNANT) {
+      if (!enseignement) {
+        throw new ForbiddenException('Accès interdit à cette conversation.');
+      }
+      try {
+        const teacherId = await this.resoudreCompteEnseignant(enseignement);
+        if (teacherId !== userId) {
+          throw new ForbiddenException('Accès interdit à cette conversation.');
+        }
+      } catch (error) {
+        if (error instanceof ForbiddenException) throw error;
+        throw new ForbiddenException('Accès interdit à cette conversation.');
+      }
+      return;
+    }
+
+    if (context.role === Role.RESPONSABLE_MENTION) {
+      const ids = await this.getEnseignementIdsForRead(context);
+      if (!ids || !enseignement || !ids.includes(enseignement.id)) {
+        throw new ForbiddenException('Accès interdit à cette conversation.');
+      }
+      return;
+    }
+
+    throw new ForbiddenException('Accès interdit à cette conversation.');
+  }
 
   private async resoudreExamenEtEnseignement(examenId: string) {
     const examen = await this.examens.findOneBy({ id: examenId });
@@ -461,22 +505,8 @@ export class ExamsService {
   }
 
   async listerMessages(examenId: string, context: AuthContext) {
-    const { enseignement } = await this.resoudreExamenEtEnseignement(examenId);
-    const userId = parseInt(context.userId, 10);
-    const isScolarite = context.role === Role.SCOLARITE || context.role === Role.ADMINISTRATEUR;
-
-    if (!isScolarite) {
-      try {
-        const teacherId = await this.resoudreCompteEnseignant(enseignement);
-        if (teacherId !== userId) {
-          throw new ForbiddenException('Accès interdit à cette conversation.');
-        }
-      } catch (error) {
-        if (error instanceof ForbiddenException) throw error;
-        throw new ForbiddenException('Accès interdit à cette conversation.');
-      }
-    }
-
+    const { examen, enseignement } = await this.resoudreExamenEtEnseignement(examenId);
+    await this.verifierAccesExamen(examen, enseignement, context);
     return this.messages.find({ where: { examenId }, order: { createdAt: 'ASC' } });
   }
 
@@ -486,9 +516,15 @@ export class ExamsService {
       throw new NotFoundException('Message introuvable.');
     }
     const userId = parseInt(context.userId, 10);
-    if (message.destinataireId !== userId) {
+    const isScolarite = context.role === Role.SCOLARITE || context.role === Role.ADMINISTRATEUR;
+
+    if (context.role === Role.RESPONSABLE_MENTION) {
+      const { examen, enseignement } = await this.resoudreExamenEtEnseignement(message.examenId);
+      await this.verifierAccesExamen(examen, enseignement, context);
+    } else if (message.destinataireId !== userId) {
       throw new ForbiddenException('Seul le destinataire peut marquer ce message comme lu.');
     }
+
     if (!message.estLu) {
       message.estLu = true;
       await this.messages.save(message);

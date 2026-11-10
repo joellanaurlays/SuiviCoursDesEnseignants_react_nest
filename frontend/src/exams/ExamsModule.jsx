@@ -89,6 +89,7 @@ export default function ExamsModule() {
   const navigate = useNavigate();
   const { session, displayName } = useAuth();
   const isScolarite = session?.role === 'SCOLARITE';
+  const isResponsableMention = session?.role === 'RESPONSABLE_MENTION';
 
   const handleBack = () => {
     navigate(getRoleHomePath(session));
@@ -101,8 +102,8 @@ export default function ExamsModule() {
       const [sessionData, examData, enseignementData, alertData, referentielData, messagesNonLusData, conversationsData] = await Promise.all([
         api('/exams/sessions'),
         api('/exams'),
-        isScolarite ? api('/suivi/enseignements') : Promise.resolve([]),
-        isScolarite ? api('/exams/alertes/all') : Promise.resolve([]),
+        isScolarite || isResponsableMention ? api('/suivi/enseignements') : Promise.resolve([]),
+        isScolarite || isResponsableMention ? api('/exams/alertes/all') : Promise.resolve([]),
         isScolarite ? api('/enseignements/referentiels') : Promise.resolve(null),
         api('/exams/messages/non-lus').catch(() => ({ count: 0 })),
         api('/exams/conversations').catch(() => []),
@@ -149,7 +150,7 @@ export default function ExamsModule() {
     return matchesSession && matchesQuery;
   }), [examens, query, sessionFilter, sessions]);
   const teacherConversations = useMemo(() => {
-    if (!isScolarite) return [];
+    if (!isScolarite && !isResponsableMention) return [];
     const ensById = new Map(enseignements.map((item) => [item.id, item]));
     const map = new Map();
     for (const ens of enseignements) {
@@ -339,7 +340,7 @@ export default function ExamsModule() {
     { id: 'sessions', label: 'Sessions', task: '', icon: CalendarDays, count: sessions.length },
     { id: 'examens', label: 'Examens & notes', task: '', icon: ClipboardList, count: examens.length },
     { id: 'messages', label: 'Messages', task: '', icon: MessageSquare, count: unreadMessages },
-    ...(isScolarite ? [{ id: 'alertes', label: 'Alertes', task: '', icon: Bell, count: unreadCount }] : []),
+    ...(isScolarite || isResponsableMention ? [{ id: 'alertes', label: 'Alertes', task: '', icon: Bell, count: unreadCount }] : []),
   ];
 
   return (
@@ -470,11 +471,11 @@ export default function ExamsModule() {
                   </div>
                   <div className="overflow-x-auto rounded-xl border border-slate-200">
                     <table className="w-full min-w-[850px] text-left text-sm">
-                      <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">Date & heure</th><th className="px-4 py-3">Session</th>{isScolarite && <th className="px-4 py-3">Matière</th>}{isScolarite && <th className="px-4 py-3">Enseignant</th>}<th className="px-4 py-3">Salle</th><th className="px-4 py-3">Statut</th><th className="px-4 py-3">Notes</th>{isScolarite && <th className="px-4 py-3 text-right">Actions</th>}</tr></thead>
+                      <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">Date & heure</th><th className="px-4 py-3">Session</th>{(isScolarite || isResponsableMention) && <th className="px-4 py-3">Matière</th>}{(isScolarite || isResponsableMention) && <th className="px-4 py-3">Enseignant</th>}<th className="px-4 py-3">Salle</th><th className="px-4 py-3">Statut</th><th className="px-4 py-3">Notes</th>{isScolarite && <th className="px-4 py-3 text-right">Actions</th>}</tr></thead>
                       <tbody className="divide-y divide-slate-100">
                         {filteredExams.map((exam) => <tr key={exam.id} className="transition hover:bg-cyan-50/30">
                           <td className="px-4 py-4 font-medium text-slate-800">{dateLabel(exam.dateExamen)}<span className="mt-1 block text-xs font-normal text-slate-500">{[exam.heureDebut, exam.heureFin].filter(Boolean).join(' – ') || 'Horaire à définir'}</span></td>
-                          <td className="px-4 py-4 text-slate-600">{sessions.find((item) => item.id === exam.sessionId)?.libelle || '—'}</td>{isScolarite && <td className="px-4 py-4 text-slate-600">{enseignements.find((item) => item.id === exam.enseignementId)?.matiere || 'Non rattaché'}</td>}{isScolarite && <td className="px-4 py-4 text-slate-600">{enseignements.find((item) => item.id === exam.enseignementId)?.enseignant || 'Non rattaché'}</td>}<td className="px-4 py-4 text-slate-600">{exam.salle || '—'}</td>
+                          <td className="px-4 py-4 text-slate-600">{sessions.find((item) => item.id === exam.sessionId)?.libelle || '—'}</td>{(isScolarite || isResponsableMention) && <td className="px-4 py-4 text-slate-600">{enseignements.find((item) => item.id === exam.enseignementId)?.matiere || 'Non rattaché'}</td>}{(isScolarite || isResponsableMention) && <td className="px-4 py-4 text-slate-600">{enseignements.find((item) => item.id === exam.enseignementId)?.enseignant || 'Non rattaché'}</td>}<td className="px-4 py-4 text-slate-600">{exam.salle || '—'}</td>
                           <td className="px-4 py-4"><StatusBadge tone={exam.statut === 'TERMINE' ? 'green' : exam.statut === 'EN_COURS' ? 'blue' : 'amber'}>{exam.statut === 'TERMINE' ? 'Terminé' : exam.statut === 'EN_COURS' ? 'En cours' : 'À venir'}</StatusBadge></td>
                           <td className="px-4 py-4"><StatusBadge tone={exam.notesRemises ? 'green' : 'red'}>{exam.notesRemises ? 'Remises' : 'En attente'}</StatusBadge></td>
                           {isScolarite && (<td className="px-4 py-4"><div className="flex justify-end gap-2">
@@ -484,7 +485,7 @@ export default function ExamsModule() {
                              <button type="button" className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold text-cyan-700 hover:bg-cyan-50 disabled:opacity-50" disabled={busy} onClick={() => { setTab('messages'); openThread(exam.id); }}><MessageSquare size={14} /> Messages</button>
                           </div></td>)}
                         </tr>)}
-                        {!filteredExams.length && <tr><td colSpan={isScolarite ? 8 : 5} className="px-4 py-12 text-center text-slate-500">Aucun examen ne correspond aux filtres sélectionnés.</td></tr>}
+                        {!filteredExams.length && <tr><td colSpan={isScolarite ? 8 : (isResponsableMention ? 7 : 5)} className="px-4 py-12 text-center text-slate-500">Aucun examen ne correspond aux filtres sélectionnés.</td></tr>}
                       </tbody>
                     </table>
                   </div>
@@ -526,7 +527,7 @@ export default function ExamsModule() {
                           <div className="flex justify-end"><button className={buttonClass} type="submit" disabled={busy}><MessageSquare size={16} /> Envoyer</button></div>
                         </form>
                       </div>
-                    ) : isScolarite ? (
+                    ) : (isScolarite || isResponsableMention) ? (
                       <div className="space-y-3">
                         {teacherConversations.map((teacher) => (
                           <div key={teacher.enseignant} className="rounded-xl border border-slate-200 bg-white p-4 space-y-2">
