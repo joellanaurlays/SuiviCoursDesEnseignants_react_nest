@@ -20,18 +20,23 @@ function setup(ids: string[] = ['ens-1']) {
   const messagesCreate = vi.fn((value) => value);
   const messagesSave = vi.fn().mockImplementation(async (value) => value);
   const messagesCount = vi.fn().mockResolvedValue(0);
-  const usersFindMany = vi.fn().mockResolvedValue([{ id: 2 }]);
+  const usersFindMany = vi.fn().mockResolvedValue([{ id: 2, role: { name: 'CHEF_SCOLARITE' } }]);
   const usersFindFirst = vi.fn().mockResolvedValue({ id: 5 });
+  const usersFindUnique = vi.fn().mockImplementation((args: any) => {
+    const id = args?.where?.id;
+    if (id === 5) return Promise.resolve({ role: { name: 'ENSEIGNANT' } });
+    return Promise.resolve({ role: { name: 'CHEF_SCOLARITE' } });
+  });
 
   const service = new ExamsService(
     { find: sessionsFind, findOneBy: sessionsFindOneBy } as never,
     { find: examensFind, findOneBy: examensFindOneBy, create: examensCreate, save: examensSave } as never,
     { find: alertesFind } as never,
     { find: messagesFind, findOne: messagesFindOne, findOneBy: messagesFindOneBy, create: messagesCreate, save: messagesSave, count: messagesCount } as never,
-    { enseignement: { findMany: enseignementsFind, findUnique: enseignementsFindUnique }, user: { findFirst: usersFindFirst, findMany: usersFindMany } } as never,
+    { enseignement: { findMany: enseignementsFind, findUnique: enseignementsFindUnique }, user: { findFirst: usersFindFirst, findMany: usersFindMany, findUnique: usersFindUnique } } as never,
   );
 
-  return { service, sessionsFind, sessionsFindOneBy, examensFind, examensFindOneBy, enseignementsFind, enseignementsFindUnique, examensCreate, examensSave, alertesFind, messagesFind, messagesFindOne, messagesFindOneBy, messagesCreate, messagesSave, messagesCount, usersFindMany, usersFindFirst };
+  return { service, sessionsFind, sessionsFindOneBy, examensFind, examensFindOneBy, enseignementsFind, enseignementsFindUnique, examensCreate, examensSave, alertesFind, messagesFind, messagesFindOne, messagesFindOneBy, messagesCreate, messagesSave, messagesCount, usersFindMany, usersFindFirst, usersFindUnique };
 }
 
 describe('ExamsService - createExamen', () => {
@@ -79,8 +84,8 @@ describe('ExamsService — périmètre responsable', () => {
 
     expect(enseignementsFind).toHaveBeenCalledWith({
       where: {
-        mentionId: 'INFORMATIQUE',
-        parcours: 'Informatique',
+        mentionId: { equals: 'INFORMATIQUE', mode: 'insensitive' },
+        parcours: { in: ['Informatique', 'DA2I', 'Science des donnees'] },
         cycle: { in: ['LICENCE'] },
       },
       select: { id: true },
@@ -200,7 +205,7 @@ describe('ExamsService - messagerie', () => {
     messagesFind.mockResolvedValue(ordered);
 
     const result = await service.listerMessages(dtoExamen, { userId: '2', role: Role.SCOLARITE } as any);
-    expect(result).toEqual(ordered);
+    expect(result.map((r: any) => r.id)).toEqual(['a', 'b']);
     expect(messagesFind).toHaveBeenCalledWith(expect.objectContaining({ order: { createdAt: 'ASC' } }));
   });
 
@@ -318,5 +323,34 @@ describe('ExamsService - messagerie périmètre RESPONSABLE_MENTION', () => {
   it('ne peut pas envoyer de message (écriture réservée)', async () => {
     const { service } = setup();
     await expect(service.creerMessage(dtoExamen, 'Bonjour', { userId: '3', role: Role.RESPONSABLE_MENTION, mentionId: 'INFORMATIQUE', cycles: ['LICENCE'], parcours: 'Informatique' } as any)).rejects.toBeInstanceOf(ForbiddenException);
+  });
+});
+
+describe('ExamsService - périmètre Responsable insensible à la casse', () => {
+  it('associe INFORMATIQUE (majuscules, JWT) à Informatique (base) via mode insensible', async () => {
+    const { service, enseignementsFind } = setup();
+    const context = { userId: '3', role: Role.RESPONSABLE_MENTION, mentionId: 'INFORMATIQUE', cycles: ['LICENCE'], parcours: 'Informatique' };
+    await service.getEnseignementIdsForRead(context as any).catch(() => null);
+    expect(enseignementsFind).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        mentionId: { equals: 'INFORMATIQUE', mode: 'insensitive' },
+        parcours: { in: ['Informatique', 'DA2I', 'Science des donnees'] },
+        cycle: { in: ['LICENCE'] },
+      }),
+    }));
+  });
+
+  it('isole les mentions : Mathematiques ne voit pas les enseignements d\'Informatique', async () => {
+    const { service, enseignementsFind } = setup();
+    enseignementsFind.mockResolvedValue([]);
+    const context = { userId: '9', role: Role.RESPONSABLE_MENTION, mentionId: 'MATHEMATIQUES', cycles: ['LICENCE'], parcours: 'Mathematiques' };
+    const ids = await service.getEnseignementIdsForRead(context as any);
+    expect(ids).toEqual([]);
+    expect(enseignementsFind).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        mentionId: { equals: 'MATHEMATIQUES', mode: 'insensitive' },
+        parcours: { in: ['Mathematiques'] },
+      }),
+    }));
   });
 });

@@ -156,7 +156,7 @@ export default function MessagesBubble() {
                     return (
                       <div key={m.id} className={`rounded-lg border p-2 text-xs ${isMine ? 'bg-cyan-50 border-cyan-200 ml-4' : 'bg-white border-slate-200 mr-4'}`}>
                         <div className="flex justify-between text-slate-400 mb-0.5">
-                          <span className="font-semibold">{isMine ? 'Vous' : (role === 'SCOLARITE' ? 'Enseignant' : 'Scolarité')}</span>
+                          <span className="font-semibold">{isMine ? 'Vous' : (m.expediteurRole === 'CHEF_SCOLARITE' ? 'Scolarité' : (m.expediteurRole === 'ENSEIGNANT' ? 'Enseignant' : 'Scolarité'))}</span>
                           <span>{new Date(m.createdAt).toLocaleString('fr-FR')}</span>
                         </div>
                         <p className="text-slate-800 whitespace-pre-wrap">{m.contenu}</p>

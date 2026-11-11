@@ -512,7 +512,7 @@ export default function ExamsModule() {
                             return (
                               <div key={item.id} className={`rounded-lg border p-3 text-sm ${isMine ? 'bg-cyan-50 border-cyan-200 ml-6' : 'bg-white border-slate-200 mr-6'}`}>
                                 <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-                                  <span className="font-semibold">{isMine ? 'Vous' : (isScolarite ? 'Enseignant' : 'Scolarité')}</span>
+                                  <span className="font-semibold">{isMine ? 'Vous' : (item.expediteurRole === 'CHEF_SCOLARITE' ? 'Scolarité' : (item.expediteurRole === 'ENSEIGNANT' ? 'Enseignant' : 'Scolarité'))}</span>
                                   <span>{new Date(item.createdAt).toLocaleString('fr-FR')}</span>
                                 </div>
                                 <p className="text-slate-800 whitespace-pre-wrap">{item.contenu}</p>
@@ -527,7 +527,7 @@ export default function ExamsModule() {
                           <div className="flex justify-end"><button className={buttonClass} type="submit" disabled={busy}><MessageSquare size={16} /> Envoyer</button></div>
                         </form>
                       </div>
-                    ) : (isScolarite || isResponsableMention) ? (
+                    ) : isScolarite ? (
                       <div className="space-y-3">
                         {teacherConversations.map((teacher) => (
                           <div key={teacher.enseignant} className="rounded-xl border border-slate-200 bg-white p-4 space-y-2">
@@ -571,7 +571,7 @@ export default function ExamsModule() {
                     )}
                   </div>}
 
-                  {isScolarite && tab === 'alertes' && <div className="space-y-6">
+                  {(isScolarite || isResponsableMention) && tab === 'alertes' && <div className="space-y-6">
                   <div><h2 className="text-xl font-bold text-[#0a0a32]">Centre des alertes</h2><p className="mt-1 text-sm text-slate-500">Consultez les alertes et marquez celles que vous avez traitées.</p></div>
                   {isScolarite && (<form onSubmit={createAlert} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
                     <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-800"><Plus size={17} className="text-cyan-700" /> Nouvelle alerte</div>

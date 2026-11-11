@@ -8,6 +8,11 @@ import { AuthContext } from '../auth/auth-context.js';
 import { Role } from '../auth/roles.enum.js';
 import { estAnneeUniversitaireValide, SEMESTRES_PAR_NIVEAU } from '../enseignements/domain/referentiel-enseignement.js';
 
+// Sous-parcours réellement présents pour la mention Informatique (parcours de mention -> sous-parcours).
+const SOUS_PARCOURS_PAR_MENTION: Record<string, string[]> = {
+  informatique: ['DA2I', 'Science des donnees'],
+};
+
 import { SessionExamen } from './entities/session-examen.entity.js';
 import { Examen } from './entities/examen.entity.js';
 import { Alerte } from './entities/alerte.entity.js';
@@ -71,8 +76,11 @@ export class ExamsService {
       throw new ForbiddenException('PÃ©rimÃ¨tre de mention incomplet.');
     }
 
+    const sousParcours = SOUS_PARCOURS_PAR_MENTION[parcours.toLowerCase()] ?? [];
+    const parcoursAutorises = [parcours, ...sousParcours];
+
     const rows = await this.prisma.enseignement.findMany({
-      where: { mentionId, parcours, cycle: { in: cycles as Cycle[] } },
+      where: { mentionId: { equals: mentionId, mode: 'insensitive' }, parcours: { in: parcoursAutorises }, cycle: { in: cycles as Cycle[] } },
       select: { id: true },
     });
     return rows.map(row => row.id);
@@ -501,13 +509,23 @@ export class ExamsService {
     const texte = (contenu ?? '').trim() || `Rappel : vos notes pour l'examen du ${examen.dateExamen} (salle ${examen.salle || '—'}) ne sont pas encore remises. Merci de les transmettre.`;
 
     const message = this.messages.create({ examenId, expediteurId, destinataireId, contenu: texte, estLu: false });
-    return this.messages.save(message);
+    const saved = await this.messages.save(message);
+    const expediteur = await this.prisma.user.findUnique({ where: { id: expediteurId }, select: { role: { select: { name: true } } } });
+    return { ...saved, expediteurRole: expediteur?.role?.name ?? null };
   }
 
   async listerMessages(examenId: string, context: AuthContext) {
     const { examen, enseignement } = await this.resoudreExamenEtEnseignement(examenId);
     await this.verifierAccesExamen(examen, enseignement, context);
-    return this.messages.find({ where: { examenId }, order: { createdAt: 'ASC' } });
+    const messages = await this.messages.find({ where: { examenId }, order: { createdAt: 'ASC' } });
+
+    // Enrichissement à la source : rôle réel de l'expéditeur (jamais déduit du contenu ni du statut lu).
+    const expediteurIds = [...new Set(messages.map((message) => message.expediteurId))];
+    const expediteurs = expediteurIds.length
+      ? await this.prisma.user.findMany({ where: { id: { in: expediteurIds } }, select: { id: true, role: { select: { name: true } } } })
+      : [];
+    const roleParId = new Map(expediteurs.map((user) => [user.id, user.role?.name ?? null]));
+    return messages.map((message) => ({ ...message, expediteurRole: roleParId.get(message.expediteurId) ?? null }));
   }
 
   async marquerLu(messageId: string, context: AuthContext) {
