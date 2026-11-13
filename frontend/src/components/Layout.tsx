@@ -186,7 +186,7 @@ export function Layout({ children }: { children: ReactNode }) {
             Bienvenue, <span className="font-semibold text-[#03045E]">{displayName}</span>
           </p>
         </header>
-        <div className="flex-1 overflow-y-auto p-8">{children}</div>
+        <div className="flex-1 overflow-y-auto px-8 pb-8">{children}</div>
       </main>
     </div>
   );
